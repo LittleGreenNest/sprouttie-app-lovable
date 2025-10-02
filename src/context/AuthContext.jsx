@@ -146,29 +146,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Google sign in function
-  const googleSignIn = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/profile`
-        }
-      });
-
-      if (error) throw error;
-      return data;
-    } catch (err) {
-      const errorMessage = err.message || 'Failed to sign in with Google';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Logout function
   const logout = async () => {
@@ -212,7 +189,6 @@ export const AuthProvider = ({ children }) => {
     error,
     signup,
     login,
-    googleSignIn,
     logout,
     getUserProfile,
     setError
