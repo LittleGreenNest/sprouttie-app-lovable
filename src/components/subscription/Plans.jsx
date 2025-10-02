@@ -104,8 +104,8 @@ export default function Plans() {
       // Map plan keys to Stripe Price IDs (you'll need to create these in Stripe)
       const priceIds = {
         print: {
-          monthly: 'price_print_monthly', // Replace with your actual Stripe Price ID
-          yearly: 'price_print_yearly',   // Replace with your actual Stripe Price ID
+          monthly: 'price_1Rp1LZEVoum0YBjsFK6SriTG',
+          yearly: 'price_yearly_placeholder', // TODO: Add yearly price ID
         }
       };
 
