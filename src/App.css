@@ -1,24 +1,35 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+/* ========== Base App Styles ========== */
+.App {
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
 }
 
-@keyframes logo-spin {
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
   }
@@ -27,16 +38,211 @@
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+/* ========== Plans Page Styles ========== */
+.plans-container {
+  padding: 3rem 1rem;
+  text-align: center;
+  background: #f9fafb;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: #6b7280;
+  font-size: 1rem;
+  margin-bottom: 2rem;
+}
+
+.plans {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.plan {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  width: 300px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  transition: transform 0.2s ease;
+}
+
+.plan:hover {
+  transform: translateY(-5px);
+}
+
+.plan h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.plan p {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.price {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #1f703c;
+  margin: 1rem 0;
+}
+
+.plan ul {
+  list-style: none;
+  padding-left: 0;
+  text-align: left;
+}
+
+.plan ul li {
+  margin-bottom: 0.5rem;
+}
+
+.select-btn,
+.subscribe-btn,
+.waitlist-btn {
+  background-color: #1f703c;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.select-btn:hover,
+.subscribe-btn:hover,
+.waitlist-btn:hover {
+  background-color: #14532d;
+}
+
+/* ========== Modal Styles ========== */
+.waitlist-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.close-btn {
+  margin-top: 1rem;
+  background: #ccc;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.success-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+  background: #fff0f6;
+  padding: 2rem;
+  text-align: center;
+}
+
+.success-card {
+  background: #fff;
+  padding: 2.5rem 2rem;
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  max-width: 500px;
+}
+
+.success-card h1 {
+  font-size: 2rem;
+  color: #ff80ab;
+}
+
+.success-card p {
+  font-size: 1rem;
+  color: #555;
+  margin: 1rem 0;
+}
+
+.success-card .subtext {
+  font-size: 0.9rem;
+  color: #999;
+}
+
+.success-btn {
+  margin-top: 1.5rem;
+  background-color: #ff80ab;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.success-btn:hover {
+  background-color: #ff5e94;
+}
+
+
+/* Optional: fade-in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.card {
-  padding: 2em;
+
+/* === Waitlist Modal Enhancements === */
+.waitlist-modal input[type="email"] {
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  width: 100%;
+  font-size: 1rem;
+  margin-bottom: 1rem;
 }
 
-.read-the-docs {
-  color: #888;
+/* Spinner for submitting state */
+.spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #1f703c;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }

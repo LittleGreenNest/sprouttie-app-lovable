@@ -1,0 +1,13 @@
+]˚import React from 'react';
+import './App.css';
+import GlennDomanFlashcardTracker from './components/GlennDomanFlashcardTracker';
+
+function App() {
+  return (
+    <div className="App">
+      <GlennDomanFlashcardTracker />
+    </div>
+  );
+}
+
+export default App;

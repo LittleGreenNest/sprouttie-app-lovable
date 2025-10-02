@@ -1,0 +1,13 @@
+services:
+- type: web
+  name: Sprouttie
+  runtime: node
+  repo: https://github.com/LittleGreenNest/LGN
+  plan: starter
+  envVars:
+  - key: Sprouttie
+    sync: false
+  region: singapore
+  buildCommand: npm install && npm run build
+  startCommand: npm run start
+version: "1"
