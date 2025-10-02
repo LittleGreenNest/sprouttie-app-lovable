@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../supabaseClient'; // Add this import
+import { supabase } from '@/integrations/supabase/client'; // Add this import
 
 const Profile = () => {
   const { currentUser, logout } = useAuth();

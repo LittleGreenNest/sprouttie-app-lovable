@@ -28,7 +28,7 @@ import HistoryView from './components/HistoryView';
 import Plans from './components/subscription/Plans';
 
 // Supabase
-import { supabase } from './supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 
 export const fetchUserPlan = async (userEmail) => {
   const { data, error } = await supabase
