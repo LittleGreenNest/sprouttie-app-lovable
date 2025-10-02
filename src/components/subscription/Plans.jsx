@@ -4,13 +4,6 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../integrations/supabase/client';
 import WaitlistForm from '../WaitlistForm';
 
-const SERVER_URL =
-  import.meta.env.VITE_BACKEND_URL ||
-  (window.location.hostname === 'localhost' ? 'http://localhost:5001' : '');
-
-
-console.log('SERVER_URL →', SERVER_URL);
-
 const plans = [
   {
     name: 'Free',
@@ -99,7 +92,7 @@ export default function Plans() {
   }, [showWaitlist, showFreeConfirm]);
 
   // Start Stripe Checkout - require auth for paid plans
-  const handleSubscribe = async (plan) => {
+  const handleSubscribe = async (planKey) => {
     if (!currentUser) {
       alert('Please log in to subscribe to a plan.');
       navigate('/login');
@@ -108,27 +101,35 @@ export default function Plans() {
 
     setLoading(true);
     try {
-      const identifiers = { userId: currentUser.id, email: currentUser.email };
+      // Map plan keys to Stripe Price IDs (you'll need to create these in Stripe)
+      const priceIds = {
+        print: {
+          monthly: 'price_print_monthly', // Replace with your actual Stripe Price ID
+          yearly: 'price_print_yearly',   // Replace with your actual Stripe Price ID
+        }
+      };
 
-      console.log('Creating checkout session for:', { plan, ...identifiers });
-
-      const res = await fetch(`${SERVER_URL}/create-checkout-session`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ plan, userId: currentUser.id, email: currentUser.email })
-});
-
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || `HTTP ${res.status}`);
-      }
+      const priceId = priceIds[planKey]?.[billingCycle];
       
-      const data = await res.json();
-      if (data.url) {
+      if (!priceId) {
+        throw new Error('Invalid plan or billing cycle');
+      }
+
+      console.log('Creating checkout session for:', { planKey, billingCycle, priceId });
+
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: {
+          priceId,
+          planKey,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
         window.location.href = data.url;
       } else {
-        throw new Error(data.error || 'No checkout URL returned');
+        throw new Error('No checkout URL returned');
       }
     } catch (e) {
       console.error('Subscription error:', e);
