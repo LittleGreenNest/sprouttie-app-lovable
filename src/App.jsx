@@ -85,7 +85,7 @@ const AppContent = () => {
       {/* Header with Sprouttie Mascot - improved spacing */}
       <div className="flex items-center mb-10">
         <img 
-          src="/sprouttie-mascot.png" 
+          src="/images/sprouttie-mascot.png" 
           alt="Sprouttie Mascot" 
           className="h-24 mr-6"
           onError={(e) => {
