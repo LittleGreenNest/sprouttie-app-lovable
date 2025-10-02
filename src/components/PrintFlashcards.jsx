@@ -3,13 +3,37 @@ import React, { useState, useEffect } from 'react';
 import { useFlashcards } from '../context/FlashcardContext';
 import { jsPDF } from 'jspdf';
 
-// Simple font selection - use helvetica for all text
+// CJK range + Latin Extended/combining marks (covers ā á ǎ à, etc.)
+const needsNotoCJK = (s='') => /[\u4E00-\u9FFF]/.test(s);
+const needsLatinDiacritics = (s='') => /[\u0100-\u036F]/.test(s);
+
+// CJK + Latin-diacritics auto font switch
 const setAutoFont = (doc, s, weight = 'normal') => {
-  doc.setFont('helvetica', weight);
+  if (needsNotoCJK(s) && doc.getFontList()?.['NotoSansSC-Regular']) {
+    // Always use normal for Noto SC; no bold variant registered
+    doc.setFont('NotoSansSC-Regular', 'normal');
+  } else if (needsLatinDiacritics(s) && doc.getFontList()?.['NotoSans-Regular']) {
+    // Always use normal for Noto Latin; tone marks render correctly
+    doc.setFont('NotoSans-Regular', 'normal');
+  } else {
+    // ASCII: Helvetica can use the requested weight
+    doc.setFont('helvetica', weight);
+  }
 };
 
+function ab2b64(buf) {
+  let binary = '';
+  const bytes = new Uint8Array(buf);
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
 
-// Font loading removed - using built-in fonts
+// cache the font across re-renders
+let NOTO_SC_B64 = null;     // Noto Sans SC – for Chinese
+let NOTO_LAT_B64 = null;    // Noto Sans – for pinyin with tone marks
 
 
 function PrintFlashcards({ onClose }) {
@@ -35,8 +59,31 @@ const [previewSide, setPreviewSide] = useState('front'); // 'front' | 'back'
   // State for preview pages - organized how they'll appear on A4 pages
   const [previewPages, setPreviewPages] = useState([]);
 
-// Font ready state (simplified - no external fonts needed)
-const [fontReady] = useState(true);
+// load CJK font for jsPDF
+const [fontReady, setFontReady] = useState(false);
+
+useEffect(() => {
+  let cancelled = false;
+  (async () => {
+    try {
+      if (!NOTO_SC_B64) {
+        const res = await fetch('/fonts/NotoSansSC-Regular.ttf');
+        const buf = await res.arrayBuffer();
+        NOTO_SC_B64 = ab2b64(buf);
+      }
+      if (!NOTO_LAT_B64) {
+        const res2 = await fetch('/fonts/NotoSans-Regular.ttf');
+        const buf2 = await res2.arrayBuffer();
+        NOTO_LAT_B64 = ab2b64(buf2);
+      }
+      if (!cancelled) setFontReady(true);
+    } catch (e) {
+      console.error('Font loading error:', e);
+      if (!cancelled) setFontReady(true);
+    }
+  })();
+  return () => { cancelled = true; };
+}, []);
 
   // Effect to clear selections when changing selection mode
   useEffect(() => {
@@ -139,8 +186,16 @@ const generatePreview = () => {
   // Create temp document for measuring
   const tempDoc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   
-  // Set up font
-  tempDoc.setFont('helvetica', 'bold');
+  // Register fonts
+  if (NOTO_SC_B64) {
+    tempDoc.addFileToVFS('NotoSansSC-Regular.ttf', NOTO_SC_B64);
+    tempDoc.addFont('NotoSansSC-Regular.ttf', 'NotoSansSC-Regular', 'normal');
+  }
+  if (NOTO_LAT_B64) {
+    tempDoc.addFileToVFS('NotoSans-Regular.ttf', NOTO_LAT_B64);
+    tempDoc.addFont('NotoSans-Regular.ttf', 'NotoSans-Regular', 'normal');
+  }
+  
   tempDoc.setFontSize(250);
   
   const pageWidth = tempDoc.internal.pageSize.getWidth();
@@ -155,8 +210,8 @@ const generatePreview = () => {
     const category = categories.find(cat => cat.id === flashcard.categoryId);
     const word = flashcard.word;
     
-    tempDoc.setFont('helvetica', 'bold');
     const text = (word ?? '').toString();
+    setAutoFont(tempDoc, text, 'bold');
     const fontSize = calculateSafeFontSize(text, tempDoc, maxWidth);
     return { ...flashcard, categoryName: category ? category.name : 'Unknown', fontSize };
   }).filter(Boolean);
@@ -192,8 +247,16 @@ const generatePreview = () => {
         format: 'a4'
       });
       
-      // Set up font
-      doc.setFont('helvetica', 'bold');
+      // Register fonts
+      if (NOTO_SC_B64) {
+        doc.addFileToVFS('NotoSansSC-Regular.ttf', NOTO_SC_B64);
+        doc.addFont('NotoSansSC-Regular.ttf', 'NotoSansSC-Regular', 'normal');
+      }
+      if (NOTO_LAT_B64) {
+        doc.addFileToVFS('NotoSans-Regular.ttf', NOTO_LAT_B64);
+        doc.addFont('NotoSans-Regular.ttf', 'NotoSans-Regular', 'normal');
+      }
+      
       doc.setFontSize(250);
 
       const pageWidth = doc.internal.pageSize.getWidth();    // A4 landscape width (297mm)
@@ -224,7 +287,7 @@ const generatePreview = () => {
           
           // Get the word and render it
           const text = (flashcard.word ?? '').toString();
-          doc.setFont('helvetica', 'bold');
+          setAutoFont(doc, text, 'bold');
           doc.setFontSize(flashcard.fontSize);
           doc.text(text, pageWidth / 2, yPosition, { align: 'center', baseline: 'middle' });
 
@@ -253,20 +316,23 @@ const xRight = pageWidth - 20;
             const py = (flashcard.pinyin ?? '').toString().trim();
 
             doc.setTextColor(0, 0, 0);
-            doc.setFont('helvetica', 'normal');
 
             if (en && !/[\u3400-\u9FFF]/.test(cn)) {
               // English-only card: show just English (top-right)
+              setAutoFont(doc, en, 'normal');
               doc.setFontSize(16);
               doc.text(en, xRight, baseY, { align: 'right' });
             } else {
               // Chinese card: English / 中文 / Pinyin (top-right stack)
+              setAutoFont(doc, en, 'normal');
               doc.setFontSize(14);
               doc.text(`English: ${en || '—'}`, xRight, baseY, { align: 'right' });
 
+              setAutoFont(doc, cn, 'normal');
               doc.setFontSize(18);
               doc.text(`中文: ${cn || '—'}`, xRight, baseY + 16, { align: 'right' });
 
+              setAutoFont(doc, py, 'normal');
               doc.setFontSize(14);
               doc.text(`Pinyin: ${py || '—'}`, xRight, baseY + 32, { align: 'right' });
             }
