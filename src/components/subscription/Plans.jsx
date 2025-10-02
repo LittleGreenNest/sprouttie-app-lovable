@@ -5,7 +5,7 @@ import { supabase } from '../../integrations/supabase/client';
 import WaitlistForm from '../WaitlistForm';
 
 const SERVER_URL =
-  process.env.REACT_APP_BACKEND_URL ||
+  import.meta.env.VITE_BACKEND_URL ||
   (window.location.hostname === 'localhost' ? 'http://localhost:5001' : '');
 
 
