@@ -261,18 +261,6 @@ export default function Plans() {
           })}
         </div>
 
-        <div className="mt-6">
-          <label className="inline-flex items-center">
-            <input
-              type="checkbox"
-              checked={billingCycle === 'yearly'}
-              onChange={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-              className="form-checkbox text-green-600"
-            />
-            <span className="ml-2 text-gray-700">Bill yearly (Save 17%!)</span>
-          </label>
-        </div>
-
         {currentUser && (
           <div className="mt-8">
             <button
