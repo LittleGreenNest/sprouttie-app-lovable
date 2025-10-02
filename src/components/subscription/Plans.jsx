@@ -1,8 +1,7 @@
-//src/components/subscription/Plans.js
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../supabaseClient';
+import { supabase } from '../../integrations/supabase/client';
 import WaitlistForm from '../WaitlistForm';
 
 const SERVER_URL =
