@@ -27,7 +27,6 @@ import FlashcardManager from './components/FlashcardManager';
 import HistoryView from './components/HistoryView';
 import Plans from './components/subscription/Plans';
 import PrintFlashcards from './components/PrintFlashcards';
-import ProcessLogo from './pages/ProcessLogo';
 
 // Supabase
 import { supabase } from '@/integrations/supabase/client';
@@ -168,7 +167,6 @@ function App() {
               <Route path="/plans" element={<Plans />} />
               <Route path="/pdf-success" element={<PDFSuccess />} />
               <Route path="/print" element={<PrintFlashcards />} />
-              <Route path="/process-logo" element={<ProcessLogo />} />
 
               
               {/* Protected routes */}
