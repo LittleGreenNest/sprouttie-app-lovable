@@ -3,38 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { useFlashcards } from '../context/FlashcardContext';
 import { jsPDF } from 'jspdf';
 
-// CJK range + Latin Extended/combining marks (covers ā á ǎ à, etc.)
-const needsNotoCJK = (s='') => /[\u4E00-\u9FFF]/.test(s);
-const needsLatinDiacritics = (s='') => /[\u0100-\u036F]/.test(s);
-
-// CJK + Latin-diacritics auto font switch
+// Simple font selection - use helvetica for all text
 const setAutoFont = (doc, s, weight = 'normal') => {
-  if (needsNotoCJK(s) && doc.getFontList()?.['NotoSansSC-Regular']) {
-    // Always use normal for Noto SC; no bold variant registered
-    doc.setFont('NotoSansSC-Regular', 'normal');
-  } else if (needsLatinDiacritics(s) && doc.getFontList()?.['NotoSans-Regular']) {
-    // Always use normal for Noto Latin; tone marks render correctly
-    doc.setFont('NotoSans-Regular', 'normal');
-  } else {
-    // ASCII: Helvetica can use the requested weight
-    doc.setFont('helvetica', weight);
-  }
+  doc.setFont('helvetica', weight);
 };
 
 
-function ab2b64(buf) {
-  let binary = '';
-  const bytes = new Uint8Array(buf);
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
-  }
-  return btoa(binary);
-}
-
-// cache the font across re-renders
-let NOTO_SC_B64 = null;     // Noto Sans SC – for Chinese
-let NOTO_LAT_B64 = null;    // Noto Sans – for pinyin with tone marks
+// Font loading removed - using built-in fonts
 
 
 function PrintFlashcards({ onClose }) {
@@ -60,30 +35,8 @@ const [previewSide, setPreviewSide] = useState('front'); // 'front' | 'back'
   // State for preview pages - organized how they'll appear on A4 pages
   const [previewPages, setPreviewPages] = useState([]);
 
-// load CJK font for jsPDF
-const [fontReady, setFontReady] = useState(false);
-
-useEffect(() => {
-  let cancelled = false;
-  (async () => {
-    try {
-      if (!NOTO_SC_B64) {
-        const res = await fetch('/fonts/NotoSansSC-Regular.ttf');
-        const buf = await res.arrayBuffer();
-        NOTO_SC_B64 = ab2b64(buf);
-      }
-if (!NOTO_LAT_B64) {
-const res2 = await fetch('/fonts/NotoSans-Regular.ttf');
-const buf2 = await res2.arrayBuffer();
-NOTO_LAT_B64 = ab2b64(buf2);
-}
-      if (!cancelled) setFontReady(true);
-    } catch (e) {
-      console.error('Failed to load CJK font', e);
-    }
-  })();
-  return () => { cancelled = true; };
-}, []);
+// Font ready state (simplified - no external fonts needed)
+const [fontReady] = useState(true);
 
   // Effect to clear selections when changing selection mode
   useEffect(() => {
@@ -183,69 +136,41 @@ NOTO_LAT_B64 = ab2b64(buf2);
 
   
 const generatePreview = () => {
-// 🚧 Prevent measuring Chinese before the CJK font is loaded
-const anyChinese = selectedFlashcards.some(id => {
-const card = flashcards.find(c => c.id === id);
-return card && /[\u3400-\u9FFF\uF900-\uFAFF\u{20000}-\u{2A6DF}]/u.test(card.word);
-});
-if (anyChinese && !NOTO_SC_B64) {
-setMessage('Loading Chinese font… try Preview again in a moment.');
-setTimeout(() => setMessage(''), 2500);
-return;
-}
+  // Create temp document for measuring
+  const tempDoc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  
+  // Set up font
+  tempDoc.setFont('helvetica', 'bold');
+  tempDoc.setFontSize(250);
+  
+  const pageWidth = tempDoc.internal.pageSize.getWidth();
+  const marginSize = 8;
+  const maxWidth = pageWidth - marginSize * 2;
 
-// 1) single tempDoc
-const tempDoc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  // Map flashcards with calculated font sizes
+  const flashcardsToPreview = selectedFlashcards.map(id => {
+    const flashcard = flashcards.find(card => card.id === id);
+    if (!flashcard) return null;
 
-// 2) register & prime ONCE (before measuring anything)
-if (NOTO_SC_B64) {
-tempDoc.addFileToVFS('NotoSansSC-Regular.ttf', NOTO_SC_B64);
-tempDoc.addFont('NotoSansSC-Regular.ttf', 'NotoSansSC-Regular', 'normal');
-tempDoc.setFont('NotoSansSC-Regular', 'normal'); // prime Noto widths
-tempDoc.setFontSize(250);
-}
-if (NOTO_LAT_B64) {
-tempDoc.addFileToVFS('NotoSans-Regular.ttf', NOTO_LAT_B64);
-tempDoc.addFont('NotoSans-Regular.ttf', 'NotoSans-Regular', 'normal');
-}
+    const category = categories.find(cat => cat.id === flashcard.categoryId);
+    const word = flashcard.word;
+    
+    tempDoc.setFont('helvetica', 'bold');
+    const text = (word ?? '').toString();
+    const fontSize = calculateSafeFontSize(text, tempDoc, maxWidth);
+    return { ...flashcard, categoryName: category ? category.name : 'Unknown', fontSize };
+  }).filter(Boolean);
 
-// also prime Helvetica once
-tempDoc.setFont('helvetica', 'bold'); // prime Helvetica widths
-tempDoc.setFontSize(250);
-const pageWidth = tempDoc.internal.pageSize.getWidth();
-const marginSize = 8;
-const maxWidth = pageWidth - marginSize * 2;
+  setPreviewFlashcards(flashcardsToPreview);
 
-// 3) per-word switch BEFORE measuring
-const flashcardsToPreview = selectedFlashcards.map(id => {
-const flashcard = flashcards.find(card => card.id === id);
-if (!flashcard) return null;
-
-const category = categories.find(cat => cat.id === flashcard.categoryId);
-const word = flashcard.word;
-
-const hasChinese = /[\u3400-\u9FFF\uF900-\uFAFF\u{20000}-\u{2A6DF}]/u.test(word);
-if (hasChinese && NOTO_SC_B64) {
-tempDoc.setFont('NotoSansSC-Regular', 'normal'); // match addFont family
-} else {
-tempDoc.setFont('helvetica', 'bold');
-}
-
-const text = (word ?? '').toString();
-const fontSize = calculateSafeFontSize(text, tempDoc, maxWidth);
-return { ...flashcard, categoryName: category ? category.name : 'Unknown', fontSize };
-}).filter(Boolean);
-
-setPreviewFlashcards(flashcardsToPreview);
-
-// 4) paginate (unchanged)
-const pages = [];
-for (let i = 0; i < flashcardsToPreview.length; i += 2) {
-const page = [flashcardsToPreview[i]];
-if (i + 1 < flashcardsToPreview.length) page.push(flashcardsToPreview[i + 1]);
-pages.push(page);
-}
-setPreviewPages(pages);
+  // Paginate (2 cards per page)
+  const pages = [];
+  for (let i = 0; i < flashcardsToPreview.length; i += 2) {
+    const page = [flashcardsToPreview[i]];
+    if (i + 1 < flashcardsToPreview.length) page.push(flashcardsToPreview[i + 1]);
+    pages.push(page);
+  }
+  setPreviewPages(pages);
 };
 
    
@@ -266,20 +191,10 @@ setPreviewPages(pages);
         unit: 'mm',
         format: 'a4'
       });
-if (NOTO_SC_B64) {
-  doc.addFileToVFS('NotoSansSC-Regular.ttf', NOTO_SC_B64);
-  doc.addFont('NotoSansSC-Regular.ttf', 'NotoSansSC-Regular', 'normal'); // <- use this family
-  doc.setFont('NotoSansSC-Regular', 'normal');                           // <- and select same
-  doc.setFontSize(250);
-}
-if (NOTO_LAT_B64) {
-doc.addFileToVFS('NotoSans-Regular.ttf', NOTO_LAT_B64);
-doc.addFont('NotoSans-Regular.ttf', 'NotoSans-Regular', 'normal');
-}
-
-// also prime Helvetica once
-doc.setFont('helvetica', 'bold');
-doc.setFontSize(250);
+      
+      // Set up font
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(250);
 
       const pageWidth = doc.internal.pageSize.getWidth();    // A4 landscape width (297mm)
       const pageHeight = doc.internal.pageSize.getHeight();  // A4 landscape height (210mm)
@@ -307,14 +222,11 @@ doc.setFontSize(250);
           // Set text properties
           doc.setTextColor(255, 0, 0); // Bright red color (Sprouttie style - #FF0000)
           
-          // Get the word
-const text = (flashcard.word ?? '').toString();
-const hasChinese = /[\u3400-\u9FFF\uF900-\uFAFF\u{20000}-\u{2A6DF}]/u.test(text);
-
-setAutoFont(doc, text, 'bold');
-
-doc.setFontSize(flashcard.fontSize);
-doc.text(text, pageWidth / 2, yPosition, { align: 'center', baseline: 'middle' });
+          // Get the word and render it
+          const text = (flashcard.word ?? '').toString();
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(flashcard.fontSize);
+          doc.text(text, pageWidth / 2, yPosition, { align: 'center', baseline: 'middle' });
 
           
           // Add a dividing line between cards (except for single-card pages)
@@ -336,34 +248,28 @@ doc.text(text, pageWidth / 2, yPosition, { align: 'center', baseline: 'middle' }
             const baseY = cardIndex === 0 ? 20 : (pageHeight / 2 + 20);
 const xRight = pageWidth - 20;
 
-const cn = (flashcard.word ?? '').toString().trim();
-const en = (flashcard.english ?? '').toString().trim();
-const py = (flashcard.pinyin ?? '').toString().trim();
+            const cn = (flashcard.word ?? '').toString().trim();
+            const en = (flashcard.english ?? '').toString().trim();
+            const py = (flashcard.pinyin ?? '').toString().trim();
 
-doc.setTextColor(0, 0, 0);
+            doc.setTextColor(0, 0, 0);
+            doc.setFont('helvetica', 'normal');
 
-if (en && !/[\u3400-\u9FFF]/.test(cn)) {
-  // English-only card: show just English (top-right)
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text(en, xRight, baseY, { align: 'right' });
-} else {
-  // Chinese card: English / 中文 / Pinyin (top-right stack)
-doc.setFontSize(14);
-setAutoFont(doc, `English: ${en || '—'}`, 'bold');
-doc.text(`English: ${en || '—'}`, xRight, baseY, { align: 'right' });
+            if (en && !/[\u3400-\u9FFF]/.test(cn)) {
+              // English-only card: show just English (top-right)
+              doc.setFontSize(16);
+              doc.text(en, xRight, baseY, { align: 'right' });
+            } else {
+              // Chinese card: English / 中文 / Pinyin (top-right stack)
+              doc.setFontSize(14);
+              doc.text(`English: ${en || '—'}`, xRight, baseY, { align: 'right' });
 
+              doc.setFontSize(18);
+              doc.text(`中文: ${cn || '—'}`, xRight, baseY + 16, { align: 'right' });
 
-doc.setFontSize(18);
-setAutoFont(doc, `中文: ${cn || '—'}`, 'normal');
-doc.text(`中文: ${cn || '—'}`, xRight, baseY + 16, { align: 'right' });
-
-  // Use Noto for pinyin to support tone marks
-doc.setFontSize(14);
-setAutoFont(doc, `Pinyin: ${py || '—'}`, 'normal'); // will pick Noto Latin if tone marks present
-doc.text(`Pinyin: ${py || '—'}`, xRight, baseY + 32, { align: 'right' });
-
-}
+              doc.setFontSize(14);
+              doc.text(`Pinyin: ${py || '—'}`, xRight, baseY + 32, { align: 'right' });
+            }
 
 // divider between halves (keep)
 if (cardIndex === 0 && page.length > 1) {
