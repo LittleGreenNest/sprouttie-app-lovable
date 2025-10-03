@@ -166,7 +166,11 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/plans" element={<Plans />} />
               <Route path="/pdf-success" element={<PDFSuccess />} />
-              <Route path="/print" element={<PrintFlashcards />} />
+              
+              {/* Protected Print Flashcards route */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/print" element={<PrintFlashcards />} />
+              </Route>
 
               
               {/* Protected routes */}
