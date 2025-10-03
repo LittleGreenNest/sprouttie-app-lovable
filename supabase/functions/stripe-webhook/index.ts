@@ -23,7 +23,7 @@ serve(async (req) => {
       cryptoProvider
     );
   } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
+    console.error('Webhook signature verification failed:', err instanceof Error ? err.message : 'Unknown error');
     return new Response(
       JSON.stringify({ error: 'Webhook signature verification failed' }),
       { status: 400 }
