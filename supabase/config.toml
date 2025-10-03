@@ -1,8 +1,8 @@
+project_id = "little-green-nest"
 # For detailed configuration reference documentation, visit:
 # https://supabase.com/docs/guides/local-development/cli/config
 # A string used to distinguish different Supabase projects on the same host. Defaults to the
 # working directory name when running `supabase init`.
-project_id = "little-green-nest"
 
 [api]
 enabled = true
@@ -334,6 +334,7 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 [functions.sendWaitlistEmail]
 enabled = true
 verify_jwt = false
+entrypoint = "functions/sendWaitlistEmail/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/sendWaitlistEmail/*.html" ]
