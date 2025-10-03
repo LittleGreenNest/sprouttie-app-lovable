@@ -102,12 +102,12 @@ export default function Plans() {
     setLoading(true);
     try {
       // Map plan keys to Stripe Price IDs (you'll need to create these in Stripe)
-      const priceIds = {
-        print: {
-          monthly: 'price_1Rp1LZEVoum0YBjsFK6SriTG',
-          yearly: 'price_yearly_placeholder', // TODO: Add yearly price ID
-        }
-      };
+        const priceIds = {
+          print: {
+            monthly: 'price_1Rp1LZEVoum0YBjsFK6SriTG',
+            yearly: 'price_1SDylNEVoum0YBjsLMdqBY3S',
+          }
+        };
 
       const priceId = priceIds[planKey]?.[billingCycle];
       
@@ -259,6 +259,18 @@ export default function Plans() {
               </div>
             );
           })}
+        </div>
+
+        <div className="mt-6">
+          <label className="inline-flex items-center">
+            <input
+              type="checkbox"
+              checked={billingCycle === 'yearly'}
+              onChange={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+              className="form-checkbox text-green-600"
+            />
+            <span className="ml-2 text-gray-700">Bill yearly (Save 17%!)</span>
+          </label>
         </div>
 
         {currentUser && (
