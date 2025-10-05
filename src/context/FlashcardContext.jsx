@@ -77,22 +77,49 @@ export const FlashcardProvider = ({ children }) => {
         setCategories(savedCategories ? JSON.parse(savedCategories) : defaultCategories);
         
         // Load flashcards or use defaults if none found
-const savedFlashcards = localStorage.getItem('flashcards');
-let loadedFlashcards = savedFlashcards ? JSON.parse(savedFlashcards) : defaultFlashcards;
+        const savedFlashcards = localStorage.getItem('flashcards');
+        let loadedFlashcards = savedFlashcards ? JSON.parse(savedFlashcards) : defaultFlashcards;
 
-// Ensure english & pinyin fields exist
-loadedFlashcards = loadedFlashcards.map(fc => ({
-  english: '',
-  pinyin: '',
-  ...fc,
-}));
+        // Ensure english & pinyin fields exist
+        loadedFlashcards = loadedFlashcards.map(fc => ({
+          english: '',
+          pinyin: '',
+          ...fc,
+        }));
 
-setFlashcards(loadedFlashcards);
-
+        setFlashcards(loadedFlashcards);
         
         // Load sets or use defaults if none found
         const savedSets = localStorage.getItem('sets');
-        setSets(savedSets ? JSON.parse(savedSets) : defaultSets);
+        let loadedSets = savedSets ? JSON.parse(savedSets) : defaultSets;
+        
+        // Validate and clean up sets - remove any flashcard IDs that don't exist
+        const flashcardIds = new Set(loadedFlashcards.map(fc => fc.id));
+        let setsModified = false;
+        
+        loadedSets = loadedSets.map(set => {
+          const validFlashcardIds = set.flashcardIds.filter(id => {
+            const isValid = flashcardIds.has(id);
+            if (!isValid) {
+              console.warn(`Removing invalid flashcard ID '${id}' from set '${set.name}'`);
+              setsModified = true;
+            }
+            return isValid;
+          });
+          
+          return {
+            ...set,
+            flashcardIds: validFlashcardIds
+          };
+        });
+        
+        setSets(loadedSets);
+        
+        // Save cleaned sets back to localStorage if modified
+        if (setsModified) {
+          console.log('Sets were cleaned up and saved');
+          localStorage.setItem('sets', JSON.stringify(loadedSets));
+        }
         
         // Load history if available
         const savedHistory = localStorage.getItem('history');
