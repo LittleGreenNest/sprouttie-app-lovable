@@ -22,7 +22,7 @@ const AllWords = () => {
       const { data: flashcards, error: flashcardsError } = await supabase
         .from('flashcards')
         .select('*')
-        .eq('user_id', currentUser.uid)
+        .eq('user_id', currentUser.id)
         .order('folder', { ascending: true })
         .order('front', { ascending: true });
 
@@ -32,7 +32,7 @@ const AllWords = () => {
       const { data: tracking, error: trackingError } = await supabase
         .from('daily_tracking')
         .select('flashcard_id')
-        .eq('user_id', currentUser.uid)
+        .eq('user_id', currentUser.id)
         .eq('status', 'flashed');
 
       if (trackingError) throw trackingError;
