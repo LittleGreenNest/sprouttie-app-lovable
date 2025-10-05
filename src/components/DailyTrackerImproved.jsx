@@ -340,7 +340,15 @@ const DailyTrackerImproved = () => {
     }
 
     const updatedFlashcardIds = [...set.flashcardIds, wordId];
-    updateSetFlashcards(editingSetId, updatedFlashcardIds);
+    
+    // Track the date this word was added
+    const today = new Date().toISOString().split('T')[0];
+    const updatedFlashcardDates = {
+      ...(set.flashcardDates || {}),
+      [wordId]: today
+    };
+    
+    updateSetFlashcards(editingSetId, updatedFlashcardIds, updatedFlashcardDates);
 
     // Update available words
     setAvailableWords(availableWords.filter(w => w.id !== wordId));
@@ -358,7 +366,12 @@ const DailyTrackerImproved = () => {
     }
 
     const updatedFlashcardIds = set.flashcardIds.filter(id => id !== wordId);
-    updateSetFlashcards(editingSetId, updatedFlashcardIds);
+    
+    // Remove the date tracking for this word
+    const updatedFlashcardDates = { ...(set.flashcardDates || {}) };
+    delete updatedFlashcardDates[wordId];
+    
+    updateSetFlashcards(editingSetId, updatedFlashcardIds, updatedFlashcardDates);
 
     // Add to available words
     const removedWord = flashcards.find(w => w.id === wordId);
@@ -581,9 +594,9 @@ const DailyTrackerImproved = () => {
                   )}
                   <div className="flex flex-wrap gap-2">
                     {getFlashcardsForSet(editingSetId).map((card, index) => {
-                      const isOldest = index === 0;
                       const currentSet = sets.find(s => s.id === editingSetId);
                       const isFirstCard = currentSet?.flashcardIds[0] === card.id;
+                      const dateAdded = currentSet?.flashcardDates?.[card.id];
                       
                       return (
                         <div
@@ -594,7 +607,7 @@ const DailyTrackerImproved = () => {
                               : 'bg-blue-50 border-blue-200'
                           }`}
                         >
-                          <div>
+                          <div className="flex-1">
                             {isFirstCard && (
                               <span className="text-xs text-amber-600 font-semibold mr-1">
                                 [Oldest]
@@ -603,6 +616,15 @@ const DailyTrackerImproved = () => {
                             <span className="font-medium">{card.word}</span>
                             {card.english && (
                               <span className="text-gray-600 ml-1">({card.english})</span>
+                            )}
+                            {dateAdded && (
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                Added: {new Date(dateAdded).toLocaleDateString('en-US', { 
+                                  month: 'short', 
+                                  day: 'numeric',
+                                  year: 'numeric'
+                                })}
+                              </div>
                             )}
                           </div>
                           <button

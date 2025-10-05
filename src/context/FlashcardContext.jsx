@@ -201,10 +201,18 @@ categoryId,
   };
   
   // Set operations
-  const updateSetFlashcards = (setId, flashcardIds) => {
-    setSets(sets.map(set => 
-      set.id === setId ? { ...set, flashcardIds } : set
-    ));
+  const updateSetFlashcards = (setId, flashcardIds, flashcardDates = null) => {
+    setSets(sets.map(set => {
+      if (set.id === setId) {
+        const updatedSet = { ...set, flashcardIds };
+        // If flashcardDates is provided, update it
+        if (flashcardDates !== null) {
+          updatedSet.flashcardDates = flashcardDates;
+        }
+        return updatedSet;
+      }
+      return set;
+    }));
   };
   
   // Get flashcards by category
