@@ -333,6 +333,12 @@ const DailyTrackerImproved = () => {
     const set = sets.find(s => s.id === editingSetId);
     if (!set) return;
 
+    // Check if set already has 5 words
+    if (set.flashcardIds.length >= 5) {
+      toast.warning('This set already has 5 words. Remove the oldest word first.');
+      return;
+    }
+
     const updatedFlashcardIds = [...set.flashcardIds, wordId];
     updateSetFlashcards(editingSetId, updatedFlashcardIds);
 
@@ -344,6 +350,12 @@ const DailyTrackerImproved = () => {
   const removeWordFromSet = (wordId) => {
     const set = sets.find(s => s.id === editingSetId);
     if (!set) return;
+
+    // Only allow removing the oldest word (first in the array)
+    if (set.flashcardIds[0] !== wordId) {
+      toast.warning('You can only remove the oldest word (first word) from the set.');
+      return;
+    }
 
     const updatedFlashcardIds = set.flashcardIds.filter(id => id !== wordId);
     updateSetFlashcards(editingSetId, updatedFlashcardIds);
@@ -559,27 +571,55 @@ const DailyTrackerImproved = () => {
 
                 {/* Current Words in Set */}
                 <div className="mb-6">
-                  <h4 className="font-medium text-gray-700 mb-3">Current Words in Set</h4>
+                  <h4 className="font-medium text-gray-700 mb-3">
+                    Current Words in Set ({getFlashcardsForSet(editingSetId).length}/5)
+                  </h4>
+                  {getFlashcardsForSet(editingSetId).length >= 5 && (
+                    <p className="text-sm text-amber-600 mb-3">
+                      Set is full. Remove the oldest word before adding a new one.
+                    </p>
+                  )}
                   <div className="flex flex-wrap gap-2">
-                    {getFlashcardsForSet(editingSetId).map((card) => (
-                      <div
-                        key={card.id}
-                        className="flex items-center gap-2 px-3 py-2 bg-blue-50 border-2 border-blue-200 rounded-lg text-sm"
-                      >
-                        <div>
-                          <span className="font-medium">{card.word}</span>
-                          {card.english && (
-                            <span className="text-gray-600 ml-1">({card.english})</span>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => removeWordFromSet(card.id)}
-                          className="text-red-600 hover:text-red-800 font-bold"
+                    {getFlashcardsForSet(editingSetId).map((card, index) => {
+                      const isOldest = index === 0;
+                      const currentSet = sets.find(s => s.id === editingSetId);
+                      const isFirstCard = currentSet?.flashcardIds[0] === card.id;
+                      
+                      return (
+                        <div
+                          key={card.id}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm border-2 ${
+                            isFirstCard 
+                              ? 'bg-amber-50 border-amber-300' 
+                              : 'bg-blue-50 border-blue-200'
+                          }`}
                         >
-                          ×
-                        </button>
-                      </div>
-                    ))}
+                          <div>
+                            {isFirstCard && (
+                              <span className="text-xs text-amber-600 font-semibold mr-1">
+                                [Oldest]
+                              </span>
+                            )}
+                            <span className="font-medium">{card.word}</span>
+                            {card.english && (
+                              <span className="text-gray-600 ml-1">({card.english})</span>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => removeWordFromSet(card.id)}
+                            disabled={!isFirstCard}
+                            className={`font-bold ${
+                              isFirstCard
+                                ? 'text-red-600 hover:text-red-800 cursor-pointer'
+                                : 'text-gray-300 cursor-not-allowed'
+                            }`}
+                            title={isFirstCard ? 'Remove this word' : 'Only the oldest word can be removed'}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -587,41 +627,49 @@ const DailyTrackerImproved = () => {
                 <div>
                   <h4 className="font-medium text-gray-700 mb-3">Available Words to Add</h4>
                   
-                  {/* Search Input */}
-                  <div className="mb-4">
-                    <input
-                      type="text"
-                      placeholder="Search by word, translation, pinyin, or category..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  {availableWords.length === 0 ? (
-                    <p className="text-gray-500 text-sm">No more words available. All flashcards are already in sets.</p>
+                  {getFlashcardsForSet(editingSetId).length >= 5 ? (
+                    <p className="text-gray-500 text-sm">
+                      Cannot add more words. Set already has 5 words. Remove the oldest word first.
+                    </p>
                   ) : (
                     <>
-                      {getFilteredAvailableWords().length === 0 ? (
-                        <p className="text-gray-500 text-sm">No words match your search.</p>
+                      {/* Search Input */}
+                      <div className="mb-4">
+                        <input
+                          type="text"
+                          placeholder="Search by word, translation, pinyin, or category..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      {availableWords.length === 0 ? (
+                        <p className="text-gray-500 text-sm">No more words available. All flashcards are already in sets.</p>
                       ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                          {getFilteredAvailableWords().map((card) => (
-                            <button
-                              key={card.id}
-                              onClick={() => addWordToSet(card.id)}
-                              className="px-3 py-2 bg-white border-2 border-gray-300 hover:border-green-500 rounded-lg text-sm text-left transition-colors"
-                            >
-                              <div className="font-medium">{card.word}</div>
-                              {card.english && (
-                                <div className="text-xs text-gray-600">{card.english}</div>
-                              )}
-                              <div className="text-xs text-gray-500 mt-1">
-                                {getCategoryName(card.categoryId)}
-                              </div>
-                            </button>
-                          ))}
-                        </div>
+                        <>
+                          {getFilteredAvailableWords().length === 0 ? (
+                            <p className="text-gray-500 text-sm">No words match your search.</p>
+                          ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                              {getFilteredAvailableWords().map((card) => (
+                                <button
+                                  key={card.id}
+                                  onClick={() => addWordToSet(card.id)}
+                                  className="px-3 py-2 bg-white border-2 border-gray-300 hover:border-green-500 rounded-lg text-sm text-left transition-colors"
+                                >
+                                  <div className="font-medium">{card.word}</div>
+                                  {card.english && (
+                                    <div className="text-xs text-gray-600">{card.english}</div>
+                                  )}
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {getCategoryName(card.categoryId)}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </>
                       )}
                     </>
                   )}
