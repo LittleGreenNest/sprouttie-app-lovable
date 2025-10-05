@@ -10,7 +10,9 @@ const BingoCardGenerator = () => {
   const { categories, flashcards: localFlashcards } = useFlashcards();
   const [gridSize, setGridSize] = useState(3); // 3, 4, or 5
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [timeFilter, setTimeFilter] = useState('all'); // 'all', 'week', 'month'
   const [availableFlashcards, setAvailableFlashcards] = useState([]);
+  const [flashedInTimeRange, setFlashedInTimeRange] = useState(new Set());
   const [selectedWords, setSelectedWords] = useState(new Set());
   const [loading, setLoading] = useState(true);
 
@@ -18,7 +20,44 @@ const BingoCardGenerator = () => {
 
   useEffect(() => {
     fetchFlashcards();
+    fetchTrackingData();
   }, [currentUser, localFlashcards, categories]);
+
+  const fetchTrackingData = async () => {
+    if (!currentUser) return;
+
+    try {
+      // Calculate dates for past week and month
+      const now = new Date();
+      const oneWeekAgo = new Date(now);
+      oneWeekAgo.setDate(now.getDate() - 7);
+      const oneMonthAgo = new Date(now);
+      oneMonthAgo.setMonth(now.getMonth() - 1);
+
+      // Fetch tracking data for the past month (covers both week and month)
+      const { data: tracking, error } = await supabase
+        .from('daily_tracking')
+        .select('flashcard_id, date')
+        .eq('user_id', currentUser.id)
+        .eq('status', 'flashed')
+        .gte('date', oneMonthAgo.toISOString().split('T')[0]);
+
+      if (error) throw error;
+
+      // Store the flashed flashcard IDs with their most recent date
+      const flashedMap = new Map();
+      (tracking || []).forEach(t => {
+        const existingDate = flashedMap.get(t.flashcard_id);
+        if (!existingDate || t.date > existingDate) {
+          flashedMap.set(t.flashcard_id, t.date);
+        }
+      });
+
+      setFlashedInTimeRange(flashedMap);
+    } catch (error) {
+      console.error('Error fetching tracking data:', error);
+    }
+  };
 
   const fetchFlashcards = async () => {
     setLoading(true);
@@ -89,10 +128,33 @@ const BingoCardGenerator = () => {
   };
 
   const getFilteredFlashcards = () => {
-    if (selectedCategory === 'all') {
-      return availableFlashcards;
+    let filtered = availableFlashcards;
+
+    // Apply time filter
+    if (timeFilter !== 'all' && currentUser) {
+      const now = new Date();
+      const cutoffDate = new Date(now);
+      
+      if (timeFilter === 'week') {
+        cutoffDate.setDate(now.getDate() - 7);
+      } else if (timeFilter === 'month') {
+        cutoffDate.setMonth(now.getMonth() - 1);
+      }
+
+      const cutoffString = cutoffDate.toISOString().split('T')[0];
+      
+      filtered = filtered.filter(card => {
+        const lastFlashedDate = flashedInTimeRange.get(card.id);
+        return lastFlashedDate && lastFlashedDate >= cutoffString;
+      });
     }
-    return availableFlashcards.filter(card => card.category === selectedCategory);
+
+    // Apply category filter
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(card => card.category === selectedCategory);
+    }
+
+    return filtered;
   };
 
   const getUniqueCategories = () => {
@@ -234,13 +296,53 @@ const BingoCardGenerator = () => {
           </div>
         </div>
 
+        {/* Time Range Filter */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-3">Filter by Time</label>
+          <div className="flex gap-4 flex-wrap">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="timeFilter"
+                value="all"
+                checked={timeFilter === 'all'}
+                onChange={() => setTimeFilter('all')}
+                className="w-4 h-4 text-blue-600"
+              />
+              <span>All Words</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="timeFilter"
+                value="week"
+                checked={timeFilter === 'week'}
+                onChange={() => setTimeFilter('week')}
+                className="w-4 h-4 text-blue-600"
+              />
+              <span>Flashed in Past Week</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="timeFilter"
+                value="month"
+                checked={timeFilter === 'month'}
+                onChange={() => setTimeFilter('month')}
+                className="w-4 h-4 text-blue-600"
+              />
+              <span>Flashed in Past Month</span>
+            </label>
+          </div>
+        </div>
+
         {/* Category Filter */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Category</label>
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 z-10 relative"
           >
             <option value="all">All Categories</option>
             {uniqueCategories.map(cat => (
