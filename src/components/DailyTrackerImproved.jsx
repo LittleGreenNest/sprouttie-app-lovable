@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 
 const DailyTrackerImproved = () => {
   const { currentUser } = useAuth();
-  const { sets, flashcards, getFlashcardsForSet, categories, updateSetFlashcards } = useFlashcards();
+  const { sets, flashcards, getFlashcardsForSet, categories, updateSetFlashcards, addFlashcard } = useFlashcards();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [sessions, setSessions] = useState({}); // { setId: { round1: {completed, by, time}, round2: {}, round3: {} } }
   const [notes, setNotes] = useState([]);
@@ -17,6 +17,8 @@ const DailyTrackerImproved = () => {
   const [availableWords, setAvailableWords] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [flashedWords, setFlashedWords] = useState(new Set());
+  const [showCreateWord, setShowCreateWord] = useState(false);
+  const [newWordData, setNewWordData] = useState({ word: '', english: '', pinyin: '', categoryId: '' });
 
   const dailyGoal = sets.length * 3; // Each set should be done 3 times
 
@@ -27,6 +29,18 @@ const DailyTrackerImproved = () => {
       setLoading(false);
     }
   }, [currentUser, selectedDate]);
+
+  // Update available words when flashcards or sets change while editing
+  useEffect(() => {
+    if (editingSetId !== null) {
+      const currentSet = sets.find(s => s.id === editingSetId);
+      if (currentSet) {
+        const currentSetCardIds = new Set(currentSet.flashcardIds || []);
+        const available = flashcards.filter(card => !currentSetCardIds.has(card.id));
+        setAvailableWords(available);
+      }
+    }
+  }, [flashcards, sets, editingSetId]);
 
   const loadDayData = async () => {
     try {
@@ -320,12 +334,44 @@ const DailyTrackerImproved = () => {
 
   const startEditingSet = (setId) => {
     setEditingSetId(setId);
-    setSearchQuery(''); // Reset search when opening edit view
+    setSearchQuery('');
+    setShowCreateWord(false);
+    setNewWordData({ word: '', english: '', pinyin: '', categoryId: categories[0]?.id || '' });
+    
     // Get all available flashcards not in this set
     const currentSet = sets.find(s => s.id === setId);
     const currentSetCardIds = new Set(currentSet?.flashcardIds || []);
     const available = flashcards.filter(card => !currentSetCardIds.has(card.id));
     setAvailableWords(available);
+  };
+
+  const createAndAddWord = () => {
+    if (!newWordData.word.trim()) {
+      toast.warning('Please enter a word');
+      return;
+    }
+    
+    if (!newWordData.categoryId) {
+      toast.warning('Please select a category');
+      return;
+    }
+
+    // Create the new flashcard
+    const newCard = addFlashcard(
+      newWordData.word.trim(),
+      newWordData.categoryId,
+      newWordData.english.trim(),
+      newWordData.pinyin.trim()
+    );
+
+    // Add to current set
+    addWordToSet(newCard.id);
+
+    // Reset form
+    setShowCreateWord(false);
+    setNewWordData({ word: '', english: '', pinyin: '', categoryId: categories[0]?.id || '' });
+    setSearchQuery('');
+    toast.success('Word created and added to set!');
   };
 
   const addWordToSet = (wordId) => {
@@ -349,8 +395,12 @@ const DailyTrackerImproved = () => {
     
     updateSetFlashcards(editingSetId, updatedFlashcardIds, updatedFlashcardDates);
 
-    // Update available words
-    setAvailableWords(availableWords.filter(w => w.id !== wordId));
+    // Recalculate available words
+    const currentSet = sets.find(s => s.id === editingSetId);
+    const updatedSetCardIds = new Set([...updatedFlashcardIds]);
+    const available = flashcards.filter(card => !updatedSetCardIds.has(card.id));
+    setAvailableWords(available);
+    
     toast.success('Word added to set');
   };
 
@@ -372,11 +422,11 @@ const DailyTrackerImproved = () => {
     
     updateSetFlashcards(editingSetId, updatedFlashcardIds, updatedFlashcardDates);
 
-    // Add to available words
-    const removedWord = flashcards.find(w => w.id === wordId);
-    if (removedWord) {
-      setAvailableWords([...availableWords, removedWord]);
-    }
+    // Recalculate available words
+    const updatedSetCardIds = new Set(updatedFlashcardIds);
+    const available = flashcards.filter(card => !updatedSetCardIds.has(card.id));
+    setAvailableWords(available);
+    
     toast.success('Word removed from set');
   };
 
@@ -560,29 +610,123 @@ const DailyTrackerImproved = () => {
                       {setFlashcards.length < 5 && (
                         <div>
                           <h5 className="font-medium text-gray-700 mb-2 text-sm">Add Word</h5>
-                          <input
-                            type="text"
-                            placeholder="Search words..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2"
-                          />
-                          {availableWords.length === 0 ? (
-                            <p className="text-gray-500 text-xs">No available words</p>
-                          ) : getFilteredAvailableWords().length === 0 ? (
-                            <p className="text-gray-500 text-xs">No matches</p>
+                          
+                          {!showCreateWord ? (
+                            <>
+                              <input
+                                type="text"
+                                placeholder="Search words..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2"
+                              />
+                              {availableWords.length === 0 ? (
+                                <div className="text-center py-4">
+                                  <p className="text-gray-500 text-xs mb-2">No available words</p>
+                                  <button
+                                    onClick={() => setShowCreateWord(true)}
+                                    className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
+                                  >
+                                    + Create New Word
+                                  </button>
+                                </div>
+                              ) : getFilteredAvailableWords().length === 0 && searchQuery.trim() ? (
+                                <div className="text-center py-4">
+                                  <p className="text-gray-500 text-xs mb-2">No matches for "{searchQuery}"</p>
+                                  <button
+                                    onClick={() => {
+                                      setShowCreateWord(true);
+                                      setNewWordData({ ...newWordData, word: searchQuery });
+                                    }}
+                                    className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
+                                  >
+                                    + Create "{searchQuery}"
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto mb-2">
+                                    {getFilteredAvailableWords().map((card) => (
+                                      <button
+                                        key={card.id}
+                                        onClick={() => addWordToSet(card.id)}
+                                        className="px-2 py-1.5 bg-white border border-gray-300 hover:border-green-500 rounded text-xs text-left"
+                                      >
+                                        <div className="font-medium">{card.word}</div>
+                                        {card.english && <div className="text-[10px] text-gray-600">{card.english}</div>}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  {searchQuery.trim() && (
+                                    <button
+                                      onClick={() => {
+                                        setShowCreateWord(true);
+                                        setNewWordData({ ...newWordData, word: searchQuery });
+                                      }}
+                                      className="w-full px-2 py-1.5 bg-green-50 border border-green-300 hover:bg-green-100 text-green-700 rounded text-xs"
+                                    >
+                                      + Create New Word
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                            </>
                           ) : (
-                            <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-                              {getFilteredAvailableWords().map((card) => (
+                            <div className="bg-green-50 border border-green-200 rounded p-3 space-y-2">
+                              <div className="flex justify-between items-center mb-2">
+                                <h6 className="font-medium text-sm text-green-900">Create New Word</h6>
                                 <button
-                                  key={card.id}
-                                  onClick={() => addWordToSet(card.id)}
-                                  className="px-2 py-1.5 bg-white border border-gray-300 hover:border-green-500 rounded text-xs text-left"
+                                  onClick={() => {
+                                    setShowCreateWord(false);
+                                    setNewWordData({ word: '', english: '', pinyin: '', categoryId: categories[0]?.id || '' });
+                                  }}
+                                  className="text-gray-500 hover:text-gray-700 text-sm"
                                 >
-                                  <div className="font-medium">{card.word}</div>
-                                  {card.english && <div className="text-[10px] text-gray-600">{card.english}</div>}
+                                  ✕
                                 </button>
-                              ))}
+                              </div>
+                              
+                              <input
+                                type="text"
+                                placeholder="Chinese word *"
+                                value={newWordData.word}
+                                onChange={(e) => setNewWordData({ ...newWordData, word: e.target.value })}
+                                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                              />
+                              
+                              <input
+                                type="text"
+                                placeholder="English translation"
+                                value={newWordData.english}
+                                onChange={(e) => setNewWordData({ ...newWordData, english: e.target.value })}
+                                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                              />
+                              
+                              <input
+                                type="text"
+                                placeholder="Pinyin"
+                                value={newWordData.pinyin}
+                                onChange={(e) => setNewWordData({ ...newWordData, pinyin: e.target.value })}
+                                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                              />
+                              
+                              <select
+                                value={newWordData.categoryId}
+                                onChange={(e) => setNewWordData({ ...newWordData, categoryId: e.target.value })}
+                                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                              >
+                                <option value="">Select Category *</option>
+                                {categories.map(cat => (
+                                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                ))}
+                              </select>
+                              
+                              <button
+                                onClick={createAndAddWord}
+                                className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium"
+                              >
+                                Create and Add to Set
+                              </button>
                             </div>
                           )}
                         </div>
