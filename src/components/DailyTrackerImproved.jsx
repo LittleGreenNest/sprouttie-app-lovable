@@ -7,7 +7,6 @@ import { toast } from 'react-toastify';
 const DailyTrackerImproved = () => {
   const { currentUser } = useAuth();
   const { sets, flashcards, getFlashcardsForSet, categories, updateSetFlashcards } = useFlashcards();
-  const [activeTab, setActiveTab] = useState('track'); // 'track' or 'words'
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [sessions, setSessions] = useState({}); // { setId: { round1: {completed, by, time}, round2: {}, round3: {} } }
   const [notes, setNotes] = useState([]);
@@ -461,284 +460,186 @@ const DailyTrackerImproved = () => {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="flex border-b">
-          <button
-            onClick={() => setActiveTab('track')}
-            className={`flex-1 px-6 py-3 font-medium transition-colors ${
-              activeTab === 'track'
-                ? 'bg-gray-100 border-b-2 border-green-500 text-green-700'
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            Track Sessions
-          </button>
-          <button
-            onClick={() => setActiveTab('words')}
-            className={`flex-1 px-6 py-3 font-medium transition-colors ${
-              activeTab === 'words'
-                ? 'bg-gray-100 border-b-2 border-green-500 text-green-700'
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            Manage Words
-          </button>
-        </div>
+      <div className="bg-white rounded-lg shadow-md overflow-hidden p-6">
+        <h3 className="text-xl font-bold mb-6">Track Sessions</h3>
 
-        {/* Track Sessions Tab */}
-        {activeTab === 'track' && (
-          <div className="p-6">
-            <h3 className="text-xl font-bold mb-4">Today's Sessions</h3>
-
-            {/* Sessions Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Set</th>
-                    <th className="text-center py-3 px-4 font-medium text-gray-700">Round 1</th>
-                    <th className="text-center py-3 px-4 font-medium text-gray-700">Round 2</th>
-                    <th className="text-center py-3 px-4 font-medium text-gray-700">Round 3</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sets.map((set) => (
-                    <tr key={set.id} className="border-b hover:bg-gray-50">
-                      <td className="py-4 px-4 font-medium">{set.name}</td>
-                      {[1, 2, 3].map((round) => {
-                        const session = sessions[set.id]?.[`round${round}`];
-                        return (
-                          <td key={round} className="py-4 px-4 text-center">
-                            <div className="flex flex-col items-center gap-2">
-                              <button
-                                onClick={() => toggleSession(set.id, round)}
-                                className={`w-10 h-10 border-2 rounded flex items-center justify-center transition-colors ${
-                                  session?.completed
-                                    ? 'bg-green-500 border-green-600 hover:bg-green-600'
-                                    : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                                }`}
-                              >
-                                {session?.completed && (
-                                  <span className="text-white text-xl font-bold">✓</span>
-                                )}
-                              </button>
-                              {session?.completed && (
-                                <div className="text-xs">
-                                  <div className="px-2 py-1 bg-gray-100 rounded font-medium text-gray-700">
-                                    {session.by}
-                                  </div>
-                                  <div className="text-gray-600 mt-1">{formatTime(session.time)}</div>
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mark All Buttons */}
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => markAllRound(1)}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
-              >
-                Mark all Round 1
-              </button>
-              <button
-                onClick={() => markAllRound(2)}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
-              >
-                Mark all Round 2
-              </button>
-              <button
-                onClick={() => markAllRound(3)}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
-              >
-                Mark all Round 3
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Manage Words Tab */}
-        {activeTab === 'words' && (
-          <div className="p-6">
-            {editingSetId ? (
-              // Edit Set View
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold">
-                    Edit {sets.find(s => s.id === editingSetId)?.name}
-                  </h3>
-                  <button
-                    onClick={() => setEditingSetId(null)}
-                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition-colors"
-                  >
-                    Done
-                  </button>
-                </div>
-
-                {/* Current Words in Set */}
-                <div className="mb-6">
-                  <h4 className="font-medium text-gray-700 mb-3">
-                    Current Words in Set ({getFlashcardsForSet(editingSetId).length}/5)
-                  </h4>
-                  {getFlashcardsForSet(editingSetId).length >= 5 && (
-                    <p className="text-sm text-amber-600 mb-3">
-                      Set is full. Remove the oldest word before adding a new one.
-                    </p>
-                  )}
-                  <div className="flex flex-wrap gap-2">
-                    {getFlashcardsForSet(editingSetId).map((card, index) => {
-                      const currentSet = sets.find(s => s.id === editingSetId);
-                      const isFirstCard = currentSet?.flashcardIds[0] === card.id;
-                      const dateAdded = currentSet?.flashcardDates?.[card.id];
-                      
-                      return (
+        {/* Track Sessions */}
+        <div>
+          {/* Sessions List */}
+          <div className="space-y-6">
+            {sets.map((set) => {
+              const setFlashcards = getFlashcardsForSet(set.id);
+              const isEditing = editingSetId === set.id;
+              
+              return (
+                <div key={set.id} className="border rounded-lg p-5">
+                  {/* Set Header */}
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-bold text-lg">{set.name}</h4>
+                    <button
+                      onClick={() => isEditing ? setEditingSetId(null) : startEditingSet(set.id)}
+                      className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm font-medium transition-colors"
+                    >
+                      {isEditing ? 'Done Editing' : 'Edit Set'}
+                    </button>
+                  </div>
+                  
+                  {/* Words in Set */}
+                  <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="text-sm font-medium text-gray-700 mb-2">Words ({setFlashcards.length}):</div>
+                    <div className="flex flex-wrap gap-2">
+                      {setFlashcards.map((card) => (
                         <div
                           key={card.id}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm border-2 ${
-                            isFirstCard 
-                              ? 'bg-amber-50 border-amber-300' 
-                              : 'bg-blue-50 border-blue-200'
-                          }`}
+                          className="px-2 py-1 bg-white border border-gray-300 rounded text-xs"
                         >
-                          <div className="flex-1">
-                            {isFirstCard && (
-                              <span className="text-xs text-amber-600 font-semibold mr-1">
-                                [Oldest]
-                              </span>
-                            )}
-                            <span className="font-medium">{card.word}</span>
-                            {card.english && (
-                              <span className="text-gray-600 ml-1">({card.english})</span>
-                            )}
-                            {dateAdded && (
-                              <div className="text-xs text-gray-500 mt-0.5">
-                                Added: {new Date(dateAdded).toLocaleDateString('en-US', { 
-                                  month: 'short', 
-                                  day: 'numeric',
-                                  year: 'numeric'
-                                })}
-                              </div>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => removeWordFromSet(card.id)}
-                            disabled={!isFirstCard}
-                            className={`font-bold ${
-                              isFirstCard
-                                ? 'text-red-600 hover:text-red-800 cursor-pointer'
-                                : 'text-gray-300 cursor-not-allowed'
-                            }`}
-                            title={isFirstCard ? 'Remove this word' : 'Only the oldest word can be removed'}
-                          >
-                            ×
-                          </button>
+                          <span className="font-medium">{card.word}</span>
+                          {card.english && (
+                            <span className="text-gray-600 ml-1">({card.english})</span>
+                          )}
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                {/* Available Words to Add */}
-                <div>
-                  <h4 className="font-medium text-gray-700 mb-3">Available Words to Add</h4>
-                  
-                  {getFlashcardsForSet(editingSetId).length >= 5 ? (
-                    <p className="text-gray-500 text-sm">
-                      Cannot add more words. Set already has 5 words. Remove the oldest word first.
-                    </p>
-                  ) : (
-                    <>
-                      {/* Search Input */}
+                  {/* Edit Set Interface - shown when editing */}
+                  {isEditing && (
+                    <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      {/* Current Words with Remove Option */}
                       <div className="mb-4">
-                        <input
-                          type="text"
-                          placeholder="Search by word, translation, pinyin, or category..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                        <h5 className="font-medium text-gray-700 mb-2">
+                          Manage Words ({setFlashcards.length}/5)
+                        </h5>
+                        {setFlashcards.length >= 5 && (
+                          <p className="text-xs text-amber-600 mb-2">
+                            Set is full. Remove oldest word to add new one.
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                          {setFlashcards.map((card) => {
+                            const currentSet = sets.find(s => s.id === editingSetId);
+                            const isOldest = currentSet?.flashcardIds[0] === card.id;
+                            const dateAdded = currentSet?.flashcardDates?.[card.id];
+                            
+                            return (
+                              <div
+                                key={card.id}
+                                className={`flex items-center gap-1.5 px-2 py-1.5 rounded text-xs border ${
+                                  isOldest 
+                                    ? 'bg-amber-50 border-amber-300' 
+                                    : 'bg-white border-gray-300'
+                                }`}
+                              >
+                                <div className="flex-1">
+                                  {isOldest && <span className="text-amber-600 font-bold mr-1">[Oldest]</span>}
+                                  <span className="font-medium">{card.word}</span>
+                                  {card.english && <span className="text-gray-600 ml-1">({card.english})</span>}
+                                  {dateAdded && (
+                                    <div className="text-[10px] text-gray-500 mt-0.5">
+                                      Added: {new Date(dateAdded).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </div>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => removeWordFromSet(card.id)}
+                                  disabled={!isOldest}
+                                  className={`font-bold text-sm ${
+                                    isOldest ? 'text-red-600 hover:text-red-800' : 'text-gray-300 cursor-not-allowed'
+                                  }`}
+                                  title={isOldest ? 'Remove' : 'Only oldest can be removed'}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
 
-                      {availableWords.length === 0 ? (
-                        <p className="text-gray-500 text-sm">No more words available. All flashcards are already in sets.</p>
-                      ) : (
-                        <>
-                          {getFilteredAvailableWords().length === 0 ? (
-                            <p className="text-gray-500 text-sm">No words match your search.</p>
+                      {/* Add Words Section */}
+                      {setFlashcards.length < 5 && (
+                        <div>
+                          <h5 className="font-medium text-gray-700 mb-2 text-sm">Add Word</h5>
+                          <input
+                            type="text"
+                            placeholder="Search words..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2"
+                          />
+                          {availableWords.length === 0 ? (
+                            <p className="text-gray-500 text-xs">No available words</p>
+                          ) : getFilteredAvailableWords().length === 0 ? (
+                            <p className="text-gray-500 text-xs">No matches</p>
                           ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
                               {getFilteredAvailableWords().map((card) => (
                                 <button
                                   key={card.id}
                                   onClick={() => addWordToSet(card.id)}
-                                  className="px-3 py-2 bg-white border-2 border-gray-300 hover:border-green-500 rounded-lg text-sm text-left transition-colors"
+                                  className="px-2 py-1.5 bg-white border border-gray-300 hover:border-green-500 rounded text-xs text-left"
                                 >
                                   <div className="font-medium">{card.word}</div>
-                                  {card.english && (
-                                    <div className="text-xs text-gray-600">{card.english}</div>
-                                  )}
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    {getCategoryName(card.categoryId)}
-                                  </div>
+                                  {card.english && <div className="text-[10px] text-gray-600">{card.english}</div>}
                                 </button>
                               ))}
                             </div>
                           )}
-                        </>
+                        </div>
                       )}
-                    </>
+                    </div>
                   )}
-                </div>
-              </div>
-            ) : (
-              // Today's Sets
-              <div>
-                <h3 className="text-xl font-bold mb-4">Today's Sets</h3>
-                <div className="space-y-4">
-                  {sets.map((set) => {
-                    const setFlashcards = getFlashcardsForSet(set.id);
-                    return (
-                      <div key={set.id} className="border rounded-lg p-4 bg-gray-50">
-                        <div className="flex justify-between items-center mb-3">
-                          <h4 className="font-bold">{set.name}</h4>
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm text-gray-600">{setFlashcards.length} words</span>
-                            <button
-                              onClick={() => startEditingSet(set.id)}
-                              className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm font-medium transition-colors"
-                            >
-                              Edit Set
-                            </button>
+                  
+                  {/* Session Tracking */}
+                  <div className="grid grid-cols-3 gap-3">
+                    {[1, 2, 3].map((round) => {
+                      const session = sessions[set.id]?.[`round${round}`];
+                      return (
+                        <button
+                          key={round}
+                          onClick={() => toggleSession(set.id, round)}
+                          className={`p-3 rounded-lg border-2 transition-all ${
+                            session?.completed
+                              ? 'bg-green-100 border-green-500'
+                              : 'bg-white border-gray-300 hover:border-gray-400'
+                          }`}
+                        >
+                          <div className="text-center">
+                            <div className="text-sm font-medium text-gray-700 mb-1">Round {round}</div>
+                            {session?.completed ? (
+                              <>
+                                <div className="text-2xl mb-1">✓</div>
+                                <div className="text-xs text-gray-600">{session.by}</div>
+                                <div className="text-xs text-gray-500">{formatTime(session.time)}</div>
+                              </>
+                            ) : (
+                              <div className="text-gray-400 text-2xl">○</div>
+                            )}
                           </div>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {setFlashcards.map((card) => (
-                            <div
-                              key={card.id}
-                              className="px-2 py-1 bg-white border border-gray-300 rounded text-xs"
-                            >
-                              <span className="font-medium">{card.word}</span>
-                              {card.english && (
-                                <span className="text-gray-600 ml-1">({card.english})</span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })}
           </div>
-        )}
+
+          {/* Quick Actions */}
+          <div className="mt-6 pt-6 border-t">
+            <h4 className="font-medium text-gray-700 mb-3">Quick Actions</h4>
+            <div className="flex gap-3">
+              {[1, 2, 3].map((round) => (
+                <button
+                  key={round}
+                  onClick={() => markAllRound(round)}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
+                >
+                  Mark all Round {round}
+                </button>
+              ))}
+            </div>
+          </div>
       </div>
 
       {/* Today's Notes */}
