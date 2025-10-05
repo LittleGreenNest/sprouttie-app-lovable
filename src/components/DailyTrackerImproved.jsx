@@ -19,16 +19,34 @@ const DailyTrackerImproved = () => {
   const [flashedWords, setFlashedWords] = useState(new Set());
   const [showCreateWord, setShowCreateWord] = useState(false);
   const [newWordData, setNewWordData] = useState({ word: '', english: '', pinyin: '', categoryId: '' });
+  const [userPlan, setUserPlan] = useState(null);
 
   const dailyGoal = sets.length * 3; // Each set should be done 3 times
 
   useEffect(() => {
     if (currentUser) {
       loadDayData();
+      loadUserPlan();
     } else {
       setLoading(false);
     }
   }, [currentUser, selectedDate]);
+
+  const loadUserPlan = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('plan')
+        .eq('id', currentUser.id)
+        .single();
+
+      if (error) throw error;
+      setUserPlan(data?.plan || 'free');
+    } catch (error) {
+      console.error('Error loading user plan:', error);
+      setUserPlan('free');
+    }
+  };
 
   // Update available words when flashcards or sets change while editing
   useEffect(() => {
@@ -501,11 +519,18 @@ const DailyTrackerImproved = () => {
         <div className="mt-4">
           <input
             type="text"
-            placeholder="Enter your name (e.g., Parent, Mother-in-law)"
+            placeholder="Select your name (e.g., Parent, Mother-in-law)"
             value={familyMember}
             onChange={(e) => setFamilyMember(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2"
+            disabled={userPlan !== 'print' && userPlan !== 'pro'}
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
+          {(userPlan !== 'print' && userPlan !== 'pro') && (
+            <p className="text-sm text-red-600 mt-2">
+              🔒 Upgrade to Print Plan or Pro Sprout to track sessions by family member.{' '}
+              <a href="/plans" className="underline font-semibold">Upgrade now</a>
+            </p>
+          )}
         </div>
       </div>
 
