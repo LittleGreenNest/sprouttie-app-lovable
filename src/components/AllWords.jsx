@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 const AllWords = () => {
   const { currentUser } = useAuth();
   const [flashcardsByCategory, setFlashcardsByCategory] = useState({});
-  const [flashedToday, setFlashedToday] = useState(new Set());
+  const [flashedEver, setFlashedEver] = useState(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,20 +28,18 @@ const AllWords = () => {
 
       if (flashcardsError) throw flashcardsError;
 
-      // Fetch today's tracking data
-      const today = new Date().toISOString().split('T')[0];
+      // Fetch all tracking data (ever flashed)
       const { data: tracking, error: trackingError } = await supabase
         .from('daily_tracking')
         .select('flashcard_id')
         .eq('user_id', currentUser.uid)
-        .eq('date', today)
         .eq('status', 'flashed');
 
       if (trackingError) throw trackingError;
 
-      // Create a set of flashed flashcard IDs
+      // Create a set of ever-flashed flashcard IDs
       const flashedIds = new Set(tracking?.map(t => t.flashcard_id) || []);
-      setFlashedToday(flashedIds);
+      setFlashedEver(flashedIds);
 
       // Group flashcards by category (folder)
       const grouped = {};
@@ -79,7 +77,7 @@ const AllWords = () => {
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-              <span>Flashed Today</span>
+              <span>Flashed</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-white border border-gray-300 rounded"></div>
@@ -103,14 +101,14 @@ const AllWords = () => {
                     {category}
                   </h3>
                   <div className="text-xs text-gray-600 mt-1">
-                    {flashcardsByCategory[category].filter(c => flashedToday.has(c.id)).length}/{flashcardsByCategory[category].length}
+                    {flashcardsByCategory[category].filter(c => flashedEver.has(c.id)).length}/{flashcardsByCategory[category].length}
                   </div>
                 </div>
 
                 {/* Flashcards in this category */}
                 <div className="space-y-1">
-                  {flashcardsByCategory[category].map(card => {
-                    const isFlashed = flashedToday.has(card.id);
+                {flashcardsByCategory[category].map(card => {
+                    const isFlashed = flashedEver.has(card.id);
                     return (
                       <div
                         key={card.id}
@@ -148,14 +146,14 @@ const AllWords = () => {
               <div className="text-sm text-gray-600">Total Words</div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded">
-              <div className="text-3xl font-bold text-green-600">{flashedToday.size}</div>
-              <div className="text-sm text-gray-600">Flashed Today</div>
+              <div className="text-3xl font-bold text-green-600">{flashedEver.size}</div>
+              <div className="text-sm text-gray-600">Ever Flashed</div>
             </div>
             <div className="text-center p-4 bg-orange-50 rounded">
               <div className="text-3xl font-bold text-orange-600">
-                {Object.values(flashcardsByCategory).flat().length - flashedToday.size}
+                {Object.values(flashcardsByCategory).flat().length - flashedEver.size}
               </div>
-              <div className="text-sm text-gray-600">Remaining</div>
+              <div className="text-sm text-gray-600">Never Flashed</div>
             </div>
           </div>
         </div>
