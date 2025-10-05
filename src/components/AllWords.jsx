@@ -12,7 +12,6 @@ const AllWords = () => {
   const [dataSource, setDataSource] = useState('db'); // 'db' | 'local'
 
   useEffect(() => {
-    // Refresh when user or local data changes
     fetchFlashcardsAndTracking();
   }, [currentUser, localFlashcards, categories]);
 
@@ -31,10 +30,12 @@ const AllWords = () => {
       setDataSource('local');
       setFlashcardsByCategory(groupedLocal);
       setFlashedEver(new Set());
+      setLoading(false);
       return;
     }
 
-    // Fetch all flashcards from backend first
+    try {
+      // Fetch all flashcards from backend first
       const { data: dbFlashcards, error: flashcardsError } = await supabase
         .from('flashcards')
         .select('*')
@@ -144,7 +145,7 @@ const AllWords = () => {
 
                 {/* Flashcards in this category */}
                 <div className="space-y-1">
-                {flashcardsByCategory[category].map(card => {
+                  {flashcardsByCategory[category].map(card => {
                     const isFlashed = flashedEver.has(card.id);
                     return (
                       <div
@@ -154,7 +155,7 @@ const AllWords = () => {
                             ? 'bg-green-100 border-green-300 text-green-900'
                             : 'bg-white border-gray-300 text-gray-800'
                         }`}
-                        title={`${card.title || ''}`}
+                        title={card.title || ''}
                       >
                         <div className="truncate font-medium">{card.label}</div>
                       </div>
@@ -173,7 +174,7 @@ const AllWords = () => {
           <h3 className="text-lg font-bold text-green-800 mb-4">Summary</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded">
-              <div className="text-3xl font-bold text-blue-600">{categories.length}</div>
+              <div className="text-3xl font-bold text-blue-600">{categoryNames.length}</div>
               <div className="text-sm text-gray-600">Categories</div>
             </div>
             <div className="text-center p-4 bg-purple-50 rounded">
