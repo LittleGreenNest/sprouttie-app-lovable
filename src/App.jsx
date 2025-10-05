@@ -23,6 +23,7 @@ import Profile from './components/user/Profile';
 // App Components
 import Dashboard from './components/Dashboard';
 import DailyTracker from './components/DailyTracker';
+import DailyTrackerGrid from './components/DailyTrackerGrid';
 import FlashcardManager from './components/FlashcardManager';
 import HistoryView from './components/HistoryView';
 import Plans from './components/subscription/Plans';
@@ -135,7 +136,7 @@ const AppContent = () => {
 
           {/* tab pages */}
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/daily-tracking" element={<DailyTracker />} />
+          <Route path="/daily-tracking" element={<DailyTrackerGrid />} />
           <Route path="/manage-flashcards" element={<FlashcardManager />} />
           <Route path="/history" element={<HistoryView />} />
 

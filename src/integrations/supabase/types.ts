@@ -18,25 +18,40 @@ export type Database = {
         Row: {
           created_at: string | null
           date: string
+          engagement: number | null
           flashcard_id: string
+          flashed_at: string | null
+          flashed_by: string | null
           id: string
+          notes: string | null
           status: string
+          time_of_day: string | null
           user_id: string
         }
         Insert: {
           created_at?: string | null
           date?: string
+          engagement?: number | null
           flashcard_id: string
+          flashed_at?: string | null
+          flashed_by?: string | null
           id?: string
+          notes?: string | null
           status: string
+          time_of_day?: string | null
           user_id: string
         }
         Update: {
           created_at?: string | null
           date?: string
+          engagement?: number | null
           flashcard_id?: string
+          flashed_at?: string | null
+          flashed_by?: string | null
           id?: string
+          notes?: string | null
           status?: string
+          time_of_day?: string | null
           user_id?: string
         }
         Relationships: [
