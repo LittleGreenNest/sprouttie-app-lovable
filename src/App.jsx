@@ -24,6 +24,7 @@ import Profile from './components/user/Profile';
 import Dashboard from './components/Dashboard';
 import DailyTracker from './components/DailyTracker';
 import DailyTrackerGrid from './components/DailyTrackerGrid';
+import DailyTrackerImproved from './components/DailyTrackerImproved';
 import FlashcardManager from './components/FlashcardManager';
 import HistoryView from './components/HistoryView';
 import AllWords from './components/AllWords';
@@ -152,7 +153,7 @@ const AppContent = () => {
 
           {/* tab pages */}
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/daily-tracking" element={<DailyTrackerGrid />} />
+          <Route path="/daily-tracking" element={<DailyTrackerImproved />} />
           <Route path="/all-words" element={<AllWords />} />
           <Route path="/bingo-generator" element={<BingoCardGenerator />} />
           <Route path="/manage-flashcards" element={<FlashcardManager />} />
