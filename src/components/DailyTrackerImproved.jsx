@@ -17,6 +17,7 @@ const DailyTrackerImproved = () => {
   const [editingSetId, setEditingSetId] = useState(null);
   const [availableWords, setAvailableWords] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [flashedWords, setFlashedWords] = useState(new Set());
 
   const dailyGoal = sets.length * 3; // Each set should be done 3 times
 
@@ -44,9 +45,16 @@ const DailyTrackerImproved = () => {
 
       // Organize sessions by set and round
       const sessionsMap = {};
+      const flashedWordsSet = new Set();
+      
       (trackingData || []).forEach(record => {
-        const setId = record.flashcard_id; // We'll use this differently - store set info in notes field as JSON
-        if (record.notes) {
+        // Track flashed words
+        if (record.status === 'flashed' && record.flashcard_id && record.flashcard_id !== 'shared-note') {
+          flashedWordsSet.add(record.flashcard_id);
+        }
+        
+        // Organize session data
+        if (record.notes && record.status === 'flashed') {
           try {
             const metadata = JSON.parse(record.notes);
             if (metadata.setId && metadata.round) {
@@ -66,6 +74,7 @@ const DailyTrackerImproved = () => {
       });
 
       setSessions(sessionsMap);
+      setFlashedWords(flashedWordsSet);
 
       // Load notes (stored separately)
       const { data: notesData, error: notesError } = await supabase
@@ -619,63 +628,53 @@ const DailyTrackerImproved = () => {
                 </div>
               </div>
             ) : (
-              // Sets Overview
+              // Words Overview by Category
               <div>
-                <h3 className="text-xl font-bold mb-4">Today's Sets</h3>
+                <h3 className="text-xl font-bold mb-4">All Words by Category</h3>
+                
+                {/* Legend */}
+                <div className="mb-6 flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-green-100 border-2 border-green-300 rounded"></div>
+                    <span>Flashed today</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-white border-2 border-gray-300 rounded"></div>
+                    <span>Not flashed today</span>
+                  </div>
+                </div>
+
                 <div className="space-y-6">
-                  {sets.map((set) => {
-                    const setFlashcards = getFlashcardsForSet(set.id);
-                    const { oldest, newest } = getWordAge(setFlashcards);
+                  {categories.map((category) => {
+                    const categoryFlashcards = flashcards.filter(card => card.categoryId === category.id);
+                    if (categoryFlashcards.length === 0) return null;
+
+                    const flashedCount = categoryFlashcards.filter(card => flashedWords.has(card.id)).length;
+                    
                     return (
-                      <div key={set.id} className="border rounded-lg p-4">
+                      <div key={category.id} className="border rounded-lg p-4">
                         <div className="flex justify-between items-center mb-3">
-                          <h4 className="font-bold text-lg">{set.name}</h4>
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm text-gray-600">{setFlashcards.length} words</span>
-                            <button
-                              onClick={() => startEditingSet(set.id)}
-                              className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm font-medium transition-colors"
-                            >
-                              Edit Set
-                            </button>
-                          </div>
+                          <h4 className="font-bold text-lg">{category.name}</h4>
+                          <span className="text-sm text-gray-600">
+                            {flashedCount} / {categoryFlashcards.length} flashed today
+                          </span>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          {setFlashcards.map((card) => {
-                            const isOldest = card.id === oldest;
-                            const isNewest = card.id === newest;
+                          {categoryFlashcards.map((card) => {
+                            const isFlashed = flashedWords.has(card.id);
                             return (
                               <div
                                 key={card.id}
                                 className={`px-3 py-2 rounded-lg text-sm border-2 ${
-                                  isOldest
-                                    ? 'bg-orange-50 border-orange-300'
-                                    : isNewest
-                                    ? 'bg-green-50 border-green-300'
-                                    : 'bg-gray-100 border-gray-200'
+                                  isFlashed
+                                    ? 'bg-green-100 border-green-300'
+                                    : 'bg-white border-gray-300'
                                 }`}
                               >
-                                <div className="flex items-center gap-2">
-                                  <div>
-                                    <span className="font-medium">{card.word}</span>
-                                    {card.english && (
-                                      <span className="text-gray-600 ml-1">({card.english})</span>
-                                    )}
-                                  </div>
-                                  {isOldest && (
-                                    <span className="text-xs bg-orange-200 text-orange-800 px-2 py-0.5 rounded">
-                                      Oldest
-                                    </span>
-                                  )}
-                                  {isNewest && (
-                                    <span className="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded">
-                                      Newest
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {getCategoryName(card.categoryId)}
-                                </div>
+                                <div className="font-medium">{card.word}</div>
+                                {card.english && (
+                                  <div className="text-xs text-gray-600 mt-1">{card.english}</div>
+                                )}
                               </div>
                             );
                           })}
@@ -685,15 +684,42 @@ const DailyTrackerImproved = () => {
                   })}
                 </div>
 
-                {/* Legend */}
-                <div className="mt-6 flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-orange-200 border-2 border-orange-300 rounded"></div>
-                    <span>Oldest word in set</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-200 border-2 border-green-300 rounded"></div>
-                    <span>Newest word in set</span>
+                {/* Sets Info */}
+                <div className="mt-8">
+                  <h3 className="text-xl font-bold mb-4">Today's Sets</h3>
+                  <div className="space-y-4">
+                    {sets.map((set) => {
+                      const setFlashcards = getFlashcardsForSet(set.id);
+                      return (
+                        <div key={set.id} className="border rounded-lg p-4 bg-gray-50">
+                          <div className="flex justify-between items-center mb-3">
+                            <h4 className="font-bold">{set.name}</h4>
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm text-gray-600">{setFlashcards.length} words</span>
+                              <button
+                                onClick={() => startEditingSet(set.id)}
+                                className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm font-medium transition-colors"
+                              >
+                                Edit Set
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {setFlashcards.map((card) => (
+                              <div
+                                key={card.id}
+                                className="px-2 py-1 bg-white border border-gray-300 rounded text-xs"
+                              >
+                                <span className="font-medium">{card.word}</span>
+                                {card.english && (
+                                  <span className="text-gray-600 ml-1">({card.english})</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
