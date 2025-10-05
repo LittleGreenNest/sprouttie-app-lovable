@@ -26,6 +26,7 @@ import DailyTracker from './components/DailyTracker';
 import DailyTrackerGrid from './components/DailyTrackerGrid';
 import FlashcardManager from './components/FlashcardManager';
 import HistoryView from './components/HistoryView';
+import AllWords from './components/AllWords';
 import Plans from './components/subscription/Plans';
 import PrintFlashcards from './components/PrintFlashcards';
 
@@ -60,6 +61,7 @@ const AppContent = () => {
     const path = location.pathname;
     if (path.includes('/dashboard')) setActiveTab('dashboard');
     else if (path.includes('/daily-tracking')) setActiveTab('daily-tracking');
+    else if (path.includes('/all-words')) setActiveTab('all-words');
     else if (path.includes('/manage-flashcards')) setActiveTab('manage-flashcards');
     else if (path.includes('/history')) setActiveTab('history');
   }, [location]);
@@ -101,27 +103,33 @@ const AppContent = () => {
       </div>
       
       {/* Navigation Tabs - with proper spacing from header */}
-      <div className="flex mb-6 border-b">
+      <div className="flex mb-6 border-b overflow-x-auto">
         <button 
-          className={`px-4 py-2 ${activeTab === 'dashboard' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
+          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
           onClick={() => handleTabChange('dashboard')}
         >
           Dashboard
         </button>
         <button 
-          className={`px-4 py-2 ${activeTab === 'daily-tracking' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
+          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'daily-tracking' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
           onClick={() => handleTabChange('daily-tracking')}
         >
           Daily Tracking
         </button>
         <button 
-          className={`px-4 py-2 ${activeTab === 'manage-flashcards' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
+          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'all-words' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
+          onClick={() => handleTabChange('all-words')}
+        >
+          All Words
+        </button>
+        <button 
+          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'manage-flashcards' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
           onClick={() => handleTabChange('manage-flashcards')}
         >
           Manage Flashcards
         </button>
         <button 
-          className={`px-4 py-2 ${activeTab === 'history' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
+          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'history' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
           onClick={() => handleTabChange('history')}
         >
           History
@@ -137,6 +145,7 @@ const AppContent = () => {
           {/* tab pages */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/daily-tracking" element={<DailyTrackerGrid />} />
+          <Route path="/all-words" element={<AllWords />} />
           <Route path="/manage-flashcards" element={<FlashcardManager />} />
           <Route path="/history" element={<HistoryView />} />
 
