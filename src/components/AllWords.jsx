@@ -1,25 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
+import { useFlashcards } from '../context/FlashcardContext';
 
 const AllWords = () => {
   const { currentUser } = useAuth();
+  const { categories, flashcards: localFlashcards } = useFlashcards();
   const [flashcardsByCategory, setFlashcardsByCategory] = useState({});
   const [flashedEver, setFlashedEver] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [dataSource, setDataSource] = useState('db'); // 'db' | 'local'
 
   useEffect(() => {
-    if (currentUser) {
-      fetchFlashcardsAndTracking();
-    }
-  }, [currentUser]);
+    // Refresh when user or local data changes
+    fetchFlashcardsAndTracking();
+  }, [currentUser, localFlashcards, categories]);
 
   const fetchFlashcardsAndTracking = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch all flashcards
-      const { data: flashcards, error: flashcardsError } = await supabase
+    setLoading(true);
+    
+    // If no authenticated user, show local data from context
+    if (!currentUser) {
+      const groupedLocal = {};
+      const catNameById = categories.reduce((acc, c) => { acc[c.id] = c.name; return acc; }, {});
+      (localFlashcards || []).forEach(card => {
+        const category = catNameById[card.categoryId] || 'Uncategorized';
+        if (!groupedLocal[category]) groupedLocal[category] = [];
+        groupedLocal[category].push({ id: card.id, label: card.word, title: card.english || card.pinyin });
+      });
+      setDataSource('local');
+      setFlashcardsByCategory(groupedLocal);
+      setFlashedEver(new Set());
+      return;
+    }
+
+    // Fetch all flashcards from backend first
+      const { data: dbFlashcards, error: flashcardsError } = await supabase
         .from('flashcards')
         .select('*')
         .eq('user_id', currentUser.id)
@@ -28,7 +44,7 @@ const AllWords = () => {
 
       if (flashcardsError) throw flashcardsError;
 
-      // Fetch all tracking data (ever flashed)
+      // Fetch all tracking data (ever flashed) from backend
       const { data: tracking, error: trackingError } = await supabase
         .from('daily_tracking')
         .select('flashcard_id')
@@ -41,19 +57,40 @@ const AllWords = () => {
       const flashedIds = new Set(tracking?.map(t => t.flashcard_id) || []);
       setFlashedEver(flashedIds);
 
-      // Group flashcards by category (folder)
+      // Group flashcards by category
       const grouped = {};
-      flashcards?.forEach(card => {
-        const category = card.folder || 'Uncategorized';
-        if (!grouped[category]) {
-          grouped[category] = [];
-        }
-        grouped[category].push(card);
-      });
+
+      if (dbFlashcards && dbFlashcards.length > 0) {
+        setDataSource('db');
+        dbFlashcards.forEach(card => {
+          const category = card.folder || 'Uncategorized';
+          if (!grouped[category]) grouped[category] = [];
+          grouped[category].push({ id: card.id, label: card.front, title: card.back });
+        });
+      } else {
+        // Fallback to local flashcards (from context)
+        setDataSource('local');
+        const catNameById = categories.reduce((acc, c) => { acc[c.id] = c.name; return acc; }, {});
+        (localFlashcards || []).forEach(card => {
+          const category = catNameById[card.categoryId] || 'Uncategorized';
+          if (!grouped[category]) grouped[category] = [];
+          grouped[category].push({ id: card.id, label: card.word, title: card.english || card.pinyin });
+        });
+      }
 
       setFlashcardsByCategory(grouped);
     } catch (error) {
       console.error('Error fetching data:', error);
+      // On any error, still try to show local data
+      const grouped = {};
+      const catNameById = categories.reduce((acc, c) => { acc[c.id] = c.name; return acc; }, {});
+      (localFlashcards || []).forEach(card => {
+        const category = catNameById[card.categoryId] || 'Uncategorized';
+        if (!grouped[category]) grouped[category] = [];
+        grouped[category].push({ id: card.id, label: card.word, title: card.english || card.pinyin });
+      });
+      setDataSource('local');
+      setFlashcardsByCategory(grouped);
     } finally {
       setLoading(false);
     }
@@ -67,7 +104,7 @@ const AllWords = () => {
     );
   }
 
-  const categories = Object.keys(flashcardsByCategory).sort();
+  const categoryNames = Object.keys(flashcardsByCategory).sort();
 
   return (
     <div className="space-y-6">
@@ -86,14 +123,14 @@ const AllWords = () => {
           </div>
         </div>
 
-        {categories.length === 0 ? (
+        {categoryNames.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <p className="text-lg">No flashcards yet.</p>
             <p className="mt-2">Go to "Manage Flashcards" to create your first flashcard.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {categories.map(category => (
+            {categoryNames.map(category => (
               <div key={category} className="space-y-2">
                 {/* Category Header */}
                 <div className="bg-yellow-200 border-2 border-yellow-400 rounded p-2 text-center">
@@ -117,9 +154,9 @@ const AllWords = () => {
                             ? 'bg-green-100 border-green-300 text-green-900'
                             : 'bg-white border-gray-300 text-gray-800'
                         }`}
-                        title={`${card.front}\n${card.back}`}
+                        title={`${card.title || ''}`}
                       >
-                        <div className="truncate font-medium">{card.front}</div>
+                        <div className="truncate font-medium">{card.label}</div>
                       </div>
                     );
                   })}
@@ -131,7 +168,7 @@ const AllWords = () => {
       </div>
 
       {/* Summary Stats */}
-      {categories.length > 0 && (
+      {categoryNames.length > 0 && (
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-bold text-green-800 mb-4">Summary</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
