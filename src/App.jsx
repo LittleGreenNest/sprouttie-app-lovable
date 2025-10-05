@@ -27,6 +27,7 @@ import DailyTrackerGrid from './components/DailyTrackerGrid';
 import FlashcardManager from './components/FlashcardManager';
 import HistoryView from './components/HistoryView';
 import AllWords from './components/AllWords';
+import BingoCardGenerator from './components/BingoCardGenerator';
 import Plans from './components/subscription/Plans';
 import PrintFlashcards from './components/PrintFlashcards';
 
@@ -62,6 +63,7 @@ const AppContent = () => {
     if (path.includes('/dashboard')) setActiveTab('dashboard');
     else if (path.includes('/daily-tracking')) setActiveTab('daily-tracking');
     else if (path.includes('/all-words')) setActiveTab('all-words');
+    else if (path.includes('/bingo-generator')) setActiveTab('bingo-generator');
     else if (path.includes('/manage-flashcards')) setActiveTab('manage-flashcards');
     else if (path.includes('/history')) setActiveTab('history');
   }, [location]);
@@ -123,6 +125,12 @@ const AppContent = () => {
           All Words
         </button>
         <button 
+          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'bingo-generator' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
+          onClick={() => handleTabChange('bingo-generator')}
+        >
+          Bingo Generator
+        </button>
+        <button 
           className={`px-4 py-2 whitespace-nowrap ${activeTab === 'manage-flashcards' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
           onClick={() => handleTabChange('manage-flashcards')}
         >
@@ -146,6 +154,7 @@ const AppContent = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/daily-tracking" element={<DailyTrackerGrid />} />
           <Route path="/all-words" element={<AllWords />} />
+          <Route path="/bingo-generator" element={<BingoCardGenerator />} />
           <Route path="/manage-flashcards" element={<FlashcardManager />} />
           <Route path="/history" element={<HistoryView />} />
 
