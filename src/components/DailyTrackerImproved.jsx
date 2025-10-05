@@ -698,99 +698,42 @@ const DailyTrackerImproved = () => {
                 </div>
               </div>
             ) : (
-              // Words Overview by Category
+              // Today's Sets
               <div>
-                <h3 className="text-xl font-bold mb-4">All Words by Category</h3>
-                
-                {/* Legend */}
-                <div className="mb-6 flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-100 border-2 border-green-300 rounded"></div>
-                    <span>Flashed today</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-white border-2 border-gray-300 rounded"></div>
-                    <span>Not flashed today</span>
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  {categories.map((category) => {
-                    const categoryFlashcards = flashcards.filter(card => card.categoryId === category.id);
-                    if (categoryFlashcards.length === 0) return null;
-
-                    const flashedCount = categoryFlashcards.filter(card => flashedWords.has(card.id)).length;
-                    
+                <h3 className="text-xl font-bold mb-4">Today's Sets</h3>
+                <div className="space-y-4">
+                  {sets.map((set) => {
+                    const setFlashcards = getFlashcardsForSet(set.id);
                     return (
-                      <div key={category.id} className="border rounded-lg p-4">
+                      <div key={set.id} className="border rounded-lg p-4 bg-gray-50">
                         <div className="flex justify-between items-center mb-3">
-                          <h4 className="font-bold text-lg">{category.name}</h4>
-                          <span className="text-sm text-gray-600">
-                            {flashedCount} / {categoryFlashcards.length} flashed today
-                          </span>
+                          <h4 className="font-bold">{set.name}</h4>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-gray-600">{setFlashcards.length} words</span>
+                            <button
+                              onClick={() => startEditingSet(set.id)}
+                              className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm font-medium transition-colors"
+                            >
+                              Edit Set
+                            </button>
+                          </div>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          {categoryFlashcards.map((card) => {
-                            const isFlashed = flashedWords.has(card.id);
-                            return (
-                              <div
-                                key={card.id}
-                                className={`px-3 py-2 rounded-lg text-sm border-2 ${
-                                  isFlashed
-                                    ? 'bg-green-100 border-green-300'
-                                    : 'bg-white border-gray-300'
-                                }`}
-                              >
-                                <div className="font-medium">{card.word}</div>
-                                {card.english && (
-                                  <div className="text-xs text-gray-600 mt-1">{card.english}</div>
-                                )}
-                              </div>
-                            );
-                          })}
+                          {setFlashcards.map((card) => (
+                            <div
+                              key={card.id}
+                              className="px-2 py-1 bg-white border border-gray-300 rounded text-xs"
+                            >
+                              <span className="font-medium">{card.word}</span>
+                              {card.english && (
+                                <span className="text-gray-600 ml-1">({card.english})</span>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     );
                   })}
-                </div>
-
-                {/* Sets Info */}
-                <div className="mt-8">
-                  <h3 className="text-xl font-bold mb-4">Today's Sets</h3>
-                  <div className="space-y-4">
-                    {sets.map((set) => {
-                      const setFlashcards = getFlashcardsForSet(set.id);
-                      return (
-                        <div key={set.id} className="border rounded-lg p-4 bg-gray-50">
-                          <div className="flex justify-between items-center mb-3">
-                            <h4 className="font-bold">{set.name}</h4>
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm text-gray-600">{setFlashcards.length} words</span>
-                              <button
-                                onClick={() => startEditingSet(set.id)}
-                                className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm font-medium transition-colors"
-                              >
-                                Edit Set
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {setFlashcards.map((card) => (
-                              <div
-                                key={card.id}
-                                className="px-2 py-1 bg-white border border-gray-300 rounded text-xs"
-                              >
-                                <span className="font-medium">{card.word}</span>
-                                {card.english && (
-                                  <span className="text-gray-600 ml-1">({card.english})</span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
                 </div>
               </div>
             )}
