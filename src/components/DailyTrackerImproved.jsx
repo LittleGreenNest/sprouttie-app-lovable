@@ -94,7 +94,12 @@ const DailyTrackerImproved = () => {
   };
 
   const toggleSession = async (setId, round) => {
-    if (!familyMember) {
+    if (!currentUser) {
+      toast.error('Please log in to track sessions');
+      return;
+    }
+
+    if (!familyMember.trim()) {
       toast.warning('Please enter your name first');
       return;
     }
@@ -111,49 +116,59 @@ const DailyTrackerImproved = () => {
         setSessions(newSessions);
 
         // Delete from database
-        await supabase
+        const { error } = await supabase
           .from('daily_tracking')
           .delete()
           .eq('user_id', currentUser.id)
           .eq('date', dateString)
-          .eq('notes', JSON.stringify({ setId, round }));
+          .eq('status', 'flashed')
+          .like('notes', `%"setId":${setId}%`)
+          .like('notes', `%"round":${round}%`);
+
+        if (error) throw error;
       } else {
         // Add the session
         const newSessions = { ...sessions };
         if (!newSessions[setId]) newSessions[setId] = {};
         newSessions[setId][roundKey] = {
           completed: true,
-          by: familyMember,
+          by: familyMember.trim(),
           time: new Date().toISOString()
         };
         setSessions(newSessions);
 
-        // Save to database (use first flashcard in set as reference)
+        // Save to database - create a dummy flashcard_id if no flashcards in set
         const setFlashcards = getFlashcardsForSet(setId);
-        if (setFlashcards.length > 0) {
-          await supabase
-            .from('daily_tracking')
-            .insert({
-              user_id: currentUser.id,
-              flashcard_id: setFlashcards[0].id,
-              date: dateString,
-              status: 'flashed',
-              flashed_by: familyMember,
-              flashed_at: new Date().toISOString(),
-              notes: JSON.stringify({ setId, round })
-            });
-        }
-      }
+        const flashcardId = setFlashcards.length > 0 ? setFlashcards[0].id : `set-${setId}`;
 
-      toast.success('Session updated');
+        const { error } = await supabase
+          .from('daily_tracking')
+          .insert({
+            user_id: currentUser.id,
+            flashcard_id: flashcardId,
+            date: dateString,
+            status: 'flashed',
+            flashed_by: familyMember.trim(),
+            flashed_at: new Date().toISOString(),
+            notes: JSON.stringify({ setId, round })
+          });
+
+        if (error) throw error;
+        toast.success('Session marked complete!');
+      }
     } catch (error) {
       console.error('Error toggling session:', error);
-      toast.error('Failed to update session');
+      toast.error('Failed to update session: ' + error.message);
     }
   };
 
   const markAllRound = async (round) => {
-    if (!familyMember) {
+    if (!currentUser) {
+      toast.error('Please log in to track sessions');
+      return;
+    }
+
+    if (!familyMember.trim()) {
       toast.warning('Please enter your name first');
       return;
     }
@@ -168,39 +183,51 @@ const DailyTrackerImproved = () => {
         if (!newSessions[set.id][roundKey]?.completed) {
           newSessions[set.id][roundKey] = {
             completed: true,
-            by: familyMember,
+            by: familyMember.trim(),
             time: new Date().toISOString()
           };
 
           // Save to database
           const setFlashcards = getFlashcardsForSet(set.id);
-          if (setFlashcards.length > 0) {
-            await supabase
-              .from('daily_tracking')
-              .insert({
-                user_id: currentUser.id,
-                flashcard_id: setFlashcards[0].id,
-                date: dateString,
-                status: 'flashed',
-                flashed_by: familyMember,
-                flashed_at: new Date().toISOString(),
-                notes: JSON.stringify({ setId: set.id, round })
-              });
-          }
+          const flashcardId = setFlashcards.length > 0 ? setFlashcards[0].id : `set-${set.id}`;
+
+          const { error } = await supabase
+            .from('daily_tracking')
+            .insert({
+              user_id: currentUser.id,
+              flashcard_id: flashcardId,
+              date: dateString,
+              status: 'flashed',
+              flashed_by: familyMember.trim(),
+              flashed_at: new Date().toISOString(),
+              notes: JSON.stringify({ setId: set.id, round })
+            });
+
+          if (error) throw error;
         }
       }
 
       setSessions(newSessions);
-      toast.success(`All Round ${round} sessions marked complete`);
+      toast.success(`All Round ${round} sessions marked complete!`);
     } catch (error) {
       console.error('Error marking all round:', error);
-      toast.error('Failed to mark all sessions');
+      toast.error('Failed to mark all sessions: ' + error.message);
     }
   };
 
   const addNote = async () => {
-    if (!newNote.trim() || !familyMember) {
-      toast.warning('Please enter your name and a note');
+    if (!currentUser) {
+      toast.error('Please log in to add notes');
+      return;
+    }
+
+    if (!newNote.trim()) {
+      toast.warning('Please enter a note');
+      return;
+    }
+
+    if (!familyMember.trim()) {
+      toast.warning('Please enter your name first');
       return;
     }
 
@@ -210,30 +237,31 @@ const DailyTrackerImproved = () => {
 
       const noteEntry = {
         text: newNote.trim(),
-        by: familyMember,
+        by: familyMember.trim(),
         time: timestamp
       };
 
       setNotes([...notes, noteEntry]);
       setNewNote('');
 
-      // Save to database
-      await supabase
+      // Save to database - use a placeholder flashcard_id for notes
+      const { error } = await supabase
         .from('daily_tracking')
         .insert({
           user_id: currentUser.id,
-          flashcard_id: sets[0]?.flashcardIds?.[0] || 'note',
+          flashcard_id: 'shared-note',
           date: dateString,
           status: 'note',
-          flashed_by: familyMember,
+          flashed_by: familyMember.trim(),
           flashed_at: timestamp,
           notes: newNote.trim()
         });
 
-      toast.success('Note added');
+      if (error) throw error;
+      toast.success('Note added successfully!');
     } catch (error) {
       console.error('Error adding note:', error);
-      toast.error('Failed to add note');
+      toast.error('Failed to add note: ' + error.message);
     }
   };
 
