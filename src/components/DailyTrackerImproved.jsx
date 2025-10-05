@@ -16,6 +16,7 @@ const DailyTrackerImproved = () => {
   const [loading, setLoading] = useState(true);
   const [editingSetId, setEditingSetId] = useState(null);
   const [availableWords, setAvailableWords] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const dailyGoal = sets.length * 3; // Each set should be done 3 times
 
@@ -283,6 +284,7 @@ const DailyTrackerImproved = () => {
 
   const startEditingSet = (setId) => {
     setEditingSetId(setId);
+    setSearchQuery(''); // Reset search when opening edit view
     // Get all available flashcards not in this set
     const currentSet = sets.find(s => s.id === setId);
     const currentSetCardIds = new Set(currentSet?.flashcardIds || []);
@@ -315,6 +317,25 @@ const DailyTrackerImproved = () => {
       setAvailableWords([...availableWords, removedWord]);
     }
     toast.success('Word removed from set');
+  };
+
+  const getFilteredAvailableWords = () => {
+    if (!searchQuery.trim()) {
+      return availableWords;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return availableWords.filter(card => {
+      const word = (card.word || '').toLowerCase();
+      const english = (card.english || '').toLowerCase();
+      const pinyin = (card.pinyin || '').toLowerCase();
+      const category = getCategoryName(card.categoryId).toLowerCase();
+      
+      return word.includes(query) || 
+             english.includes(query) || 
+             pinyin.includes(query) ||
+             category.includes(query);
+    });
   };
 
   if (loading) {
@@ -526,26 +547,44 @@ const DailyTrackerImproved = () => {
                 {/* Available Words to Add */}
                 <div>
                   <h4 className="font-medium text-gray-700 mb-3">Available Words to Add</h4>
+                  
+                  {/* Search Input */}
+                  <div className="mb-4">
+                    <input
+                      type="text"
+                      placeholder="Search by word, translation, pinyin, or category..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
                   {availableWords.length === 0 ? (
                     <p className="text-gray-500 text-sm">No more words available. All flashcards are already in sets.</p>
                   ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                      {availableWords.map((card) => (
-                        <button
-                          key={card.id}
-                          onClick={() => addWordToSet(card.id)}
-                          className="px-3 py-2 bg-white border-2 border-gray-300 hover:border-green-500 rounded-lg text-sm text-left transition-colors"
-                        >
-                          <div className="font-medium">{card.word}</div>
-                          {card.english && (
-                            <div className="text-xs text-gray-600">{card.english}</div>
-                          )}
-                          <div className="text-xs text-gray-500 mt-1">
-                            {getCategoryName(card.categoryId)}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
+                    <>
+                      {getFilteredAvailableWords().length === 0 ? (
+                        <p className="text-gray-500 text-sm">No words match your search.</p>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                          {getFilteredAvailableWords().map((card) => (
+                            <button
+                              key={card.id}
+                              onClick={() => addWordToSet(card.id)}
+                              className="px-3 py-2 bg-white border-2 border-gray-300 hover:border-green-500 rounded-lg text-sm text-left transition-colors"
+                            >
+                              <div className="font-medium">{card.word}</div>
+                              {card.english && (
+                                <div className="text-xs text-gray-600">{card.english}</div>
+                              )}
+                              <div className="text-xs text-gray-500 mt-1">
+                                {getCategoryName(card.categoryId)}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
