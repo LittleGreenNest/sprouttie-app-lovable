@@ -447,23 +447,25 @@ const DailyTrackerImproved = () => {
                         const session = sessions[set.id]?.[`round${round}`];
                         return (
                           <td key={round} className="py-4 px-4 text-center">
-                            <div className="flex flex-col items-center gap-1">
+                            <div className="flex flex-col items-center gap-2">
                               <button
                                 onClick={() => toggleSession(set.id, round)}
-                                className={`w-8 h-8 border-2 rounded transition-colors ${
+                                className={`w-10 h-10 border-2 rounded flex items-center justify-center transition-colors ${
                                   session?.completed
-                                    ? 'bg-green-500 border-green-600'
-                                    : 'border-gray-300 hover:border-gray-400'
+                                    ? 'bg-green-500 border-green-600 hover:bg-green-600'
+                                    : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                                 }`}
                               >
                                 {session?.completed && (
-                                  <span className="text-white text-lg">✓</span>
+                                  <span className="text-white text-xl font-bold">✓</span>
                                 )}
                               </button>
                               {session?.completed && (
-                                <div className="text-xs text-gray-600">
-                                  <div className="font-medium">{session.by}</div>
-                                  <div>{formatTime(session.time)}</div>
+                                <div className="text-xs">
+                                  <div className="px-2 py-1 bg-gray-100 rounded font-medium text-gray-700">
+                                    {session.by}
+                                  </div>
+                                  <div className="text-gray-600 mt-1">{formatTime(session.time)}</div>
                                 </div>
                               )}
                             </div>
@@ -677,32 +679,39 @@ const DailyTrackerImproved = () => {
         <h3 className="text-xl font-bold mb-4">Today's Notes (Shared)</h3>
         
         {/* Add Note */}
-        <div className="flex gap-2 mb-4">
+        <div className="mb-6">
           <textarea
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             placeholder="Add observations, words recognized, special moments... Everyone can add notes here."
-            className="flex-1 border border-gray-300 rounded-lg px-4 py-2 min-h-[80px] resize-none"
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 min-h-[100px] resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
           />
           <button
             onClick={addNote}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+            className="mt-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
           >
-            +
+            <span className="text-xl">+</span>
+            Add Note
           </button>
         </div>
 
         {/* Notes List */}
-        <div className="space-y-3">
-          {notes.map((note, idx) => (
-            <div key={idx} className="border-l-4 border-green-500 bg-gray-50 p-3 rounded">
-              <p className="text-gray-800 mb-1">{note.text}</p>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span className="px-2 py-1 bg-gray-200 rounded">{note.by}</span>
-                <span>{formatTime(note.time)}</span>
+        <div className="space-y-4">
+          {notes.length === 0 ? (
+            <p className="text-gray-500 text-sm text-center py-8">No notes yet today. Add your first observation!</p>
+          ) : (
+            notes.map((note, idx) => (
+              <div key={idx} className="bg-gray-50 rounded-lg p-4">
+                <p className="text-gray-800 mb-3 leading-relaxed">{note.text}</p>
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="px-3 py-1 bg-gray-700 text-white rounded font-medium">
+                    {note.by}
+                  </span>
+                  <span className="text-gray-600">{formatTime(note.time)}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>
