@@ -162,7 +162,7 @@ const BingoCardGenerator = () => {
     return cats.sort();
   };
 
-  const generateBingoCardsPDF = () => {
+  const generateBingoCardsPDF = async () => {
     if (selectedWords.size < wordsNeeded) {
       toast.error(`Please select ${wordsNeeded} words for a ${gridSize}×${gridSize} bingo card`);
       return;
@@ -170,64 +170,87 @@ const BingoCardGenerator = () => {
 
     const selectedFlashcards = availableFlashcards.filter(card => selectedWords.has(card.id));
     
-    // Create multiple bingo cards with different random arrangements
-    const numberOfCards = 6; // Generate 6 different bingo cards
-    const doc = new jsPDF();
-    
-    for (let cardIndex = 0; cardIndex < numberOfCards; cardIndex++) {
-      if (cardIndex > 0) {
-        doc.addPage();
-      }
-
-      // Shuffle the selected words for this card
-      const shuffled = [...selectedFlashcards].sort(() => Math.random() - 0.5);
+    try {
+      // Create multiple bingo cards with different random arrangements
+      const numberOfCards = 6;
+      const doc = new jsPDF();
       
-      // Draw title
-      doc.setFontSize(18);
-      doc.text('Bingo Card', 105, 20, { align: 'center' });
+      // Load Noto Sans SC font for Chinese character support
+      const fontUrl = '/fonts/NotoSansSC-Regular.ttf';
+      const response = await fetch(fontUrl);
+      const fontBlob = await response.blob();
+      const fontBase64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.readAsDataURL(fontBlob);
+      });
       
-      // Card dimensions
-      const startX = 20;
-      const startY = 35;
-      const cellSize = 170 / gridSize;
+      // Add the font to jsPDF
+      doc.addFileToVFS('NotoSansSC-Regular.ttf', fontBase64);
+      doc.addFont('NotoSansSC-Regular.ttf', 'NotoSansSC', 'normal');
       
-      // Draw grid
-      doc.setFontSize(10);
-      
-      for (let row = 0; row < gridSize; row++) {
-        for (let col = 0; col < gridSize; col++) {
-          const x = startX + col * cellSize;
-          const y = startY + row * cellSize;
-          const index = row * gridSize + col;
-          const card = shuffled[index];
-          
-          // Draw cell border
-          doc.rect(x, y, cellSize, cellSize);
-          
-          // Draw text (Chinese character)
-          doc.setFontSize(Math.max(12, 24 - gridSize * 2));
-          const text = card.front;
-          doc.text(text, x + cellSize / 2, y + cellSize / 2 - 5, { 
-            align: 'center',
-            maxWidth: cellSize - 4
-          });
-          
-          // Draw translation
-          doc.setFontSize(Math.max(7, 10 - gridSize));
-          doc.text(card.back, x + cellSize / 2, y + cellSize / 2 + 5, { 
-            align: 'center',
-            maxWidth: cellSize - 4
-          });
+      for (let cardIndex = 0; cardIndex < numberOfCards; cardIndex++) {
+        if (cardIndex > 0) {
+          doc.addPage();
         }
+
+        // Shuffle the selected words for this card
+        const shuffled = [...selectedFlashcards].sort(() => Math.random() - 0.5);
+        
+        // Draw title
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.text('Bingo Card', 105, 20, { align: 'center' });
+        
+        // Card dimensions
+        const startX = 20;
+        const startY = 40;
+        const cellSize = 170 / gridSize;
+        
+        for (let row = 0; row < gridSize; row++) {
+          for (let col = 0; col < gridSize; col++) {
+            const x = startX + col * cellSize;
+            const y = startY + row * cellSize;
+            const index = row * gridSize + col;
+            const card = shuffled[index];
+            
+            // Draw cell border
+            doc.setDrawColor(0);
+            doc.setLineWidth(0.5);
+            doc.rect(x, y, cellSize, cellSize);
+            
+            // Draw Chinese text
+            doc.setFont('NotoSansSC', 'normal');
+            doc.setFontSize(Math.max(16, 28 - gridSize * 3));
+            const chineseText = card.front || '';
+            doc.text(chineseText, x + cellSize / 2, y + cellSize / 2 - 3, { 
+              align: 'center',
+              maxWidth: cellSize - 6
+            });
+            
+            // Draw English translation
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(Math.max(8, 11 - gridSize));
+            const englishText = card.back || '';
+            doc.text(englishText, x + cellSize / 2, y + cellSize / 2 + 8, { 
+              align: 'center',
+              maxWidth: cellSize - 6
+            });
+          }
+        }
+        
+        // Add card number at bottom
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text(`Card ${cardIndex + 1} of ${numberOfCards}`, 105, 280, { align: 'center' });
       }
       
-      // Add card number at bottom
-      doc.setFontSize(10);
-      doc.text(`Card ${cardIndex + 1} of ${numberOfCards}`, 105, 280, { align: 'center' });
+      doc.save('bingo-cards.pdf');
+      toast.success('Bingo cards PDF generated successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF. Please try again.');
     }
-    
-    doc.save('bingo-cards.pdf');
-    toast.success('Bingo cards PDF generated successfully!');
   };
 
   if (loading) {
