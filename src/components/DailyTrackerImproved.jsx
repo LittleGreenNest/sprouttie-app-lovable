@@ -640,6 +640,7 @@ const DailyTrackerImproved = () => {
               ))}
             </div>
           </div>
+        </div>
       </div>
 
       {/* Today's Notes */}
