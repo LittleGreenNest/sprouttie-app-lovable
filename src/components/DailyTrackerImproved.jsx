@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 
 const DailyTrackerImproved = () => {
   const { currentUser } = useAuth();
-  const { sets, flashcards, getFlashcardsForSet, categories, updateSetFlashcards, addFlashcard } = useFlashcards();
+  const { sets, flashcards, getFlashcardsForSet, categories, updateSetFlashcards, addFlashcard, addCategory } = useFlashcards();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [sessions, setSessions] = useState({}); // { setId: { round1: {completed, by, time}, round2: {}, round3: {} } }
   const [notes, setNotes] = useState([]);
@@ -20,6 +20,8 @@ const DailyTrackerImproved = () => {
   const [showCreateWord, setShowCreateWord] = useState(false);
   const [newWordData, setNewWordData] = useState({ word: '', english: '', pinyin: '', categoryId: '' });
   const [userPlan, setUserPlan] = useState(null);
+  const [showCreateCategory, setShowCreateCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   const dailyGoal = sets.length * 3; // Each set should be done 3 times
 
@@ -368,8 +370,22 @@ const DailyTrackerImproved = () => {
       toast.warning('Please enter a word');
       return;
     }
+
+    // Check if we need to create a new category
+    let categoryId = newWordData.categoryId;
+    if (showCreateCategory) {
+      if (!newCategoryName.trim()) {
+        toast.warning('Please enter a category name');
+        return;
+      }
+      const newCat = addCategory(newCategoryName.trim());
+      categoryId = newCat.id;
+      setNewCategoryName('');
+      setShowCreateCategory(false);
+      toast.success(`Created category "${newCat.name}"`);
+    }
     
-    if (!newWordData.categoryId) {
+    if (!categoryId) {
       toast.warning('Please select a category');
       return;
     }
@@ -377,7 +393,7 @@ const DailyTrackerImproved = () => {
     // Create the new flashcard
     const newCard = addFlashcard(
       newWordData.word.trim(),
-      newWordData.categoryId,
+      categoryId,
       newWordData.english.trim(),
       newWordData.pinyin.trim()
     );
@@ -703,6 +719,8 @@ const DailyTrackerImproved = () => {
                                 <button
                                   onClick={() => {
                                     setShowCreateWord(false);
+                                    setShowCreateCategory(false);
+                                    setNewCategoryName('');
                                     setNewWordData({ word: '', english: '', pinyin: '', categoryId: categories[0]?.id || '' });
                                   }}
                                   className="text-gray-500 hover:text-gray-700 text-sm"
@@ -735,16 +753,52 @@ const DailyTrackerImproved = () => {
                                 className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
                               />
                               
-                              <select
-                                value={newWordData.categoryId}
-                                onChange={(e) => setNewWordData({ ...newWordData, categoryId: e.target.value })}
-                                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
-                              >
-                                <option value="">Select Category *</option>
-                                {categories.map(cat => (
-                                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                ))}
-                              </select>
+                              {!showCreateCategory ? (
+                                <>
+                                  <select
+                                    value={newWordData.categoryId}
+                                    onChange={(e) => {
+                                      if (e.target.value === 'CREATE_NEW') {
+                                        setShowCreateCategory(true);
+                                        setNewWordData({ ...newWordData, categoryId: '' });
+                                      } else {
+                                        setNewWordData({ ...newWordData, categoryId: e.target.value });
+                                      }
+                                    }}
+                                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                                  >
+                                    <option value="">Select Category *</option>
+                                    {categories.map(cat => (
+                                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                    <option value="CREATE_NEW" className="text-green-600 font-medium">+ Create New Category</option>
+                                  </select>
+                                </>
+                              ) : (
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <label className="text-xs font-medium text-gray-700">New Category Name *</label>
+                                    <button
+                                      onClick={() => {
+                                        setShowCreateCategory(false);
+                                        setNewCategoryName('');
+                                        setNewWordData({ ...newWordData, categoryId: categories[0]?.id || '' });
+                                      }}
+                                      className="text-xs text-gray-500 hover:text-gray-700"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    placeholder="Enter category name (e.g., Food, Colors)"
+                                    value={newCategoryName}
+                                    onChange={(e) => setNewCategoryName(e.target.value)}
+                                    className="w-full border border-green-300 rounded px-2 py-1.5 text-sm focus:border-green-500 focus:outline-none"
+                                    autoFocus
+                                  />
+                                </div>
+                              )}
                               
                               <button
                                 onClick={createAndAddWord}
