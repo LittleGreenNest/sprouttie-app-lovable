@@ -141,10 +141,13 @@ const DailyTrackerImproved = () => {
       return;
     }
 
-    if (!familyMember.trim()) {
+    const requiresFamilyMember = userPlan === 'print' || userPlan === 'pro';
+    if (requiresFamilyMember && !familyMember.trim()) {
       toast.warning('Please enter your name first');
       return;
     }
+
+    const trackedBy = familyMember.trim() || 'User';
 
     try {
       const dateString = selectedDate.toISOString().split('T')[0];
@@ -174,7 +177,7 @@ const DailyTrackerImproved = () => {
         if (!newSessions[setId]) newSessions[setId] = {};
         newSessions[setId][roundKey] = {
           completed: true,
-          by: familyMember.trim(),
+          by: trackedBy,
           time: new Date().toISOString()
         };
         setSessions(newSessions);
@@ -190,7 +193,7 @@ const DailyTrackerImproved = () => {
             flashcard_id: flashcardId,
             date: dateString,
             status: 'flashed',
-            flashed_by: familyMember.trim(),
+            flashed_by: trackedBy,
             flashed_at: new Date().toISOString(),
             notes: JSON.stringify({ setId, round })
           });
@@ -210,10 +213,15 @@ const DailyTrackerImproved = () => {
       return;
     }
 
-    if (!familyMember.trim()) {
+    // Check if family member is required (for print/pro plans) and if it's filled
+    const requiresFamilyMember = userPlan === 'print' || userPlan === 'pro';
+    if (requiresFamilyMember && !familyMember.trim()) {
       toast.warning('Please enter your name first');
       return;
     }
+
+    // Use family member name if available, otherwise use a default
+    const trackedBy = familyMember.trim() || 'User';
 
     try {
       const dateString = selectedDate.toISOString().split('T')[0];
@@ -225,7 +233,7 @@ const DailyTrackerImproved = () => {
         if (!newSessions[set.id][roundKey]?.completed) {
           newSessions[set.id][roundKey] = {
             completed: true,
-            by: familyMember.trim(),
+            by: trackedBy,
             time: new Date().toISOString()
           };
 
@@ -240,7 +248,7 @@ const DailyTrackerImproved = () => {
               flashcard_id: flashcardId,
               date: dateString,
               status: 'flashed',
-              flashed_by: familyMember.trim(),
+              flashed_by: trackedBy,
               flashed_at: new Date().toISOString(),
               notes: JSON.stringify({ setId: set.id, round })
             });
@@ -268,10 +276,14 @@ const DailyTrackerImproved = () => {
       return;
     }
 
-    if (!familyMember.trim()) {
+    // Check if family member is required and filled
+    const requiresFamilyMember = userPlan === 'print' || userPlan === 'pro';
+    if (requiresFamilyMember && !familyMember.trim()) {
       toast.warning('Please enter your name first');
       return;
     }
+
+    const trackedBy = familyMember.trim() || 'User';
 
     try {
       const dateString = selectedDate.toISOString().split('T')[0];
@@ -279,7 +291,7 @@ const DailyTrackerImproved = () => {
 
       const noteEntry = {
         text: newNote.trim(),
-        by: familyMember.trim(),
+        by: trackedBy,
         time: timestamp
       };
 
@@ -294,7 +306,7 @@ const DailyTrackerImproved = () => {
           flashcard_id: 'shared-note',
           date: dateString,
           status: 'note',
-          flashed_by: familyMember.trim(),
+          flashed_by: trackedBy,
           flashed_at: timestamp,
           notes: newNote.trim()
         });
