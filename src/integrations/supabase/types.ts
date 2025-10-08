@@ -54,15 +54,7 @@ export type Database = {
           time_of_day?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "daily_tracking_flashcard_id_fkey"
-            columns: ["flashcard_id"]
-            isOneToOne: false
-            referencedRelation: "flashcards"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       flashcards: {
         Row: {
