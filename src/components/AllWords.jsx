@@ -56,6 +56,7 @@ const AllWords = () => {
 
       // Create a set of ever-flashed flashcard IDs
       const flashedIds = new Set(tracking?.map(t => t.flashcard_id) || []);
+      console.log('Flashed flashcard IDs from tracking:', Array.from(flashedIds));
       setFlashedEver(flashedIds);
 
       // Group flashcards by category
@@ -77,6 +78,7 @@ const AllWords = () => {
           if (!grouped[category]) grouped[category] = [];
           grouped[category].push({ id: card.id, label: card.word, title: card.english || card.pinyin });
         });
+        console.log('Using localStorage flashcards, IDs:', localFlashcards.map(c => c.id));
       }
 
       setFlashcardsByCategory(grouped);

@@ -182,23 +182,44 @@ const DailyTrackerImproved = () => {
         };
         setSessions(newSessions);
 
-        // Save to database - create a dummy flashcard_id if no flashcards in set
+        // Save to database - save ALL flashcards in the set as flashed
         const setFlashcards = getFlashcardsForSet(setId);
-        const flashcardId = setFlashcards.length > 0 ? setFlashcards[0].id : `set-${setId}`;
+        
+        console.log('Tracking session:', { setId, round, setFlashcards: setFlashcards.map(f => f.id) });
 
-        const { error } = await supabase
-          .from('daily_tracking')
-          .insert({
-            user_id: currentUser.id,
-            flashcard_id: flashcardId,
-            date: dateString,
-            status: 'flashed',
-            flashed_by: trackedBy,
-            flashed_at: new Date().toISOString(),
-            notes: JSON.stringify({ setId, round })
-          });
+        // Insert a tracking record for EACH flashcard in the set
+        for (const flashcard of setFlashcards) {
+          const { error } = await supabase
+            .from('daily_tracking')
+            .insert({
+              user_id: currentUser.id,
+              flashcard_id: flashcard.id,
+              date: dateString,
+              status: 'flashed',
+              flashed_by: trackedBy,
+              flashed_at: new Date().toISOString(),
+              notes: JSON.stringify({ setId, round })
+            });
 
-        if (error) throw error;
+          if (error) throw error;
+        }
+        
+        // If set has no flashcards, save a placeholder
+        if (setFlashcards.length === 0) {
+          const { error } = await supabase
+            .from('daily_tracking')
+            .insert({
+              user_id: currentUser.id,
+              flashcard_id: `set-${setId}`,
+              date: dateString,
+              status: 'flashed',
+              flashed_by: trackedBy,
+              flashed_at: new Date().toISOString(),
+              notes: JSON.stringify({ setId, round })
+            });
+
+          if (error) throw error;
+        }
         toast.success('Session marked complete!');
       }
     } catch (error) {
@@ -237,23 +258,44 @@ const DailyTrackerImproved = () => {
             time: new Date().toISOString()
           };
 
-          // Save to database
+          // Save to database - save ALL flashcards in the set as flashed
           const setFlashcards = getFlashcardsForSet(set.id);
-          const flashcardId = setFlashcards.length > 0 ? setFlashcards[0].id : `set-${set.id}`;
+          
+          console.log('Tracking all round:', { setId: set.id, round, setFlashcards: setFlashcards.map(f => f.id) });
 
-          const { error } = await supabase
-            .from('daily_tracking')
-            .insert({
-              user_id: currentUser.id,
-              flashcard_id: flashcardId,
-              date: dateString,
-              status: 'flashed',
-              flashed_by: trackedBy,
-              flashed_at: new Date().toISOString(),
-              notes: JSON.stringify({ setId: set.id, round })
-            });
+          // Insert a tracking record for EACH flashcard in the set
+          for (const flashcard of setFlashcards) {
+            const { error } = await supabase
+              .from('daily_tracking')
+              .insert({
+                user_id: currentUser.id,
+                flashcard_id: flashcard.id,
+                date: dateString,
+                status: 'flashed',
+                flashed_by: trackedBy,
+                flashed_at: new Date().toISOString(),
+                notes: JSON.stringify({ setId: set.id, round })
+              });
 
-          if (error) throw error;
+            if (error) throw error;
+          }
+          
+          // If set has no flashcards, save a placeholder
+          if (setFlashcards.length === 0) {
+            const { error } = await supabase
+              .from('daily_tracking')
+              .insert({
+                user_id: currentUser.id,
+                flashcard_id: `set-${set.id}`,
+                date: dateString,
+                status: 'flashed',
+                flashed_by: trackedBy,
+                flashed_at: new Date().toISOString(),
+                notes: JSON.stringify({ setId: set.id, round })
+              });
+
+            if (error) throw error;
+          }
         }
       }
 
