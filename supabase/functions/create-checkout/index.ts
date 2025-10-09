@@ -13,15 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    // Verify environment variables
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Missing Supabase environment variables');
-    }
-
     if (!stripeKey) {
       throw new Error('Missing Stripe secret key');
     }
@@ -33,19 +25,14 @@ serve(async (req) => {
     }
     const token = authHeader.replace('Bearer ', '');
 
-    // Create Supabase client with user's JWT in headers so RLS evaluates as the user
+    // Create Supabase client with service role key for admin operations
     const supabaseClient = createClient(
-      supabaseUrl,
-      supabaseAnonKey,
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
         auth: {
           persistSession: false,
           autoRefreshToken: false,
-        },
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         },
       }
     );
