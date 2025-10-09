@@ -348,3 +348,8 @@ entrypoint = "index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "index.ts"
+
+[functions.health]
+enabled = true
+verify_jwt = false
+entrypoint = "index.ts"
