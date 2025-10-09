@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from 'https://esm.sh/stripe@18.5.0';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2';
+import Stripe from 'https://esm.sh/stripe@18.5.0?target=deno';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2?target=deno';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,7 +26,14 @@ serve(async (req) => {
       throw new Error('Missing Stripe secret key');
     }
 
-    // Use the anon key - sufficient for auth.getUser(token)
+    // Get user from authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+    const token = authHeader.replace('Bearer ', '');
+
+    // Create Supabase client with user's JWT in headers so RLS evaluates as the user
     const supabaseClient = createClient(
       supabaseUrl,
       supabaseAnonKey,
@@ -35,18 +42,14 @@ serve(async (req) => {
           persistSession: false,
           autoRefreshToken: false,
         },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
       }
     );
 
-    // Get user from authorization header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    // Attach the user's JWT so RLS policies evaluate as the user
-    supabaseClient.auth.setAuth(token);
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
 
     if (userError || !user) {
@@ -88,6 +91,7 @@ serve(async (req) => {
     }
 
     // Create checkout session
+    const origin = req.headers.get('origin') || 'http://127.0.0.1:3000';
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       line_items: [
@@ -97,8 +101,8 @@ serve(async (req) => {
         },
       ],
       mode: 'subscription',
-      success_url: `${req.headers.get('origin')}/profile?success=true`,
-      cancel_url: `${req.headers.get('origin')}/plans?canceled=true`,
+      success_url: `${origin}/profile?success=true`,
+      cancel_url: `${origin}/plans?canceled=true`,
       metadata: {
         user_id: user.id,
         plan_key: planKey,
