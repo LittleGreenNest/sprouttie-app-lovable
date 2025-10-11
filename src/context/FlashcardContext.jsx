@@ -52,13 +52,13 @@ const defaultFlashcards = [
 
 ];
 
-// Default sets
+// Default sets - start empty for new users
 const defaultSets = [
-  { id: 1, name: 'Set 1', flashcardIds: ['f1', 'f6', 'f11', 'f16', 'f21'] },
-  { id: 2, name: 'Set 2', flashcardIds: ['f2', 'f7', 'f12', 'f17', 'f22'] },
-  { id: 3, name: 'Set 3', flashcardIds: ['f3', 'f8', 'f13', 'f18', 'f23'] },
-  { id: 4, name: 'Set 4', flashcardIds: ['f4', 'f9', 'f14', 'f19', 'f24'] },
-  { id: 5, name: 'Set 5', flashcardIds: ['f5', 'f10', 'f15', 'f20', 'f25'] }
+  { id: 1, name: 'Set 1', flashcardIds: [] },
+  { id: 2, name: 'Set 2', flashcardIds: [] },
+  { id: 3, name: 'Set 3', flashcardIds: [] },
+  { id: 4, name: 'Set 4', flashcardIds: [] },
+  { id: 5, name: 'Set 5', flashcardIds: [] }
 ];
 
 // Provider component
