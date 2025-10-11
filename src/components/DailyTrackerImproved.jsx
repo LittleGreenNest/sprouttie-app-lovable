@@ -412,10 +412,10 @@ const DailyTrackerImproved = () => {
     setShowCreateWord(false);
     setNewWordData({ word: '', english: '', pinyin: '', categoryId: categories[0]?.id || '' });
     
-    // Get all available flashcards not in this set
+    // Get all available flashcards not in this set AND not flashed today
     const currentSet = sets.find(s => s.id === setId);
     const currentSetCardIds = new Set(currentSet?.flashcardIds || []);
-    const available = flashcards.filter(card => !currentSetCardIds.has(card.id));
+    const available = flashcards.filter(card => !currentSetCardIds.has(card.id) && !flashedWords.has(card.id));
     setAvailableWords(available);
   };
 
@@ -483,10 +483,10 @@ const DailyTrackerImproved = () => {
     
     updateSetFlashcards(editingSetId, updatedFlashcardIds, updatedFlashcardDates);
 
-    // Recalculate available words
+    // Recalculate available words (exclude words in set AND words flashed today)
     const currentSet = sets.find(s => s.id === editingSetId);
     const updatedSetCardIds = new Set([...updatedFlashcardIds]);
-    const available = flashcards.filter(card => !updatedSetCardIds.has(card.id));
+    const available = flashcards.filter(card => !updatedSetCardIds.has(card.id) && !flashedWords.has(card.id));
     setAvailableWords(available);
     
     toast.success('Word added to set');
