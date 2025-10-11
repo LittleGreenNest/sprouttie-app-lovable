@@ -356,17 +356,32 @@ const xRight = pageWidth - 20;
               doc.text(en, xRight, baseY, { align: 'right' });
             } else {
               // Chinese card: English / 中文 / Pinyin (top-right stack)
-              setAutoFont(doc, en, 'normal');
+              // English line
               doc.setFontSize(14);
-              doc.text(`English: ${en || '—'}`, xRight, baseY, { align: 'right' });
+              setAutoFont(doc, 'English:', 'normal');
+              const enLabel = 'English: ';
+              const enWidth = doc.getStringUnitWidth(enLabel) * 14 / doc.internal.scaleFactor;
+              doc.text(enLabel, xRight, baseY, { align: 'right' });
+              setAutoFont(doc, en || '—', 'normal');
+              doc.text(en || '—', xRight - enWidth, baseY, { align: 'right' });
 
-              setAutoFont(doc, cn, 'normal');
+              // Chinese line - ensure proper font for label
               doc.setFontSize(18);
-              doc.text(`中文: ${cn || '—'}`, xRight, baseY + 16, { align: 'right' });
+              setAutoFont(doc, '中文:', 'normal');
+              const cnLabel = '中文: ';
+              const cnLabelWidth = doc.getStringUnitWidth(cnLabel) * 18 / doc.internal.scaleFactor;
+              doc.text(cnLabel, xRight, baseY + 16, { align: 'right' });
+              setAutoFont(doc, cn || '—', 'normal');
+              doc.text(cn || '—', xRight - cnLabelWidth, baseY + 16, { align: 'right' });
 
-              setAutoFont(doc, py, 'normal');
+              // Pinyin line
               doc.setFontSize(14);
-              doc.text(`Pinyin: ${py || '—'}`, xRight, baseY + 32, { align: 'right' });
+              setAutoFont(doc, 'Pinyin:', 'normal');
+              const pyLabel = 'Pinyin: ';
+              const pyWidth = doc.getStringUnitWidth(pyLabel) * 14 / doc.internal.scaleFactor;
+              doc.text(pyLabel, xRight, baseY + 32, { align: 'right' });
+              setAutoFont(doc, py || '—', 'normal');
+              doc.text(py || '—', xRight - pyWidth, baseY + 32, { align: 'right' });
             }
 
 // divider between halves (keep)
