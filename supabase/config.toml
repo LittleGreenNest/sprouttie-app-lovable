@@ -353,3 +353,13 @@ entrypoint = "index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "index.ts"
+
+[functions.check-subscription]
+enabled = true
+verify_jwt = true
+entrypoint = "index.ts"
+
+[functions.customer-portal]
+enabled = true
+verify_jwt = true
+entrypoint = "index.ts"
