@@ -1,448 +1,561 @@
-// components/Dashboard.js
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useFlashcards } from '../context/FlashcardContext';
+import { useAuth } from '../hooks/useAuth';
 
 const Dashboard = () => {
   const { 
-    categories = [], 
     flashcards = [], 
-    sets = [], 
     history = [],
     getFlashcardStats = () => ({})
   } = useFlashcards() || {};
   
-  const [summaryStats, setSummaryStats] = useState({
+  const { currentUser } = useAuth() || {};
+  
+  const [currentTip, setCurrentTip] = useState(0);
+  const [stats, setStats] = useState({
     totalFlashcards: 0,
-    totalCategories: 0,
-    totalSets: 0,
-    totalSessions: 0,
     avgEngagement: 0,
-    recentActivity: [],
+    totalSessions: 0,
+    currentStreak: 0,
+    learnedWords: 0,
     topCategories: [],
-    topTimeOfDay: '',
-    learnedWords: 0
+    bestTime: '',
+    todayFlashes: 0,
+    weekData: []
   });
   
-  // Color choices for different UI elements
-  const categoryColors = [
-    'bg-blue-50 border-blue-100 text-blue-800',
-    'bg-green-50 border-green-100 text-green-800',
-    'bg-yellow-50 border-yellow-100 text-yellow-800',
-    'bg-purple-50 border-purple-100 text-purple-800',
-    'bg-red-50 border-red-100 text-red-800'
+  // Tips carousel
+  const tips = [
+    {
+      icon: '⏱',
+      title: 'Timing Is Key',
+      description: '1 second per card keeps it fun'
+    },
+    {
+      icon: '🎈',
+      title: 'Make It Fun',
+      description: 'Always stop before your child loses interest'
+    },
+    {
+      icon: '🌿',
+      title: 'Be Consistent',
+      description: 'Short daily sessions grow big results'
+    },
+    {
+      icon: '📦',
+      title: 'Introduce New Cards Gradually',
+      description: 'Rotate weekly for best results'
+    }
   ];
   
-  // Calculate learned words (simplified logic - in a real app you'd have more complex criteria)
-  const calculateLearnedWords = () => {
-    try {
-      // For this example, we'll count a word as "learned" if it has been shown at least 5 times
-      const stats = getFlashcardStats();
-      return Object.values(stats).filter(count => count >= 5).length;
-    } catch (error) {
-      console.error("Error calculating learned words:", error);
-      return 0;
-    }
-  };
+  // Auto-rotate tips
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTip((prev) => (prev + 1) % tips.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [tips.length]);
   
-  // Calculate top categories by usage
-  const calculateTopCategories = () => {
-    try {
-      const stats = getFlashcardStats();
+  // Calculate statistics
+  useEffect(() => {
+    const calculateStats = () => {
+      const today = new Date().toDateString();
+      const todayHistory = history.filter(h => new Date(h.date).toDateString() === today);
       
-      if (!stats || !categories || categories.length === 0) {
-        return [];
+      // Calculate streak
+      const sortedHistory = [...history].sort((a, b) => new Date(b.date) - new Date(a.date));
+      let streak = 0;
+      const now = new Date();
+      for (let i = 0; i < sortedHistory.length; i++) {
+        const dayDiff = Math.floor((now - new Date(sortedHistory[i].date)) / (1000 * 60 * 60 * 24));
+        if (dayDiff === i) streak++;
+        else break;
       }
       
-      // Group stats by category
-      const categoryUsage = {};
-      categories.forEach(category => {
-        if (category && category.id) {
-          categoryUsage[category.id] = 0;
+      // Calculate avg engagement
+      const avgEngagement = history.length > 0
+        ? history.reduce((sum, h) => sum + (h.engagement || 0), 0) / history.length
+        : 0;
+      
+      // Get learned words (flashcards shown 5+ times)
+      const flashcardStats = getFlashcardStats();
+      const learnedWords = Object.values(flashcardStats).filter(count => count >= 5).length;
+      
+      // Get best time of day
+      const timeCount = {};
+      history.forEach(h => {
+        if (h.timeOfDay) {
+          timeCount[h.timeOfDay] = (timeCount[h.timeOfDay] || 0) + 1;
         }
       });
+      const bestTime = Object.keys(timeCount).length > 0
+        ? Object.entries(timeCount).sort((a, b) => b[1] - a[1])[0][0]
+        : '';
       
-      // Add usage counts from stats
-      Object.entries(stats).forEach(([id, count]) => {
-        const category = categories.find(c => c && c.id === id);
-        if (category) {
-          categoryUsage[id] = count;
-        }
+      // Get top categories (simplified - using folder field)
+      const categoryCount = {};
+      flashcards.forEach(f => {
+        const cat = f.folder || 'default';
+        categoryCount[cat] = (categoryCount[cat] || 0) + 1;
       });
-      
-      // Sort and return top 3
-      return Object.entries(categoryUsage)
+      const topCategories = Object.entries(categoryCount)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
-        .map(([id, count]) => ({
-          id,
-          name: categories.find(c => c && c.id === id)?.name || 'Unknown',
-          count
-        }));
-    } catch (error) {
-      console.error("Error calculating top categories:", error);
-      return [];
-    }
-  };
-  
-  // Calculate most common time of day for flashcard sessions
-  const calculateTopTimeOfDay = () => {
-    try {
-      if (!history || history.length === 0) {
-        return '';
+        .map(([name, count]) => ({ name, count }));
+      
+      // Week data for chart (last 7 days)
+      const weekData = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dayHistory = history.filter(h => 
+          new Date(h.date).toDateString() === date.toDateString()
+        );
+        weekData.push({
+          day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+          engagement: dayHistory.length > 0 
+            ? dayHistory.reduce((sum, h) => sum + (h.engagement || 0), 0) / dayHistory.length 
+            : 0
+        });
       }
       
-      const timeCount = { Morning: 0, Afternoon: 0, Evening: 0, Night: 0 };
+      // Today's flashes
+      const todayFlashes = todayHistory.reduce((sum, h) => {
+        return sum + Object.values(h.setUsage || {}).reduce((s, c) => s + c, 0);
+      }, 0);
       
-      history.forEach(day => {
-        if (day && day.timeOfDay) {
-          timeCount[day.timeOfDay] = (timeCount[day.timeOfDay] || 0) + 1;
-        }
+      setStats({
+        totalFlashcards: flashcards.length,
+        avgEngagement,
+        totalSessions: history.length,
+        currentStreak: streak,
+        learnedWords,
+        topCategories,
+        bestTime,
+        todayFlashes,
+        weekData
       });
-      
-      const entries = Object.entries(timeCount).filter(([_, count]) => count > 0);
-      return entries.length > 0 ? entries.sort((a, b) => b[1] - a[1])[0]?.[0] || '' : '';
-    } catch (error) {
-      console.error("Error calculating top time of day:", error);
-      return '';
-    }
+    };
+    
+    calculateStats();
+  }, [flashcards, history, getFlashcardStats]);
+  
+  // Get user's first name
+  const firstName = currentUser?.user_metadata?.name?.split(' ')[0] || 'Friend';
+  
+  // Progress percentage for circular progress
+  const progressPercent = flashcards.length > 0 
+    ? Math.min(100, Math.round((stats.learnedWords / flashcards.length) * 100))
+    : 0;
+  
+  // Category emojis
+  const categoryEmojis = {
+    'animals': '🐻',
+    'vehicles': '🚗',
+    'home': '🏠',
+    'food': '🍎',
+    'colors': '🎨',
+    'default': '📚'
   };
   
-  // Calculate average engagement
-  const calculateAvgEngagement = () => {
-    try {
-      if (!history || history.length === 0) return 0;
-      
-      const validEntries = history.filter(day => day && typeof day.engagement === 'number');
-      if (validEntries.length === 0) return 0;
-      
-      const sum = validEntries.reduce((total, day) => total + (day.engagement || 0), 0);
-      return sum / validEntries.length;
-    } catch (error) {
-      console.error("Error calculating average engagement:", error);
-      return 0;
-    }
+  // Time of day emojis
+  const timeEmojis = {
+    'Morning': '🌅',
+    'Afternoon': '☀️',
+    'Evening': '🌆',
+    'Night': '🌙'
   };
   
-  // Calculate all stats
-  useEffect(() => {
-    try {
-      const calculateStats = () => {
-        // Sort history by date (newest first)
-        const sortedHistory = [...(history || [])].sort((a, b) => {
-          if (!a || !a.date) return 1;
-          if (!b || !b.date) return -1;
-          return new Date(b.date) - new Date(a.date);
-        });
-        
-        // Get latest 5 sessions
-        const recentActivity = sortedHistory.slice(0, 5);
-        
-        setSummaryStats({
-          totalFlashcards: flashcards?.length || 0,
-          totalCategories: categories?.length || 0,
-          totalSets: sets?.length || 0,
-          totalSessions: history?.length || 0,
-          avgEngagement: calculateAvgEngagement(),
-          recentActivity,
-          topCategories: calculateTopCategories(),
-          topTimeOfDay: calculateTopTimeOfDay(),
-          learnedWords: calculateLearnedWords()
-        });
-      };
-      
-      calculateStats();
-    } catch (error) {
-      console.error("Error calculating dashboard stats:", error);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flashcards, categories, sets, history]);
-  
-  // Emoji for different times of day
-  const getTimeEmoji = (time) => {
-    switch (time) {
-      case 'Morning': return <span role="img" aria-label="Morning">🌅</span>;
-      case 'Afternoon': return <span role="img" aria-label="Afternoon">☀️</span>;
-      case 'Evening': return <span role="img" aria-label="Evening">🌆</span>;
-      case 'Night': return <span role="img" aria-label="Night">🌙</span>;
-      default: return <span role="img" aria-label="Clock">⏰</span>;
-    }
-  };
+  // Garden visualization
+  const gardenElements = ['🌱', '🌸', '🌼', '🌳'];
+  const gardenLevel = Math.min(3, Math.floor(stats.currentStreak / 3));
   
   return (
-    <div className="space-y-6">
-      {/* Welcome / Stats Overview */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-bold text-green-800 mb-4">Dashboard</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {/* Total Flashcards */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Total Flashcards</h3>
-                <p className="text-2xl font-bold text-gray-900">{summaryStats.totalFlashcards}</p>
-              </div>
-              <div className="text-green-500 text-3xl">
-                <span role="img" aria-label="Books">📚</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Categories */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Categories</h3>
-                <p className="text-2xl font-bold text-gray-900">{summaryStats.totalCategories}</p>
-              </div>
-              <div className="text-blue-500 text-3xl">
-                <span role="img" aria-label="Tags">🏷️</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Sets */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Sets</h3>
-                <p className="text-2xl font-bold text-gray-900">{summaryStats.totalSets}</p>
-              </div>
-              <div className="text-purple-500 text-3xl">
-                <span role="img" aria-label="Folder">🗂️</span>
-              </div>
-            </div>
+    <div className="min-h-screen pb-20">
+      {/* Header Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass rounded-3xl shadow-xl p-8 mb-6 border border-white/50"
+      >
+        <div className="flex items-center gap-4 mb-6">
+          <motion.div
+            animate={{ rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+            className="text-6xl"
+          >
+            🌱
+          </motion.div>
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-sprouttie-green-dark mb-2">
+              Hi {firstName} 👋
+            </h1>
+            <p className="text-lg text-gray-600">Ready to grow today's words?</p>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Sessions */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Total Sessions</h3>
-                <p className="text-2xl font-bold text-gray-900">{summaryStats.totalSessions}</p>
-              </div>
-              <div className="text-orange-500 text-3xl">
-                <span role="img" aria-label="Calendar">📆</span>
-              </div>
-            </div>
-          </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex-1 bg-gradient-to-r from-sprouttie-green to-sprouttie-green-light text-white font-bold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all text-lg"
+          >
+            🌿 Start Flashcard Session
+          </motion.button>
           
-          {/* Average Engagement */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Avg. Engagement</h3>
-                <p className="text-2xl font-bold text-gray-900">
-                  {summaryStats.avgEngagement.toFixed(1)}/5
-                </p>
-              </div>
-              <div className="text-yellow-500 text-3xl">
-                <span role="img" aria-label={summaryStats.avgEngagement > 3.5 ? "Very Happy Face" : summaryStats.avgEngagement > 2 ? "Happy Face" : "Neutral Face"}>
-                  {summaryStats.avgEngagement > 3.5 ? '😃' : summaryStats.avgEngagement > 2 ? '😊' : '😐'}
-                </span>
-              </div>
-            </div>
-          </div>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-white text-sprouttie-green-dark font-semibold py-4 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all border-2 border-sprouttie-green"
+          >
+            + Add Flashcard
+          </motion.button>
           
-          {/* Words Learned */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Words Learned</h3>
-                <p className="text-2xl font-bold text-gray-900">{summaryStats.learnedWords}</p>
-              </div>
-              <div className="text-green-500 text-3xl">
-                <span role="img" aria-label="Brain">🧠</span>
-              </div>
-            </div>
-          </div>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-white text-sprouttie-coral-dark font-semibold py-4 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all border-2 border-sprouttie-coral"
+          >
+            📥 Bulk Upload
+          </motion.button>
         </div>
+      </motion.div>
+      
+      {/* Overview Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        {/* Words Learned - Circular Progress */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+          className="col-span-2 md:col-span-1 glass rounded-2xl p-6 shadow-lg hover-glow"
+        >
+          <div className="flex flex-col items-center">
+            <div className="relative w-32 h-32 mb-3">
+              <svg className="transform -rotate-90 w-32 h-32">
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="56"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="transparent"
+                  className="text-sprouttie-beige"
+                />
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="56"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="transparent"
+                  strokeDasharray={`${2 * Math.PI * 56}`}
+                  strokeDashoffset={`${2 * Math.PI * 56 * (1 - progressPercent / 100)}`}
+                  className="text-sprouttie-green transition-all duration-1000"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-3xl font-bold text-sprouttie-green-dark">{progressPercent}%</span>
+                <span className="text-xl animate-bounce-leaf">🌱</span>
+              </div>
+            </div>
+            <h3 className="text-sm font-medium text-gray-500">Words Learned</h3>
+            <p className="text-lg font-bold text-gray-700">{stats.learnedWords} / {stats.totalFlashcards}</p>
+          </div>
+        </motion.div>
+        
+        {/* Avg Engagement */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+          className="glass rounded-2xl p-6 shadow-lg hover-lift"
+        >
+          <div className="flex flex-col items-center text-center">
+            <div className="text-4xl mb-2">
+              {stats.avgEngagement >= 4 ? '😍' : stats.avgEngagement >= 3 ? '😊' : stats.avgEngagement >= 2 ? '🙂' : '😐'}
+            </div>
+            <h3 className="text-sm font-medium text-gray-500 mb-1">Avg Engagement</h3>
+            <p className="text-2xl font-bold text-gray-700">{stats.avgEngagement.toFixed(1)}</p>
+            <p className="text-xs text-gray-400">out of 5</p>
+          </div>
+        </motion.div>
+        
+        {/* Total Flashcards */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3 }}
+          className="glass rounded-2xl p-6 shadow-lg hover-lift"
+        >
+          <div className="flex flex-col items-center text-center">
+            <div className="text-4xl mb-2">📚</div>
+            <h3 className="text-sm font-medium text-gray-500 mb-1">Total Flashcards</h3>
+            <p className="text-2xl font-bold text-gray-700">{stats.totalFlashcards}</p>
+          </div>
+        </motion.div>
+        
+        {/* Total Sessions */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4 }}
+          className="glass rounded-2xl p-6 shadow-lg hover-lift"
+        >
+          <div className="flex flex-col items-center text-center">
+            <div className="text-4xl mb-2">📅</div>
+            <h3 className="text-sm font-medium text-gray-500 mb-1">Total Sessions</h3>
+            <p className="text-2xl font-bold text-gray-700">{stats.totalSessions}</p>
+          </div>
+        </motion.div>
+        
+        {/* Current Streak */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.5 }}
+          className="glass rounded-2xl p-6 shadow-lg hover-lift"
+        >
+          <div className="flex flex-col items-center text-center">
+            <div className="text-4xl mb-2">🔥</div>
+            <h3 className="text-sm font-medium text-gray-500 mb-1">Current Streak</h3>
+            <p className="text-2xl font-bold text-gray-700">{stats.currentStreak}</p>
+            <p className="text-xs text-gray-400">days</p>
+          </div>
+        </motion.div>
       </div>
       
-      {/* Recent Activity */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="font-medium mb-4">Recent Activity</h3>
+      {/* Insights Section */}
+      <div className="grid md:grid-cols-2 gap-6 mb-6">
+        {/* Today's Summary + Chart */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="glass rounded-2xl p-6 shadow-lg"
+        >
+          <h2 className="text-xl font-bold text-sprouttie-green-dark mb-4">Today's Summary</h2>
+          <div className="bg-sprouttie-coral-light/30 rounded-xl p-4 mb-4">
+            <p className="text-gray-700 leading-relaxed">
+              {stats.todayFlashes > 0 ? (
+                <>You've flashed <span className="font-bold text-sprouttie-green-dark">{stats.todayFlashes}</span> cards today — amazing consistency! 🌟</>
+              ) : (
+                <>Start your first session today and watch your garden grow! 🌱</>
+              )}
+            </p>
+          </div>
+          
+          <h3 className="text-sm font-semibold text-gray-600 mb-3">Weekly Engagement</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={stats.weekData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="day" stroke="#6b7280" fontSize={12} />
+              <YAxis stroke="#6b7280" fontSize={12} domain={[0, 5]} />
+              <Tooltip 
+                contentStyle={{ 
+                  background: 'rgba(255, 255, 255, 0.95)', 
+                  border: '1px solid #d1fae5',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="engagement" 
+                stroke="hsl(168, 85%, 65%)" 
+                strokeWidth={3}
+                dot={{ fill: 'hsl(168, 85%, 65%)', strokeWidth: 2, r: 5 }}
+                activeDot={{ r: 7 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </motion.div>
         
-        {!summaryStats.recentActivity || summaryStats.recentActivity.length === 0 ? (
-          <p className="text-gray-500">No activity recorded yet. Start tracking daily flashcard sessions!</p>
-        ) : (
-          <div className="space-y-4">
-            {summaryStats.recentActivity.map((activity, index) => (
-              <div key={activity?.date || index} className="border-l-4 border-green-500 pl-4 py-2">
-                <div className="flex justify-between">
-                  <div>
-                    <div className="font-medium">
-                      {activity?.date ? new Date(activity.date).toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'short', 
-                        day: 'numeric' 
-                      }) : 'Unknown Date'}
+        {/* Categories & Best Time */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="space-y-4"
+        >
+          {/* Most Used Categories */}
+          <div className="glass rounded-2xl p-6 shadow-lg">
+            <h2 className="text-xl font-bold text-sprouttie-green-dark mb-4">Most Used Categories</h2>
+            {stats.topCategories.length > 0 ? (
+              <div className="space-y-3">
+                {stats.topCategories.map((cat, idx) => (
+                  <motion.div
+                    key={cat.name}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="flex items-center justify-between bg-gradient-to-r from-sprouttie-beige to-sprouttie-mint p-3 rounded-xl"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{categoryEmojis[cat.name.toLowerCase()] || categoryEmojis.default}</span>
+                      <span className="font-semibold text-gray-700 capitalize">{cat.name}</span>
                     </div>
-                    <div className="text-sm text-gray-500 mt-1">
-                      {activity?.selectedSets?.length || 0} sets used • 
-                      {Object.values(activity?.setUsage || {}).reduce((sum, count) => sum + count, 0)} flashes
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="mr-3 text-sm">
-                      {getTimeEmoji(activity?.timeOfDay)}
-                      <span className="ml-1">{activity?.timeOfDay || 'Time not recorded'}</span>
-                    </div>
-                    <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                      (activity?.engagement || 0) >= 4 ? 'bg-green-100 text-green-800' :
-                      (activity?.engagement || 0) >= 2 ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {activity?.engagement || 0}
-                    </div>
-                  </div>
-                </div>
-                {activity?.notes && (
-                  <div className="text-sm mt-1 text-gray-600 italic">
-                    "{activity.notes}"
-                  </div>
-                )}
+                    <span className="bg-white px-3 py-1 rounded-full text-sm font-medium text-sprouttie-green-dark">
+                      {cat.count} cards
+                    </span>
+                  </motion.div>
+                ))}
               </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">No categories yet. Start adding flashcards!</p>
+            )}
+          </div>
+          
+          {/* Best Time of Day */}
+          <div className="glass rounded-2xl p-6 shadow-lg">
+            <h2 className="text-xl font-bold text-sprouttie-green-dark mb-4">Best Time of Day</h2>
+            {stats.bestTime ? (
+              <div className="flex items-center gap-4 bg-gradient-calm p-4 rounded-xl">
+                <span className="text-5xl">{timeEmojis[stats.bestTime] || '⏰'}</span>
+                <div>
+                  <p className="text-lg font-bold text-gray-700">{stats.bestTime}</p>
+                  <p className="text-sm text-gray-600">Peak engagement time ✨</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">Complete sessions to discover your best time!</p>
+            )}
+          </div>
+        </motion.div>
+      </div>
+      
+      {/* Sprouttie Tips Carousel */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass rounded-2xl p-6 shadow-lg mb-6 overflow-hidden"
+      >
+        <h2 className="text-xl font-bold text-sprouttie-green-dark mb-4">Sprouttie Tips 💡</h2>
+        <div className="relative h-32">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentTip}
+              initial={{ opacity: 0, x: 100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -100 }}
+              transition={{ duration: 0.5 }}
+              className="absolute inset-0 bg-gradient-sprouttie rounded-xl p-6 flex items-center gap-4"
+            >
+              <div className="text-5xl">{tips[currentTip].icon}</div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-white mb-1">{tips[currentTip].title}</h3>
+                <p className="text-white/90">{tips[currentTip].description}</p>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+        
+        <div className="flex justify-center gap-2 mt-4">
+          {tips.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentTip(idx)}
+              className={`w-2 h-2 rounded-full transition-all ${
+                idx === currentTip ? 'bg-sprouttie-green w-8' : 'bg-gray-300'
+              }`}
+            />
+          ))}
+        </div>
+      </motion.div>
+      
+      {/* Progress Garden */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass rounded-2xl p-6 shadow-lg mb-6"
+      >
+        <h2 className="text-xl font-bold text-sprouttie-green-dark mb-4">Your Progress Garden 🌿</h2>
+        <div className="bg-gradient-to-r from-sprouttie-mint to-sprouttie-beige rounded-xl p-6">
+          <div className="flex items-center justify-center gap-4 mb-4">
+            {Array.from({ length: 7 }).map((_, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: idx * 0.1 }}
+                className="text-4xl"
+              >
+                {idx < stats.currentStreak ? gardenElements[Math.min(gardenLevel, idx)] : '🌱'}
+              </motion.div>
             ))}
           </div>
-        )}
-      </div>
-      
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Top Categories */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="font-medium mb-4">Most Used Categories</h3>
-          
-          {!summaryStats.topCategories || summaryStats.topCategories.length === 0 ? (
-            <p className="text-gray-500">No category usage data yet.</p>
-          ) : (
-            <div className="space-y-3">
-              {summaryStats.topCategories.map((category, index) => (
-                <div key={category.id || index} className={`px-4 py-3 rounded-lg border ${categoryColors[index % categoryColors.length]}`}>
-                  <div className="flex justify-between items-center">
-                    <div className="font-medium">{category.name}</div>
-                    <div className="text-sm">Used {category.count} times</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <p className="text-center text-gray-700 font-medium">
+            {stats.currentStreak > 0 
+              ? "Your garden is blooming beautifully this week! 🌸" 
+              : "Start your streak to grow a beautiful garden! 🌱"}
+          </p>
         </div>
-        
-        {/* Best Time of Day */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="font-medium mb-4">Best Engagement Time</h3>
-          
-          {!summaryStats.topTimeOfDay ? (
-            <p className="text-gray-500">No time of day data recorded yet.</p>
-          ) : (
-            <div className="flex items-center px-4 py-3 rounded-lg border bg-blue-50 border-blue-100">
-              <div className="text-4xl mr-4">
-                {getTimeEmoji(summaryStats.topTimeOfDay)}
-              </div>
-              <div>
-                <div className="text-lg font-medium text-blue-800">
-                  {summaryStats.topTimeOfDay}
-                </div>
-                <div className="text-sm text-blue-600">
-                  This is when your child tends to be most engaged!
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      </motion.div>
       
-      {/* Quick Tips */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="font-medium mb-4">Sprouttie</h3>
+      {/* Create Flashcards Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass rounded-2xl p-6 shadow-lg mb-6"
+      >
+        <h2 className="text-xl font-bold text-sprouttie-green-dark mb-2">Create & Upload Flashcards Easily</h2>
+        <p className="text-gray-600 mb-4 text-sm">Short on time? Upload 20 new words each week to keep learning fresh.</p>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="border rounded-lg p-4 bg-yellow-50">
-            <h4 className="font-medium text-yellow-800 mb-2">Timing Is Key</h4>
-            <p className="text-sm text-yellow-700">
-              Show each card for just 1 second. Keep sessions short (no more than 5 minutes) and have multiple sessions per day.
-            </p>
-          </div>
-          
-          <div className="border rounded-lg p-4 bg-green-50">
-            <h4 className="font-medium text-green-800 mb-2">Make It Fun</h4>
-            <p className="text-sm text-green-700">
-              Always keep flashcard sessions positive and upbeat. Stop before your child loses interest.
-            </p>
-          </div>
-          
-          <div className="border rounded-lg p-4 bg-blue-50">
-            <h4 className="font-medium text-blue-800 mb-2">Be Consistent</h4>
-            <p className="text-sm text-blue-700">
-              Create a routine with regular times for flashcard sessions. Consistency helps reinforce learning.
-            </p>
-          </div>
-          
-          <div className="border rounded-lg p-4 bg-purple-50">
-            <h4 className="font-medium text-purple-800 mb-2">Introduce New Cards Gradually</h4>
-            <p className="text-sm text-purple-700">
-              Add one new card per set each day while phasing out older ones. This keeps content fresh and engaging.
-            </p>
-          </div>
-        </div>
-      </div>
-      
-      {/* Create Sample CSV Template Button */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="font-medium mb-4">Create Flashcards Easily</h3>
-        <p className="text-gray-600 mb-4">
-          Need to create multiple flashcards at once? Use our CSV import feature to add many flashcards quickly.
-        </p>
-        
-        <div className="flex flex-col md:flex-row gap-4">
-          <a 
-            href="data:text/csv;charset=utf-8,Body Parts,Clothing,Animals%0Aarm,shirt,dog%0Aleg,pants,cat%0Ahead,shoes,bird"
-            download="flashcard_template.csv"
-            className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+        <div className="grid sm:grid-cols-3 gap-4">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-white border-2 border-sprouttie-green text-sprouttie-green-dark font-semibold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all"
           >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-5 w-5 mr-2" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
-              />
-            </svg>
-            Download CSV Template
-          </a>
+            💾 Bulk Upload CSV
+          </motion.button>
           
-          <button
-            onClick={() => window.open('https://docs.google.com/spreadsheets/d/e/2PACX-1vQB8-EhHYHSoZRw1cPjhxw71lKTb4awDLTsuVY3tU8JfACyVAOOsLbU5KY2PiFBVg/pub?output=csv', '_blank')}
-            className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-white border-2 border-sprouttie-coral text-sprouttie-coral-dark font-semibold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all"
           >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-5 w-5 mr-2" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" 
-              />
-            </svg>
-            View Example Spreadsheet
+            📄 View Example
+          </motion.button>
+          
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-gray-100 border-2 border-gray-300 text-gray-500 font-semibold py-3 px-4 rounded-xl shadow-md cursor-not-allowed"
+            disabled
+          >
+            🪴 AI Generate (Soon)
+          </motion.button>
+        </div>
+      </motion.div>
+      
+      {/* Notifications Bar */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass rounded-2xl p-4 shadow-lg"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🌞</span>
+            <p className="text-gray-700 font-medium">Keep up the great work! Your consistency is amazing.</p>
+          </div>
+          <button className="text-sprouttie-green-dark hover:text-sprouttie-green font-semibold text-sm">
+            View All →
           </button>
         </div>
+      </motion.div>
+      
+      {/* Mobile Sticky Button */}
+      <div className="md:hidden fixed bottom-4 left-4 right-4 z-50">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="w-full bg-gradient-to-r from-sprouttie-green to-sprouttie-green-light text-white font-bold py-4 px-8 rounded-2xl shadow-2xl"
+        >
+          🌿 Start Session
+        </motion.button>
       </div>
     </div>
   );
