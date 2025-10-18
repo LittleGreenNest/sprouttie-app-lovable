@@ -11,7 +11,6 @@ const Profile = () => {
   const [email, setEmail] = useState(currentUser?.email || '');
   const [userPlan, setUserPlan] = useState(null);
   const [planLoading, setPlanLoading] = useState(true);
-  const [showDowngradeConfirm, setShowDowngradeConfirm] = useState(false);
   const navigate = useNavigate();
 
   // Fetch user's plan data from database
@@ -103,18 +102,26 @@ const Profile = () => {
     navigate('/plans');
   };
 
-  const handleDowngradeToFree = async () => {
-    // In a real app, this would call your backend to cancel the subscription
+  const handleManageBilling = async () => {
     try {
-      console.log('Downgrading to free plan...');
-      // For now, just update locally - you'll need to implement actual cancellation
-      setUserPlan({ ...userPlan, plan: 'free', subscription_status: 'canceled' });
-      setShowDowngradeConfirm(false);
-      alert('Your subscription has been canceled. You will remain on your current plan until the end of your billing period.');
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      
+      if (error) throw error;
+      
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Unable to open billing portal');
+      }
     } catch (error) {
-      console.error('Error downgrading plan:', error);
-      alert('Error canceling subscription. Please try again.');
+      console.error('Billing portal error:', error);
+      alert('Unable to open billing portal');
     }
+  };
+
+  const handleDowngradeToFree = async () => {
+    // User should cancel through Stripe billing portal
+    handleManageBilling();
   };
 
   // Display subscription plan details
@@ -179,9 +186,9 @@ const Profile = () => {
               </button>
               <button 
                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                onClick={() => setShowDowngradeConfirm(true)}
+                onClick={handleManageBilling}
               >
-                Cancel Subscription
+                Manage Billing
               </button>
             </div>
           </div>
@@ -204,9 +211,9 @@ const Profile = () => {
             <div className="mt-4">
               <button 
                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                onClick={() => setShowDowngradeConfirm(true)}
+                onClick={handleManageBilling}
               >
-                Cancel Subscription
+                Manage Billing
               </button>
             </div>
           </div>
@@ -348,31 +355,6 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Downgrade Confirmation Modal */}
-      {showDowngradeConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowDowngradeConfirm(false)}>
-          <div className="bg-white rounded-lg p-6 max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Cancel Subscription</h3>
-            <p className="text-sm text-gray-600 mb-6">
-              Are you sure you want to cancel your subscription? You'll continue to have access to your current plan until the end of your billing period, then you'll be moved to the Free plan.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowDowngradeConfirm(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Keep Subscription
-              </button>
-              <button
-                onClick={handleDowngradeToFree}
-                className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700"
-              >
-                Yes, Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

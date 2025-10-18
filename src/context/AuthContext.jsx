@@ -170,7 +170,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout function
+  // Logout function (alias for consistency with uploaded code)
   const logout = async () => {
     try {
       setError('');
@@ -182,6 +182,9 @@ export const AuthProvider = ({ children }) => {
       throw new Error(errorMessage);
     }
   };
+
+  // SignOut alias
+  const signOut = logout;
 
   // Helper function to get user profile data
   const getUserProfile = async () => {
@@ -213,7 +216,9 @@ export const AuthProvider = ({ children }) => {
     signup,
     login,
     signInWithGoogle,
+    googleSignIn: signInWithGoogle, // Alias for compatibility
     logout,
+    signOut, // Alias for compatibility
     getUserProfile,
     setError
   };
