@@ -3,6 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useFlashcards } from '../context/FlashcardContext';
 import { useAuth } from '../hooks/useAuth';
+import gardenStage0 from '../assets/garden-stage-0.png';
+import gardenStage1 from '../assets/garden-stage-1.png';
+import gardenStage2 from '../assets/garden-stage-2.png';
+import gardenStage3 from '../assets/garden-stage-3.png';
+import gardenStage4 from '../assets/garden-stage-4.png';
+import gardenStage5 from '../assets/garden-stage-5.png';
 
 const Dashboard = () => {
   const { 
@@ -168,9 +174,29 @@ const Dashboard = () => {
     'Night': '🌙'
   };
   
-  // Garden visualization
-  const gardenElements = ['🌱', '🌸', '🌼', '🌳'];
-  const gardenLevel = Math.min(3, Math.floor(stats.currentStreak / 3));
+  // Progress Garden Visualization with AI-generated images
+  const gardenStages = [
+    gardenStage0, gardenStage1, gardenStage2, 
+    gardenStage3, gardenStage4, gardenStage5
+  ];
+
+  const getGardenStage = () => {
+    if (stats.currentStreak === 0) return { stage: 0, image: gardenStages[0] };
+    if (stats.currentStreak <= 3) return { stage: 1, image: gardenStages[1] };
+    if (stats.currentStreak <= 7) return { stage: 2, image: gardenStages[2] };
+    if (stats.currentStreak <= 14) return { stage: 3, image: gardenStages[3] };
+    if (stats.currentStreak <= 21) return { stage: 4, image: gardenStages[4] };
+    return { stage: 5, image: gardenStages[5] };
+  };
+
+  const getGardenMessage = () => {
+    if (stats.currentStreak === 0) return "Plant your first seed today!";
+    if (stats.currentStreak <= 3) return "Your seedling is taking root!";
+    if (stats.currentStreak <= 7) return "Beautiful blooms are emerging!";
+    if (stats.currentStreak <= 14) return "Your garden is flourishing!";
+    if (stats.currentStreak <= 21) return "Gorgeous flowers in full bloom!";
+    return "A magnificent garden bursting with life!";
+  };
   
   return (
     <div className="min-h-screen pb-20">
@@ -464,33 +490,53 @@ const Dashboard = () => {
         </div>
       </motion.div>
       
-      {/* Progress Garden */}
+      {/* Progress Garden Visualization */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass rounded-2xl p-6 shadow-lg mb-6"
+        transition={{ delay: 0.6 }}
+        className="glass p-8 rounded-3xl shadow-lg mb-6"
       >
-        <h2 className="text-xl font-bold text-sprouttie-green-dark mb-4">Your Progress Garden 🌿</h2>
-        <div className="bg-gradient-to-r from-sprouttie-mint to-sprouttie-beige rounded-xl p-6">
-          <div className="flex items-center justify-center gap-4 mb-4">
-            {Array.from({ length: 7 }).map((_, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: idx * 0.1 }}
-                className="text-4xl"
-              >
-                {idx < stats.currentStreak ? gardenElements[Math.min(gardenLevel, idx)] : '🌱'}
-              </motion.div>
-            ))}
-          </div>
-          <p className="text-center text-gray-700 font-medium">
-            {stats.currentStreak > 0 
-              ? "Your garden is blooming beautifully this week! 🌸" 
-              : "Start your streak to grow a beautiful garden! 🌱"}
+        <h3 className="text-2xl font-bold text-sprouttie-green mb-6">🌿 Your Progress Garden</h3>
+        
+        <div className="flex items-center justify-center mb-6">
+          <motion.div
+            animate={{ 
+              scale: [1, 1.02, 1],
+            }}
+            transition={{ 
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="relative w-64 h-64 flex items-center justify-center"
+          >
+            <img 
+              src={getGardenStage().image} 
+              alt={`Garden growth stage ${getGardenStage().stage}`}
+              className="w-full h-full object-contain drop-shadow-lg print:max-w-full"
+            />
+          </motion.div>
+        </div>
+
+        <div className="text-center">
+          <p className="text-lg text-gray-700 mb-2 font-medium">{getGardenMessage()}</p>
+          <p className="text-sm text-gray-500">
+            {stats.currentStreak} day streak • Keep growing! 🌱
           </p>
         </div>
+
+        <div className="mt-6 bg-sprouttie-beige/30 rounded-full h-4 overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.min((stats.currentStreak / 30) * 100, 100)}%` }}
+            transition={{ duration: 1, delay: 0.7 }}
+            className="h-full bg-gradient-to-r from-sprouttie-green to-sprouttie-mint rounded-full"
+          />
+        </div>
+        <p className="text-xs text-gray-500 text-center mt-2">
+          {30 - stats.currentStreak > 0 ? `${30 - stats.currentStreak} days to master gardener!` : 'Master Gardener achieved! 🎉'}
+        </p>
       </motion.div>
       
       {/* Create Flashcards Section */}
