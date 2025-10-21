@@ -3,6 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { useFlashcards } from '../context/FlashcardContext';
 import { toast } from 'react-toastify';
+import DayHeader from './tracking/DayHeader';
+import SetAccordion from './tracking/SetAccordion';
+import StickyNoteButton from './tracking/StickyNoteButton';
+import NotesList from './tracking/NotesList';
+import UpgradeBanner from './tracking/UpgradeBanner';
+import PillToggle from './ui/PillToggle';
 
 const DailyTrackerImproved = () => {
   const { currentUser } = useAuth();
@@ -550,416 +556,304 @@ const DailyTrackerImproved = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header with Progress */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">Daily Tracking</h2>
-            <p className="text-sm text-gray-600">Glenn Doman Method - Track your 3 daily sessions</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => changeDate(-1)}
-              className="p-2 hover:bg-gray-100 rounded-full"
-            >
-              ←
-            </button>
-            <div className="text-center">
-              <div className="font-medium">{selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</div>
-              <div className="text-sm text-gray-600">{completedCount} / {dailyGoal} sessions</div>
-            </div>
-            <button
-              onClick={() => changeDate(1)}
-              className="p-2 hover:bg-gray-100 rounded-full"
-            >
-              →
-            </button>
-          </div>
-        </div>
+      {/* Upgrade Banner */}
+      <UpgradeBanner userPlan={userPlan} />
 
-        {/* Progress Bar */}
-        <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-300"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
+      {/* Day Header with Progress */}
+      <DayHeader
+        selectedDate={selectedDate}
+        onChangeDate={changeDate}
+        completedCount={completedCount}
+        totalGoal={dailyGoal}
+      />
 
-        {/* Family Member Input */}
-        <div className="mt-4">
+      {/* Family Member Input */}
+      {(userPlan === 'print' || userPlan === 'pro') && (
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+            Who's tracking today? 👨‍👩‍👧
+          </label>
           <input
             type="text"
-            placeholder="Select your name (e.g., Parent, Mother-in-law)"
+            placeholder="Enter your name (e.g., Mom, Dad, Grandma)"
             value={familyMember}
             onChange={(e) => setFamilyMember(e.target.value)}
-            disabled={userPlan !== 'print' && userPlan !== 'pro'}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="w-full border-2 border-[hsl(var(--border))] rounded-lg px-4 py-3 focus:outline-none focus:border-[hsl(var(--sprouttie-green))] transition-colors"
           />
-          {(userPlan !== 'print' && userPlan !== 'pro') && (
-            <p className="text-sm text-red-600 mt-2">
-              🔒 Upgrade to Print Plan or Pro Sprout to track sessions by family member.{' '}
-              <a href="/plans" className="underline font-semibold">Upgrade now</a>
-            </p>
-          )}
         </div>
-      </div>
+      )}
 
-      {/* Tabs */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden p-6">
-        <h3 className="text-xl font-bold mb-6">Track Sessions</h3>
+      {/* Sets Tracking */}
+      <div className="space-y-4">
+        {sets.map((set, index) => {
+          const setFlashcards = getFlashcardsForSet(set.id);
+          const isEditing = editingSetId === set.id;
+          
+          return (
+            <div key={set.id}>
+              <SetAccordion
+                set={set}
+                setIndex={index}
+                flashcards={setFlashcards}
+                sessions={sessions[set.id] || {}}
+                onToggleSession={toggleSession}
+                onManageWords={startEditingSet}
+              />
 
-        {/* Track Sessions */}
-        <div>
-          {/* Sessions List */}
-          <div className="space-y-6">
-            {sets.map((set) => {
-              const setFlashcards = getFlashcardsForSet(set.id);
-              const isEditing = editingSetId === set.id;
-              
-              return (
-                <div key={set.id} className="border rounded-lg p-5">
-                  {/* Set Header */}
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="font-bold text-lg">{set.name}</h4>
-                    <button
-                      onClick={() => isEditing ? setEditingSetId(null) : startEditingSet(set.id)}
-                      className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm font-medium transition-colors"
-                    >
-                      {isEditing ? 'Done Editing' : 'Edit Set'}
-                    </button>
-                  </div>
-                  
-                  {/* Words in Set */}
-                  <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                    <div className="text-sm font-medium text-gray-700 mb-2">Words ({setFlashcards.length}):</div>
+              {/* Edit Set Interface - shown when editing */}
+              {isEditing && (
+                <div className="mt-2 bg-blue-50 rounded-xl border-2 border-blue-200 p-4">
+                  {/* Current Words with Remove Option */}
+                  <div className="mb-4">
+                    <h5 className="font-medium text-gray-700 mb-2">
+                      Manage Words ({setFlashcards.length}/5)
+                    </h5>
+                    {setFlashcards.length >= 5 && (
+                      <p className="text-xs text-amber-600 mb-2">
+                        Set is full. Remove oldest word to add new one.
+                      </p>
+                    )}
                     <div className="flex flex-wrap gap-2">
-                      {setFlashcards.map((card) => (
-                        <div
-                          key={card.id}
-                          className="px-2 py-1 bg-white border border-gray-300 rounded text-xs"
-                        >
-                          <span className="font-medium">{card.word}</span>
-                          {card.english && (
-                            <span className="text-gray-600 ml-1">({card.english})</span>
-                          )}
-                        </div>
-                      ))}
+                      {setFlashcards.map((card) => {
+                        const currentSet = sets.find(s => s.id === editingSetId);
+                        const isOldest = currentSet?.flashcardIds[0] === card.id;
+                        const dateAdded = currentSet?.flashcardDates?.[card.id];
+                        
+                        return (
+                          <div
+                            key={card.id}
+                            className={`flex items-center gap-1.5 px-2 py-1.5 rounded text-xs border ${
+                              isOldest 
+                                ? 'bg-amber-50 border-amber-300' 
+                                : 'bg-white border-gray-300'
+                            }`}
+                          >
+                            <div className="flex-1">
+                              {isOldest && <span className="text-amber-600 font-bold mr-1">[Oldest]</span>}
+                              <span className="font-medium">{card.word}</span>
+                              {card.english && <span className="text-gray-600 ml-1">({card.english})</span>}
+                              {dateAdded && (
+                                <div className="text-[10px] text-gray-500 mt-0.5">
+                                  Added: {new Date(dateAdded).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => removeWordFromSet(card.id)}
+                              disabled={!isOldest}
+                              className={`font-bold text-sm ${
+                                isOldest ? 'text-red-600 hover:text-red-800' : 'text-gray-300 cursor-not-allowed'
+                              }`}
+                              title={isOldest ? 'Remove' : 'Only oldest can be removed'}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Edit Set Interface - shown when editing */}
-                  {isEditing && (
-                    <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      {/* Current Words with Remove Option */}
-                      <div className="mb-4">
-                        <h5 className="font-medium text-gray-700 mb-2">
-                          Manage Words ({setFlashcards.length}/5)
-                        </h5>
-                        {setFlashcards.length >= 5 && (
-                          <p className="text-xs text-amber-600 mb-2">
-                            Set is full. Remove oldest word to add new one.
-                          </p>
-                        )}
-                        <div className="flex flex-wrap gap-2">
-                          {setFlashcards.map((card) => {
-                            const currentSet = sets.find(s => s.id === editingSetId);
-                            const isOldest = currentSet?.flashcardIds[0] === card.id;
-                            const dateAdded = currentSet?.flashcardDates?.[card.id];
-                            
-                            return (
-                              <div
-                                key={card.id}
-                                className={`flex items-center gap-1.5 px-2 py-1.5 rounded text-xs border ${
-                                  isOldest 
-                                    ? 'bg-amber-50 border-amber-300' 
-                                    : 'bg-white border-gray-300'
-                                }`}
-                              >
-                                <div className="flex-1">
-                                  {isOldest && <span className="text-amber-600 font-bold mr-1">[Oldest]</span>}
-                                  <span className="font-medium">{card.word}</span>
-                                  {card.english && <span className="text-gray-600 ml-1">({card.english})</span>}
-                                  {dateAdded && (
-                                    <div className="text-[10px] text-gray-500 mt-0.5">
-                                      Added: {new Date(dateAdded).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                    </div>
-                                  )}
-                                </div>
-                                <button
-                                  onClick={() => removeWordFromSet(card.id)}
-                                  disabled={!isOldest}
-                                  className={`font-bold text-sm ${
-                                    isOldest ? 'text-red-600 hover:text-red-800' : 'text-gray-300 cursor-not-allowed'
-                                  }`}
-                                  title={isOldest ? 'Remove' : 'Only oldest can be removed'}
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Add Words Section */}
-                      {setFlashcards.length < 5 && (
-                        <div>
-                          <h5 className="font-medium text-gray-700 mb-2 text-sm">Add Word</h5>
-                          
-                          {!showCreateWord ? (
-                            <>
-                              <input
-                                type="text"
-                                placeholder="Search words..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2"
-                              />
-                              {availableWords.length === 0 ? (
-                                <div className="text-center py-4">
-                                  <p className="text-gray-500 text-xs mb-2">No available words</p>
-                                  <button
-                                    onClick={() => setShowCreateWord(true)}
-                                    className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
-                                  >
-                                    + Create New Word
-                                  </button>
-                                </div>
-                              ) : getFilteredAvailableWords().length === 0 && searchQuery.trim() ? (
-                                <div className="text-center py-4">
-                                  <p className="text-gray-500 text-xs mb-2">No matches for "{searchQuery}"</p>
-                                  <button
-                                    onClick={() => {
-                                      setShowCreateWord(true);
-                                      setNewWordData({ ...newWordData, word: searchQuery });
-                                    }}
-                                    className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
-                                  >
-                                    + Create "{searchQuery}"
-                                  </button>
-                                </div>
-                              ) : (
-                                <>
-                                  <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto mb-2">
-                                    {getFilteredAvailableWords().map((card) => (
-                                      <button
-                                        key={card.id}
-                                        onClick={() => addWordToSet(card.id)}
-                                        className="px-2 py-1.5 bg-white border border-gray-300 hover:border-green-500 rounded text-xs text-left"
-                                      >
-                                        <div className="font-medium">{card.word}</div>
-                                        {card.english && <div className="text-[10px] text-gray-600">{card.english}</div>}
-                                      </button>
-                                    ))}
-                                  </div>
-                                  {searchQuery.trim() && (
-                                    <button
-                                      onClick={() => {
-                                        setShowCreateWord(true);
-                                        setNewWordData({ ...newWordData, word: searchQuery });
-                                      }}
-                                      className="w-full px-2 py-1.5 bg-green-50 border border-green-300 hover:bg-green-100 text-green-700 rounded text-xs"
-                                    >
-                                      + Create New Word
-                                    </button>
-                                  )}
-                                </>
-                              )}
-                            </>
-                          ) : (
-                            <div className="bg-green-50 border border-green-200 rounded p-3 space-y-2">
-                              <div className="flex justify-between items-center mb-2">
-                                <h6 className="font-medium text-sm text-green-900">Create New Word</h6>
-                                <button
-                                  onClick={() => {
-                                    setShowCreateWord(false);
-                                    setShowCreateCategory(false);
-                                    setNewCategoryName('');
-                                    setNewWordData({ word: '', english: '', pinyin: '', categoryId: categories[0]?.id || '' });
-                                  }}
-                                  className="text-gray-500 hover:text-gray-700 text-sm"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                              
-                              <input
-                                type="text"
-                                placeholder="Chinese word *"
-                                value={newWordData.word}
-                                onChange={(e) => setNewWordData({ ...newWordData, word: e.target.value })}
-                                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
-                              />
-                              
-                              <input
-                                type="text"
-                                placeholder="English translation"
-                                value={newWordData.english}
-                                onChange={(e) => setNewWordData({ ...newWordData, english: e.target.value })}
-                                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
-                              />
-                              
-                              <input
-                                type="text"
-                                placeholder="Pinyin"
-                                value={newWordData.pinyin}
-                                onChange={(e) => setNewWordData({ ...newWordData, pinyin: e.target.value })}
-                                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
-                              />
-                              
-                              {!showCreateCategory ? (
-                                <>
-                                  <select
-                                    value={newWordData.categoryId}
-                                    onChange={(e) => {
-                                      if (e.target.value === 'CREATE_NEW') {
-                                        setShowCreateCategory(true);
-                                        setNewWordData({ ...newWordData, categoryId: '' });
-                                      } else {
-                                        setNewWordData({ ...newWordData, categoryId: e.target.value });
-                                      }
-                                    }}
-                                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
-                                  >
-                                    <option value="">Select Category *</option>
-                                    {categories.map(cat => (
-                                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                    ))}
-                                    <option value="CREATE_NEW" className="text-green-600 font-medium">+ Create New Category</option>
-                                  </select>
-                                </>
-                              ) : (
-                                <div className="space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <label className="text-xs font-medium text-gray-700">New Category Name *</label>
-                                    <button
-                                      onClick={() => {
-                                        setShowCreateCategory(false);
-                                        setNewCategoryName('');
-                                        setNewWordData({ ...newWordData, categoryId: categories[0]?.id || '' });
-                                      }}
-                                      className="text-xs text-gray-500 hover:text-gray-700"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                  <input
-                                    type="text"
-                                    placeholder="Enter category name (e.g., Food, Colors)"
-                                    value={newCategoryName}
-                                    onChange={(e) => setNewCategoryName(e.target.value)}
-                                    className="w-full border border-green-300 rounded px-2 py-1.5 text-sm focus:border-green-500 focus:outline-none"
-                                    autoFocus
-                                  />
-                                </div>
-                              )}
-                              
+                  {/* Add Words Section */}
+                  {setFlashcards.length < 5 && (
+                    <div>
+                      <h5 className="font-medium text-gray-700 mb-2 text-sm">Add Word</h5>
+                      
+                      {!showCreateWord ? (
+                        <>
+                          <input
+                            type="text"
+                            placeholder="Search words..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2"
+                          />
+                          {availableWords.length === 0 ? (
+                            <div className="text-center py-4">
+                              <p className="text-gray-500 text-xs mb-2">No available words</p>
                               <button
-                                onClick={createAndAddWord}
-                                className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium"
+                                onClick={() => setShowCreateWord(true)}
+                                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
                               >
-                                Create and Add to Set
+                                + Create New Word
                               </button>
                             </div>
+                          ) : getFilteredAvailableWords().length === 0 && searchQuery.trim() ? (
+                            <div className="text-center py-4">
+                              <p className="text-gray-500 text-xs mb-2">No matches for "{searchQuery}"</p>
+                              <button
+                                onClick={() => {
+                                  setShowCreateWord(true);
+                                  setNewWordData({ ...newWordData, word: searchQuery });
+                                }}
+                                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
+                              >
+                                + Create "{searchQuery}"
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto mb-2">
+                                {getFilteredAvailableWords().map((card) => (
+                                  <button
+                                    key={card.id}
+                                    onClick={() => addWordToSet(card.id)}
+                                    className="px-2 py-1.5 bg-white border border-gray-300 hover:border-green-500 rounded text-xs text-left"
+                                  >
+                                    <div className="font-medium">{card.word}</div>
+                                    {card.english && <div className="text-[10px] text-gray-600">{card.english}</div>}
+                                  </button>
+                                ))}
+                              </div>
+                              {searchQuery.trim() && (
+                                <button
+                                  onClick={() => {
+                                    setShowCreateWord(true);
+                                    setNewWordData({ ...newWordData, word: searchQuery });
+                                  }}
+                                  className="w-full px-2 py-1.5 bg-green-50 border border-green-300 hover:bg-green-100 text-green-700 rounded text-xs"
+                                >
+                                  + Create New Word
+                                </button>
+                              )}
+                            </>
                           )}
+                        </>
+                      ) : (
+                        <div className="bg-green-50 border border-green-200 rounded p-3 space-y-2">
+                          <div className="flex justify-between items-center mb-2">
+                            <h6 className="font-medium text-sm text-green-900">Create New Word</h6>
+                            <button
+                              onClick={() => {
+                                setShowCreateWord(false);
+                                setShowCreateCategory(false);
+                                setNewCategoryName('');
+                                setNewWordData({ word: '', english: '', pinyin: '', categoryId: categories[0]?.id || '' });
+                              }}
+                              className="text-gray-500 hover:text-gray-700 text-sm"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          
+                          <input
+                            type="text"
+                            placeholder="Chinese word *"
+                            value={newWordData.word}
+                            onChange={(e) => setNewWordData({ ...newWordData, word: e.target.value })}
+                            className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                          />
+                          
+                          <input
+                            type="text"
+                            placeholder="English translation"
+                            value={newWordData.english}
+                            onChange={(e) => setNewWordData({ ...newWordData, english: e.target.value })}
+                            className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                          />
+                          
+                          <input
+                            type="text"
+                            placeholder="Pinyin"
+                            value={newWordData.pinyin}
+                            onChange={(e) => setNewWordData({ ...newWordData, pinyin: e.target.value })}
+                            className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                          />
+                          
+                          {!showCreateCategory ? (
+                            <>
+                              <select
+                                value={newWordData.categoryId}
+                                onChange={(e) => {
+                                  if (e.target.value === 'CREATE_NEW') {
+                                    setShowCreateCategory(true);
+                                    setNewWordData({ ...newWordData, categoryId: '' });
+                                  } else {
+                                    setNewWordData({ ...newWordData, categoryId: e.target.value });
+                                  }
+                                }}
+                                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                              >
+                                <option value="">Select Category *</option>
+                                {categories.map(cat => (
+                                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                ))}
+                                <option value="CREATE_NEW" className="text-green-600 font-medium">+ Create New Category</option>
+                              </select>
+                            </>
+                          ) : (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <label className="text-xs font-medium text-gray-700">New Category Name *</label>
+                                <button
+                                  onClick={() => {
+                                    setShowCreateCategory(false);
+                                    setNewCategoryName('');
+                                    setNewWordData({ ...newWordData, categoryId: categories[0]?.id || '' });
+                                  }}
+                                  className="text-xs text-gray-500 hover:text-gray-700"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                              <input
+                                type="text"
+                                placeholder="Enter category name (e.g., Food, Colors)"
+                                value={newCategoryName}
+                                onChange={(e) => setNewCategoryName(e.target.value)}
+                                className="w-full border border-green-300 rounded px-2 py-1.5 text-sm focus:border-green-500 focus:outline-none"
+                                autoFocus
+                              />
+                            </div>
+                          )}
+                          
+                          <button
+                            onClick={createAndAddWord}
+                            className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium"
+                          >
+                            Create and Add to Set
+                          </button>
                         </div>
                       )}
                     </div>
                   )}
                   
-                  {/* Session Tracking */}
-                  <div className="grid grid-cols-3 gap-3">
-                    {[1, 2, 3].map((round) => {
-                      const session = sessions[set.id]?.[`round${round}`];
-                      return (
-                        <button
-                          key={round}
-                          onClick={() => toggleSession(set.id, round)}
-                          className={`p-3 rounded-lg border-2 transition-all ${
-                            session?.completed
-                              ? 'bg-green-100 border-green-500'
-                              : 'bg-white border-gray-300 hover:border-gray-400'
-                          }`}
-                        >
-                          <div className="text-center">
-                            <div className="text-sm font-medium text-gray-700 mb-1">Round {round}</div>
-                            {session?.completed ? (
-                              <>
-                                <div className="text-2xl mb-1">✓</div>
-                                <div className="text-xs text-gray-600">{session.by}</div>
-                                <div className="text-xs text-gray-500">{formatTime(session.time)}</div>
-                              </>
-                            ) : (
-                              <div className="text-gray-400 text-2xl">○</div>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <button
+                    onClick={() => setEditingSetId(null)}
+                    className="mt-3 w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
+                  >
+                    Done Editing
+                  </button>
                 </div>
-              );
-            })}
-          </div>
-
-          {/* Quick Actions */}
-          <div className="mt-6 pt-6 border-t">
-            <h4 className="font-medium text-gray-700 mb-3">Quick Actions</h4>
-            <div className="flex gap-3">
-              {[1, 2, 3].map((round) => (
-                <button
-                  key={round}
-                  onClick={() => markAllRound(round)}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
-                >
-                  Mark all Round {round}
-                </button>
-              ))}
+              )}
             </div>
-          </div>
+          );
+        })}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h4 className="font-bold text-lg text-[hsl(var(--foreground))] mb-4">
+          ⚡ Quick Actions
+        </h4>
+        <div className="flex flex-wrap gap-3">
+          {[1, 2, 3].map((round) => (
+            <button
+              key={round}
+              onClick={() => markAllRound(round)}
+              className="px-6 py-3 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] hover:shadow-lg text-white rounded-lg font-medium transition-all"
+            >
+              Mark all Round {round}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Today's Notes */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-bold mb-4">Today's Notes (Shared)</h3>
-        
-        {/* Add Note */}
-        <div className="mb-6">
-          <textarea
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            placeholder="Add observations, words recognized, special moments... Everyone can add notes here."
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 min-h-[100px] resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-          <button
-            onClick={addNote}
-            className="mt-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-          >
-            <span className="text-xl">+</span>
-            Add Note
-          </button>
-        </div>
+      {/* Notes List */}
+      <NotesList notes={notes} />
 
-        {/* Notes List */}
-        <div className="space-y-4">
-          {notes.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center py-8">No notes yet today. Add your first observation!</p>
-          ) : (
-            notes.map((note, idx) => (
-              <div key={idx} className="bg-gray-50 rounded-lg p-4">
-                <p className="text-gray-800 mb-3 leading-relaxed">{note.text}</p>
-                <div className="flex items-center gap-3 text-sm">
-                  <span className="px-3 py-1 bg-gray-700 text-white rounded font-medium">
-                    {note.by}
-                  </span>
-                  <span className="text-gray-600">{formatTime(note.time)}</span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+      {/* Sticky Note Button */}
+      <StickyNoteButton onAddNote={addNote} familyMember={familyMember} />
     </div>
   );
 };
