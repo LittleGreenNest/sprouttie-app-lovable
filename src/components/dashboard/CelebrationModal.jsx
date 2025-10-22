@@ -31,6 +31,9 @@ const CelebrationModal = ({ show, onClose, wordsFlashed = 0 }) => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
+          role="dialog"
+          aria-labelledby="celebration-title"
+          aria-describedby="celebration-description"
         >
           {/* Confetti */}
           {confettiPieces.map((piece) => (
@@ -57,6 +60,7 @@ const CelebrationModal = ({ show, onClose, wordsFlashed = 0 }) => {
               }}
               className="absolute w-3 h-3 rounded-sm"
               style={{ backgroundColor: piece.color }}
+              aria-hidden="true"
             />
           ))}
 
@@ -85,11 +89,13 @@ const CelebrationModal = ({ show, onClose, wordsFlashed = 0 }) => {
                 delay: 0.3
               }}
               className="text-7xl text-center mb-4"
+              aria-hidden="true"
             >
               ✨🌱✨
             </motion.div>
             
             <motion.h2
+              id="celebration-title"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
@@ -99,6 +105,7 @@ const CelebrationModal = ({ show, onClose, wordsFlashed = 0 }) => {
             </motion.h2>
             
             <motion.p
+              id="celebration-description"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4 }}

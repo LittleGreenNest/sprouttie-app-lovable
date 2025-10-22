@@ -8,6 +8,10 @@ import MetricsRow from './dashboard/MetricsRow';
 import TipsCarousel from './dashboard/TipsCarousel';
 import ProgressGarden from './dashboard/ProgressGarden';
 import CelebrationModal from './dashboard/CelebrationModal';
+import MilestoneModal from './gamification/MilestoneModal';
+import { checkForNewMilestone } from '../utils/milestones';
+import { getEncouragement } from '../utils/encouragements';
+import { useAccessibility, useSkipLinks } from '../hooks/useAccessibility';
 
 const Dashboard = () => {
   const { 
@@ -20,6 +24,11 @@ const Dashboard = () => {
   
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebrationWords, setCelebrationWords] = useState(0);
+  const [showMilestone, setShowMilestone] = useState(false);
+  const [currentMilestone, setCurrentMilestone] = useState(null);
+  const [achievedMilestones, setAchievedMilestones] = useState([]);
+  const [encouragement, setEncouragement] = useState(null);
+  
   const [stats, setStats] = useState({
     totalFlashcards: 0,
     avgEngagement: 0,
@@ -31,6 +40,10 @@ const Dashboard = () => {
     todayFlashes: 0,
     weekData: []
   });
+
+  // Accessibility hooks
+  const { announce } = useAccessibility();
+  useSkipLinks();
   
   // Calculate statistics
   useEffect(() => {
@@ -115,6 +128,37 @@ const Dashboard = () => {
     
     calculateStats();
   }, [flashcards, history, getFlashcardStats]);
+
+  // Load achieved milestones from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('achievedMilestones');
+    if (saved) {
+      setAchievedMilestones(JSON.parse(saved));
+    }
+  }, []);
+
+  // Check for milestones and generate encouragement
+  useEffect(() => {
+    if (stats.totalFlashcards > 0) {
+      // Check for new milestone
+      const newMilestone = checkForNewMilestone(stats, achievedMilestones);
+      if (newMilestone) {
+        setCurrentMilestone(newMilestone);
+        setShowMilestone(true);
+        
+        // Save milestone achievement
+        const updated = [...achievedMilestones, newMilestone.id];
+        setAchievedMilestones(updated);
+        localStorage.setItem('achievedMilestones', JSON.stringify(updated));
+        
+        // Announce to screen readers
+        announce(`Milestone achieved: ${newMilestone.title}`, 'assertive');
+      }
+
+      // Generate encouragement message
+      setEncouragement(getEncouragement(stats));
+    }
+  }, [stats, achievedMilestones, announce]);
   
   // Get user's first name
   const firstName = currentUser?.user_metadata?.name?.split(' ')[0] || 'Friend';
@@ -149,12 +193,19 @@ const Dashboard = () => {
   };
   
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-20" id="main-content">
       {/* Celebration Modal */}
       <CelebrationModal 
         show={showCelebration} 
         onClose={() => setShowCelebration(false)}
         wordsFlashed={celebrationWords}
+      />
+
+      {/* Milestone Modal */}
+      <MilestoneModal 
+        show={showMilestone}
+        onClose={() => setShowMilestone(false)}
+        milestone={currentMilestone}
       />
 
       {/* Header Section */}
@@ -353,29 +404,38 @@ const Dashboard = () => {
         </div>
       </motion.div>
       
-      {/* Notifications Bar */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass rounded-2xl p-4 shadow-lg"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🌞</span>
-            <p className="text-gray-700 font-medium">Keep up the great work! Your consistency is amazing.</p>
+      {/* Encouragement Bar */}
+      {encouragement && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass rounded-2xl p-4 shadow-lg"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl" aria-hidden="true">{encouragement.icon}</span>
+              <p className="text-gray-700 font-medium">{encouragement.message}</p>
+            </div>
+            <button 
+              onClick={() => setShowMilestone(true)}
+              className="text-sprouttie-green-dark hover:text-sprouttie-green font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-sprouttie-green rounded-lg px-2 py-1"
+              aria-label="View milestones and achievements"
+            >
+              View Milestones →
+            </button>
           </div>
-          <button className="text-sprouttie-green-dark hover:text-sprouttie-green font-semibold text-sm">
-            View All →
-          </button>
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
       
       {/* Mobile Sticky Button */}
       <div className="md:hidden fixed bottom-4 left-4 right-4 z-50">
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="w-full bg-gradient-to-r from-sprouttie-green to-sprouttie-green-light text-white font-bold py-4 px-8 rounded-2xl shadow-2xl"
+          className="w-full bg-gradient-to-r from-sprouttie-green to-sprouttie-green-light text-white font-bold py-4 px-8 rounded-2xl shadow-2xl focus:outline-none focus:ring-4 focus:ring-sprouttie-green/50"
+          aria-label="Start flashcard learning session"
         >
           🌿 Start Session
         </motion.button>
