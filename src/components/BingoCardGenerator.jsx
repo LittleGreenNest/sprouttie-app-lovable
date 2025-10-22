@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { useFlashcards } from '../context/FlashcardContext';
@@ -263,9 +264,37 @@ const BingoCardGenerator = () => {
 
   const filteredFlashcards = getFilteredFlashcards();
   const uniqueCategories = getUniqueCategories();
+  const selectedFlashcards = availableFlashcards.filter(card => selectedWords.has(card.id));
 
   return (
     <div className="space-y-6">
+      {/* Selection Counter Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl shadow-lg p-6"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold mb-2">🎯 Bingo Card Generator</h2>
+            <p className="text-blue-100">Create custom bingo cards from your flashcards</p>
+          </div>
+          <div className="text-right">
+            <div className="text-4xl font-bold">{selectedWords.size}/{wordsNeeded}</div>
+            <div className="text-sm text-blue-100">words selected</div>
+          </div>
+        </div>
+        
+        {/* Progress Ring */}
+        <div className="mt-4 w-full bg-blue-400/30 rounded-full h-3 overflow-hidden">
+          <motion.div
+            className="h-full bg-white rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${(selectedWords.size / wordsNeeded) * 100}%` }}
+            transition={{ duration: 0.3 }}
+          />
+        </div>
+      </motion.div>
       {/* Settings Section */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h3 className="text-xl font-bold text-gray-800 mb-4">Bingo Card Settings</h3>
@@ -375,10 +404,63 @@ const BingoCardGenerator = () => {
         </div>
       </div>
 
+      {/* Mini Preview Section */}
+      {selectedWords.size > 0 && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-md p-6 border-2 border-purple-200"
+        >
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span>👁️</span> Preview Grid ({gridSize}×{gridSize})
+          </h3>
+          
+          <div 
+            className="grid gap-2 max-w-md mx-auto"
+            style={{ 
+              gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
+            }}
+          >
+            {Array.from({ length: wordsNeeded }).map((_, idx) => {
+              const card = selectedFlashcards[idx];
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ delay: idx * 0.02 }}
+                  className={`aspect-square rounded-lg border-2 flex flex-col items-center justify-center p-2 text-center ${
+                    card 
+                      ? 'bg-white border-purple-400 shadow-sm' 
+                      : 'bg-gray-100 border-dashed border-gray-300'
+                  }`}
+                >
+                  {card ? (
+                    <>
+                      <div className="font-bold text-gray-900 text-xs truncate w-full">{card.front}</div>
+                      <div className="text-[10px] text-gray-600 truncate w-full mt-1">{card.back}</div>
+                    </>
+                  ) : (
+                    <span className="text-gray-400 text-2xl">?</span>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+          
+          {selectedWords.size < wordsNeeded && (
+            <p className="text-center mt-4 text-sm text-gray-600">
+              Select {wordsNeeded - selectedWords.size} more word{wordsNeeded - selectedWords.size !== 1 ? 's' : ''} to complete the grid
+            </p>
+          )}
+        </motion.div>
+      )}
+
       {/* Word Selection Section */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h3 className="text-xl font-bold text-gray-800 mb-4">
-          Select Words ({selectedWords.size} / {wordsNeeded} needed)
+          Select Words
         </h3>
         
         {filteredFlashcards.length === 0 ? (
@@ -388,43 +470,74 @@ const BingoCardGenerator = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredFlashcards.map(card => (
-              <label
-                key={card.id}
-                className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
-                  selectedWords.has(card.id)
-                    ? 'bg-blue-50 border-blue-500'
-                    : 'bg-white border-gray-300 hover:border-gray-400'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedWords.has(card.id)}
-                  onChange={() => toggleWordSelection(card.id)}
-                  className="w-5 h-5 text-blue-600 rounded"
-                />
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900">{card.front}</div>
-                  <div className="text-sm text-gray-600">({card.back})</div>
-                </div>
-              </label>
-            ))}
+            <AnimatePresence mode="popLayout">
+              {filteredFlashcards.map((card, idx) => (
+                <motion.label
+                  key={card.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ delay: idx * 0.02 }}
+                  className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                    selectedWords.has(card.id)
+                      ? 'bg-gradient-to-br from-blue-50 to-purple-50 border-blue-500 shadow-md scale-105'
+                      : 'bg-white border-gray-300 hover:border-gray-400 hover:shadow-sm'
+                  }`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedWords.has(card.id)}
+                    onChange={() => toggleWordSelection(card.id)}
+                    className="w-5 h-5 text-blue-600 rounded"
+                  />
+                  <div className="flex-1">
+                    <div className="font-bold text-gray-900 flex items-center gap-2">
+                      {card.front}
+                      {selectedWords.has(card.id) && (
+                        <motion.span
+                          initial={{ scale: 0, rotate: -180 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          className="text-blue-600"
+                        >
+                          ✓
+                        </motion.span>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">({card.back})</div>
+                    {selectedWords.has(card.id) && (
+                      <div className="text-xs text-blue-600 font-medium mt-1">
+                        Position: {Array.from(selectedWords).indexOf(card.id) + 1}
+                      </div>
+                    )}
+                  </div>
+                </motion.label>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </div>
 
       {/* Generate Button */}
-      <button
+      <motion.button
         onClick={generateBingoCardsPDF}
         disabled={selectedWords.size < wordsNeeded}
-        className={`w-full py-4 rounded-lg text-white font-medium text-lg transition-colors ${
+        className={`w-full py-6 rounded-xl text-white font-bold text-xl transition-all shadow-lg ${
           selectedWords.size < wordsNeeded
             ? 'bg-gray-400 cursor-not-allowed'
-            : 'bg-blue-600 hover:bg-blue-700'
+            : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
         }`}
+        whileHover={selectedWords.size >= wordsNeeded ? { scale: 1.02, y: -2 } : {}}
+        whileTap={selectedWords.size >= wordsNeeded ? { scale: 0.98 } : {}}
       >
-        📥 Generate Bingo Cards PDF
-      </button>
+        <div className="flex items-center justify-center gap-3">
+          <span className="text-3xl">📥</span>
+          <span>Generate Bingo Cards PDF</span>
+          {selectedWords.size >= wordsNeeded && <span className="text-3xl">✨</span>}
+        </div>
+      </motion.button>
     </div>
   );
 };

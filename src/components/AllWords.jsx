@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { useFlashcards } from '../context/FlashcardContext';
+import { getFlashcardStatsByCategory } from '../utils/supabaseApi';
 
 const AllWords = () => {
   const { currentUser } = useAuth();
@@ -13,6 +15,7 @@ const AllWords = () => {
   const [editingCard, setEditingCard] = useState(null);
   const [newCategory, setNewCategory] = useState('');
   const [allCategories, setAllCategories] = useState([]);
+  const [categoryStats, setCategoryStats] = useState({});
 
   useEffect(() => {
     fetchFlashcardsAndTracking();
@@ -108,6 +111,16 @@ const AllWords = () => {
       }
 
       setFlashcardsByCategory(grouped);
+      
+      // Fetch category statistics if authenticated
+      if (currentUser) {
+        try {
+          const stats = await getFlashcardStatsByCategory(currentUser.id);
+          setCategoryStats(stats);
+        } catch (statsError) {
+          console.error('Error fetching category stats:', statsError);
+        }
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       // On any error, still try to show local data
@@ -204,49 +217,140 @@ const AllWords = () => {
             <p className="mt-2">Go to "Manage Flashcards" to create your first flashcard.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {categoryNames.map(category => (
-              <div key={category} className="space-y-2">
-                {/* Category Header */}
-                <div className="bg-yellow-200 border-2 border-yellow-400 rounded p-2 text-center">
-                  <h3 className="font-bold text-gray-800 text-sm uppercase truncate" title={category}>
-                    {category}
-                  </h3>
-                  <div className="text-xs text-gray-600 mt-1">
-                    {flashcardsByCategory[category].filter(c => flashedEver.has(c.id)).length}/{flashcardsByCategory[category].length}
-                  </div>
-                </div>
-
-                {/* Flashcards in this category */}
-                <div className="space-y-1">
-                  {flashcardsByCategory[category].map(card => {
-                    const isFlashed = flashedEver.has(card.id);
-                    return (
-                      <div
-                        key={card.id}
-                        className={`p-2 rounded border-2 text-sm transition-colors relative group ${
-                          isFlashed
-                            ? 'bg-green-100 border-green-300 text-green-900'
-                            : 'bg-white border-gray-300 text-gray-800'
-                        }`}
-                        title={card.title || ''}
-                      >
-                        <div className="truncate font-medium pr-6">{card.label}</div>
-                        <button
-                          onClick={() => handleEditClick(card, category)}
-                          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded"
-                          title="Edit category"
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
-                        </button>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {categoryNames.map((category, idx) => {
+              const stats = categoryStats[category] || { total: 0, flashed: 0, progress: 0 };
+              const flashedCount = flashcardsByCategory[category].filter(c => flashedEver.has(c.id)).length;
+              const totalCount = flashcardsByCategory[category].length;
+              const progressPercent = totalCount > 0 ? Math.round((flashedCount / totalCount) * 100) : 0;
+              
+              return (
+                <motion.div
+                  key={category}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="space-y-3"
+                >
+                  {/* Enhanced Category Header with Progress */}
+                  <motion.div
+                    className="relative overflow-hidden rounded-xl shadow-md border-2 border-sprouttie-green"
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    {/* Progress Background */}
+                    <div 
+                      className="absolute inset-0 bg-gradient-to-br from-sprouttie-mint/30 to-sprouttie-green/20 transition-all duration-500"
+                      style={{ 
+                        clipPath: `inset(${100 - progressPercent}% 0 0 0)` 
+                      }}
+                    />
+                    
+                    {/* Content */}
+                    <div className="relative p-4 bg-gradient-to-br from-sprouttie-beige/90 to-white/90 backdrop-blur-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-bold text-sprouttie-green text-sm uppercase truncate flex-1" title={category}>
+                          {category}
+                        </h3>
+                        {progressPercent === 100 && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", delay: 0.2 }}
+                            className="text-xl"
+                          >
+                            🌸
+                          </motion.span>
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+                      
+                      {/* Progress Bar */}
+                      <div className="w-full bg-gray-200 rounded-full h-2 mb-2 overflow-hidden">
+                        <motion.div
+                          className="h-full bg-gradient-to-r from-sprouttie-green to-green-600 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${progressPercent}%` }}
+                          transition={{ duration: 0.8, delay: idx * 0.05 }}
+                        />
+                      </div>
+                      
+                      {/* Stats Row */}
+                      <div className="flex items-center justify-between text-xs text-gray-700">
+                        <span className="font-medium">{flashedCount}/{totalCount}</span>
+                        <span className="font-bold text-sprouttie-green">{progressPercent}%</span>
+                      </div>
+                    </div>
+                    
+                    {/* Bloom Animation Overlay */}
+                    {progressPercent === 100 && (
+                      <motion.div
+                        className="absolute inset-0 pointer-events-none"
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ 
+                          scale: [0, 1.5, 1],
+                          opacity: [0, 1, 0],
+                        }}
+                        transition={{ 
+                          duration: 1.5,
+                          repeat: Infinity,
+                          repeatDelay: 3 
+                        }}
+                      >
+                        <div className="absolute inset-0 bg-gradient-radial from-yellow-300/40 via-pink-300/30 to-transparent" />
+                      </motion.div>
+                    )}
+                  </motion.div>
+
+                  {/* Flashcards in this category */}
+                  <div className="space-y-2">
+                    <AnimatePresence mode="popLayout">
+                      {flashcardsByCategory[category].map((card, cardIdx) => {
+                        const isFlashed = flashedEver.has(card.id);
+                        return (
+                          <motion.div
+                            key={card.id}
+                            layout
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            transition={{ delay: cardIdx * 0.02 }}
+                            className={`p-3 rounded-lg border-2 text-sm transition-all relative group ${
+                              isFlashed
+                                ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-400 text-green-900 shadow-sm'
+                                : 'bg-white border-gray-300 text-gray-800 hover:border-gray-400'
+                            }`}
+                            title={card.title || ''}
+                            whileHover={{ scale: 1.02, x: 4 }}
+                          >
+                            <div className="flex items-center gap-2">
+                              {isFlashed && (
+                                <motion.span
+                                  initial={{ scale: 0, rotate: -180 }}
+                                  animate={{ scale: 1, rotate: 0 }}
+                                  className="text-green-600"
+                                >
+                                  ✓
+                                </motion.span>
+                              )}
+                              <div className="truncate font-medium flex-1 pr-6">{card.label}</div>
+                            </div>
+                            <button
+                              onClick={() => handleEditClick(card, category)}
+                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-gray-200 rounded-md"
+                              title="Edit category"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                            </button>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </div>

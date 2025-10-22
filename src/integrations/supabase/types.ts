@@ -26,7 +26,9 @@ export type Database = {
           notes: string | null
           status: string
           time_of_day: string | null
+          timezone: string | null
           user_id: string
+          user_local_date: string | null
         }
         Insert: {
           created_at?: string | null
@@ -39,7 +41,9 @@ export type Database = {
           notes?: string | null
           status: string
           time_of_day?: string | null
+          timezone?: string | null
           user_id: string
+          user_local_date?: string | null
         }
         Update: {
           created_at?: string | null
@@ -52,7 +56,9 @@ export type Database = {
           notes?: string | null
           status?: string
           time_of_day?: string | null
+          timezone?: string | null
           user_id?: string
+          user_local_date?: string | null
         }
         Relationships: []
       }
@@ -63,6 +69,9 @@ export type Database = {
           folder: string | null
           front: string
           id: string
+          last_reviewed_at: string | null
+          mastery_level: number | null
+          review_count: number | null
           updated_at: string | null
           user_id: string
         }
@@ -72,6 +81,9 @@ export type Database = {
           folder?: string | null
           front: string
           id?: string
+          last_reviewed_at?: string | null
+          mastery_level?: number | null
+          review_count?: number | null
           updated_at?: string | null
           user_id: string
         }
@@ -81,6 +93,9 @@ export type Database = {
           folder?: string | null
           front?: string
           id?: string
+          last_reviewed_at?: string | null
+          mastery_level?: number | null
+          review_count?: number | null
           updated_at?: string | null
           user_id?: string
         }
@@ -89,32 +104,44 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string | null
+          current_streak: number | null
           email: string
           id: string
+          last_activity_date: string | null
+          longest_streak: number | null
           plan: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           subscription_status: string | null
+          timezone: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          current_streak?: number | null
           email: string
           id: string
+          last_activity_date?: string | null
+          longest_streak?: number | null
           plan?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_status?: string | null
+          timezone?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          current_streak?: number | null
           email?: string
           id?: string
+          last_activity_date?: string | null
+          longest_streak?: number | null
           plan?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_status?: string | null
+          timezone?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -163,7 +190,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_streak: {
+        Args: { user_timezone?: string; user_uuid: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
