@@ -4,6 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { useFlashcards } from '../context/FlashcardContext';
 import { getFlashcardStatsByCategory } from '../utils/supabaseApi';
+import { LayoutGrid, List, ChevronDown, ChevronUp } from 'lucide-react';
+import SearchFilterBar from './all-words/SearchFilterBar';
+import GlobalProgressBar from './all-words/GlobalProgressBar';
+import CategoryCard from './all-words/CategoryCard';
+import StatsSummary from './all-words/StatsSummary';
+import { useAllWordsUIState } from '../hooks/all-words/useAllWordsUIState';
 
 const AllWords = () => {
   const { currentUser } = useAuth();
@@ -184,280 +190,193 @@ const AllWords = () => {
     }
   };
 
+  // Initialize UI state management
+  const uiState = useAllWordsUIState(flashcardsByCategory, allCategories);
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
       </div>
     );
   }
 
-  const categoryNames = Object.keys(flashcardsByCategory).sort();
+  const totalWords = Object.values(flashcardsByCategory).flat().length;
+  const flashedWords = flashedEver.size;
+  const unflashedWords = totalWords - flashedWords;
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-green-800">All Words</h2>
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-              <span>Flashed</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-white border border-gray-300 rounded"></div>
-              <span>Not Flashed</span>
-            </div>
-          </div>
+    <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800 mb-1">All Words</h1>
+          <p className="text-sm text-slate-500">Browse and manage your flashcard collection</p>
         </div>
-
-        {categoryNames.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <p className="text-lg">No flashcards yet.</p>
-            <p className="mt-2">Go to "Manage Flashcards" to create your first flashcard.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {categoryNames.map((category, idx) => {
-              const stats = categoryStats[category] || { total: 0, flashed: 0, progress: 0 };
-              const flashedCount = flashcardsByCategory[category].filter(c => flashedEver.has(c.id)).length;
-              const totalCount = flashcardsByCategory[category].length;
-              const progressPercent = totalCount > 0 ? Math.round((flashedCount / totalCount) * 100) : 0;
-              
-              return (
-                <motion.div
-                  key={category}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  className="space-y-3"
-                >
-                  {/* Enhanced Category Header with Progress */}
-                  <motion.div
-                    className="relative overflow-hidden rounded-xl shadow-md border-2 border-sprouttie-green"
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                  >
-                    {/* Progress Background */}
-                    <div 
-                      className="absolute inset-0 bg-gradient-to-br from-sprouttie-mint/30 to-sprouttie-green/20 transition-all duration-500"
-                      style={{ 
-                        clipPath: `inset(${100 - progressPercent}% 0 0 0)` 
-                      }}
-                    />
-                    
-                    {/* Content */}
-                    <div className="relative p-4 bg-gradient-to-br from-sprouttie-beige/90 to-white/90 backdrop-blur-sm">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-bold text-sprouttie-green text-sm uppercase truncate flex-1" title={category}>
-                          {category}
-                        </h3>
-                        {progressPercent === 100 && (
-                          <motion.span
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: "spring", delay: 0.2 }}
-                            className="text-xl"
-                          >
-                            🌸
-                          </motion.span>
-                        )}
-                      </div>
-                      
-                      {/* Progress Bar */}
-                      <div className="w-full bg-gray-200 rounded-full h-2 mb-2 overflow-hidden">
-                        <motion.div
-                          className="h-full bg-gradient-to-r from-sprouttie-green to-green-600 rounded-full"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${progressPercent}%` }}
-                          transition={{ duration: 0.8, delay: idx * 0.05 }}
-                        />
-                      </div>
-                      
-                      {/* Stats Row */}
-                      <div className="flex items-center justify-between text-xs text-gray-700">
-                        <span className="font-medium">{flashedCount}/{totalCount}</span>
-                        <span className="font-bold text-sprouttie-green">{progressPercent}%</span>
-                      </div>
-                    </div>
-                    
-                    {/* Bloom Animation Overlay */}
-                    {progressPercent === 100 && (
-                      <motion.div
-                        className="absolute inset-0 pointer-events-none"
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ 
-                          scale: [0, 1.5, 1],
-                          opacity: [0, 1, 0],
-                        }}
-                        transition={{ 
-                          duration: 1.5,
-                          repeat: Infinity,
-                          repeatDelay: 3 
-                        }}
-                      >
-                        <div className="absolute inset-0 bg-gradient-radial from-yellow-300/40 via-pink-300/30 to-transparent" />
-                      </motion.div>
-                    )}
-                  </motion.div>
-
-                  {/* Flashcards in this category */}
-                  <div className="space-y-2">
-                    <AnimatePresence mode="popLayout">
-                      {flashcardsByCategory[category].map((card, cardIdx) => {
-                        const isFlashed = flashedEver.has(card.id);
-                        return (
-                          <motion.div
-                            key={card.id}
-                            layout
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            transition={{ delay: cardIdx * 0.02 }}
-                            className={`p-3 rounded-lg border-2 text-sm transition-all relative group ${
-                              isFlashed
-                                ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-400 text-green-900 shadow-sm'
-                                : 'bg-white border-gray-300 text-gray-800 hover:border-gray-400'
-                            }`}
-                            title={card.title || ''}
-                            whileHover={{ scale: 1.02, x: 4 }}
-                          >
-                            <div className="flex items-center gap-2">
-                              {isFlashed && (
-                                <motion.span
-                                  initial={{ scale: 0, rotate: -180 }}
-                                  animate={{ scale: 1, rotate: 0 }}
-                                  className="text-green-600"
-                                >
-                                  ✓
-                                </motion.span>
-                              )}
-                              <div className="truncate font-medium flex-1 pr-6">{card.label}</div>
-                            </div>
-                            <button
-                              onClick={() => handleEditClick(card, category)}
-                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-gray-200 rounded-md"
-                              title="Edit category"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                              </svg>
-                            </button>
-                          </motion.div>
-                        );
-                      })}
-                    </AnimatePresence>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
+        
+        <div className="flex items-center gap-2">
+          <button
+            onClick={uiState.isCompact ? uiState.expandAll : uiState.collapseAll}
+            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all"
+          >
+            {uiState.isCompact ? <ChevronDown className="w-4 h-4 inline mr-1" /> : <ChevronUp className="w-4 h-4 inline mr-1" />}
+            {uiState.expandedCategories.size > 0 ? 'Collapse All' : 'Expand All'}
+          </button>
+          
+          <button
+            onClick={() => uiState.setIsCompact(!uiState.isCompact)}
+            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2"
+          >
+            {uiState.isCompact ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
+            {uiState.isCompact ? 'Full View' : 'Compact View'}
+          </button>
+        </div>
       </div>
 
-      {/* Summary Stats */}
-      {categoryNames.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-bold text-green-800 mb-4">Summary</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded">
-              <div className="text-3xl font-bold text-blue-600">{categoryNames.length}</div>
-              <div className="text-sm text-gray-600">Categories</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded">
-              <div className="text-3xl font-bold text-purple-600">
-                {Object.values(flashcardsByCategory).flat().length}
-              </div>
-              <div className="text-sm text-gray-600">Total Words</div>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded">
-              <div className="text-3xl font-bold text-green-600">{flashedEver.size}</div>
-              <div className="text-sm text-gray-600">Ever Flashed</div>
-            </div>
-            <div className="text-center p-4 bg-orange-50 rounded">
-              <div className="text-3xl font-bold text-orange-600">
-                {Object.values(flashcardsByCategory).flat().length - flashedEver.size}
-              </div>
-              <div className="text-sm text-gray-600">Never Flashed</div>
-            </div>
-          </div>
+      {totalWords === 0 ? (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+          <div className="text-6xl mb-4">📚</div>
+          <h3 className="text-xl font-bold text-slate-800 mb-2">No flashcards yet</h3>
+          <p className="text-slate-500 mb-6">Go to "Manage Flashcards" to create your first flashcard.</p>
         </div>
+      ) : (
+        <>
+          {/* Search, Filter, Sort Toolbar */}
+          <SearchFilterBar
+            query={uiState.query}
+            onQueryChange={uiState.setQuery}
+            selectedCategory={uiState.selectedCategory}
+            onCategoryChange={uiState.setSelectedCategory}
+            sortBy={uiState.sortBy}
+            onSortChange={uiState.setSortBy}
+            categories={allCategories}
+          />
+
+          {/* Global Progress Bar */}
+          <GlobalProgressBar flashedCount={flashedWords} totalCount={totalWords} />
+
+          {/* Category Cards */}
+          <div className="space-y-4">
+            <AnimatePresence mode="popLayout">
+              {uiState.filteredAndSortedCategories.map((category, idx) => (
+                <CategoryCard
+                  key={category}
+                  category={category}
+                  words={flashcardsByCategory[category]}
+                  flashedIds={flashedEver}
+                  isExpanded={uiState.expandedCategories.has(category)}
+                  onToggle={() => uiState.toggleCategory(category)}
+                  isCompact={uiState.isCompact}
+                  onEditCard={handleEditClick}
+                  filteredWords={uiState.getFilteredWords(flashcardsByCategory[category])}
+                  index={idx}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+
+          {/* Summary Stats */}
+          <StatsSummary
+            categoryCount={Object.keys(flashcardsByCategory).length}
+            totalWords={totalWords}
+            flashedWords={flashedWords}
+            unflashedWords={unflashedWords}
+          />
+        </>
       )}
 
       {/* Edit Category Modal */}
-      {editingCard && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Change Category</h3>
-            
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2">
-                Word: <span className="font-semibold">{editingCard.label}</span>
-              </p>
-              <p className="text-sm text-gray-600 mb-4">
-                Current: <span className="font-semibold">{editingCard.currentCategory}</span>
-              </p>
-            </div>
+      <AnimatePresence>
+        {editingCard && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setEditingCard(null);
+                setNewCategory('');
+              }
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-200"
+            >
+              <h3 className="text-xl font-bold text-slate-800 mb-4">Change Category</h3>
+              
+              <div className="mb-4 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                <p className="text-sm text-slate-600 mb-2">
+                  Word: <span className="font-semibold text-slate-800">{editingCard.label}</span>
+                </p>
+                <p className="text-sm text-slate-600">
+                  Current: <span className="font-semibold text-slate-800">{editingCard.currentCategory}</span>
+                </p>
+              </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                New Category
-              </label>
-              {dataSource === 'db' ? (
-                <div className="space-y-2">
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  New Category
+                </label>
+                {dataSource === 'db' ? (
+                  <div className="space-y-2">
+                    <select
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                    >
+                      <option value="">Select a category</option>
+                      {allCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Or type a new category name"
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    />
+                  </div>
+                ) : (
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                   >
                     <option value="">Select a category</option>
-                    {allCategories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
-                  <input
-                    type="text"
-                    placeholder="Or type a new category name"
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-              ) : (
-                <select
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="">Select a category</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-              )}
-            </div>
+                )}
+              </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={handleCategoryChange}
-                disabled={!newCategory}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Save
-              </button>
-              <button
-                onClick={() => {
-                  setEditingCard(null);
-                  setNewCategory('');
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCategoryChange}
+                  disabled={!newCategory}
+                  className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingCard(null);
+                    setNewCategory('');
+                  }}
+                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
