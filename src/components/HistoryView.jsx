@@ -11,7 +11,7 @@ import EngagementStars from './history/EngagementStars';
 const HistoryView = () => {
   const [selectedMonth, setSelectedMonth] = useState('April 2025');
   const [showTable, setShowTable] = useState(false);
-  const { history, getFlashcards } = useFlashcards();
+  const { history, getFlashcardStats } = useFlashcards();
   
   // Get stats for summary displays
   const stats = getFlashcardStats();
