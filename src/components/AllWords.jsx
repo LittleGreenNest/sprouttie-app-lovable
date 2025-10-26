@@ -206,12 +206,14 @@ const AllWords = () => {
   const unflashedWords = totalWords - flashedWords;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-800 mb-1">All Words</h1>
-          <p className="text-sm text-slate-500">Browse and manage your flashcard collection</p>
+          <p className="text-sm text-slate-500">
+            {uiState.isCompact ? 'Compact view for quick scanning' : 'Browse and manage your flashcard collection'}
+          </p>
         </div>
         
         <div className="flex items-center gap-2">
@@ -256,7 +258,7 @@ const AllWords = () => {
           <GlobalProgressBar flashedCount={flashedWords} totalCount={totalWords} />
 
           {/* Category Cards */}
-          <div className="space-y-4">
+          <div className={isCompact ? 'space-y-2' : 'space-y-4'}>
             <AnimatePresence mode="popLayout">
               {uiState.filteredAndSortedCategories.map((category, idx) => (
                 <CategoryCard
