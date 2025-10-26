@@ -8,48 +8,51 @@ const StatsSummary = ({ categoryCount, totalWords, flashedWords, unflashedWords 
       icon: <FolderOpen className="w-6 h-6" />,
       label: 'Categories',
       value: categoryCount,
-      color: 'bg-blue-50 text-blue-700 border-blue-200'
+      color: 'bg-sprouttie-mint text-foreground'
     },
     {
       icon: <BookOpen className="w-6 h-6" />,
       label: 'Total Words',
       value: totalWords,
-      color: 'bg-purple-50 text-purple-700 border-purple-200'
+      color: 'bg-sprouttie-beige text-foreground'
     },
     {
       icon: <CheckCircle2 className="w-6 h-6" />,
       label: 'Ever Flashed',
       value: flashedWords,
-      color: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      color: 'bg-sprouttie-green-light text-sprouttie-green-dark'
     },
     {
       icon: <Circle className="w-6 h-6" />,
       label: 'Never Flashed',
       value: unflashedWords,
-      color: 'bg-orange-50 text-orange-700 border-orange-200'
+      color: 'bg-sprouttie-coral-light text-sprouttie-coral-dark'
     }
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-      <h3 className="text-lg font-bold text-slate-800 mb-5">Summary</h3>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-md border-2 border-border p-8">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-2 h-8 bg-gradient-sprouttie rounded-full"></div>
+        <h3 className="text-xl font-bold text-foreground">Your Progress</h3>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         {stats.map((stat, index) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className={`${stat.color} border-2 rounded-xl p-5 text-center transition-all duration-200 hover:shadow-md`}
-            whileHover={{ scale: 1.02, y: -2 }}
+            transition={{ delay: index * 0.1, duration: 0.4 }}
+            className={`${stat.color} rounded-2xl p-6 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
+            whileHover={{ scale: 1.03 }}
           >
-            <div className="flex justify-center mb-2">
+            <div className="flex justify-center mb-3 opacity-80">
               {stat.icon}
             </div>
-            <div className="text-3xl font-bold mb-1">
+            <div className="text-3xl font-bold mb-2">
               {stat.value}
             </div>
-            <div className="text-xs font-medium uppercase tracking-wide opacity-80">
+            <div className="text-xs font-semibold uppercase tracking-wider opacity-70">
               {stat.label}
             </div>
           </motion.div>
