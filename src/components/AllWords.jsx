@@ -258,7 +258,7 @@ const AllWords = () => {
           <GlobalProgressBar flashedCount={flashedWords} totalCount={totalWords} />
 
           {/* Category Cards */}
-          <div className={isCompact ? 'space-y-2' : 'space-y-4'}>
+          <div className={uiState.isCompact ? 'space-y-2' : 'space-y-4'}>
             <AnimatePresence mode="popLayout">
               {uiState.filteredAndSortedCategories.map((category, idx) => (
                 <CategoryCard
