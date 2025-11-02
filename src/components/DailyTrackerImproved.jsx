@@ -28,6 +28,7 @@ const DailyTrackerImproved = () => {
   const [userPlan, setUserPlan] = useState(null);
   const [showCreateCategory, setShowCreateCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
 
   const dailyGoal = sets.length * 3; // Each set should be done 3 times
 
@@ -415,6 +416,7 @@ const DailyTrackerImproved = () => {
   const startEditingSet = (setId) => {
     setEditingSetId(setId);
     setSearchQuery('');
+    setSelectedCategoryFilter('all');
     setShowCreateWord(false);
     setNewWordData({ word: '', english: '', pinyin: '', categoryId: categories[0]?.id || '' });
     
@@ -525,22 +527,36 @@ const DailyTrackerImproved = () => {
   };
 
   const getFilteredAvailableWords = () => {
-    if (!searchQuery.trim()) {
-      return availableWords;
+    let filtered = availableWords;
+    
+    // Filter by category
+    if (selectedCategoryFilter !== 'all') {
+      filtered = filtered.filter(card => card.categoryId === selectedCategoryFilter);
     }
+    
+    // Filter by search
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(card => {
+        const word = (card.word || '').toLowerCase();
+        const english = (card.english || '').toLowerCase();
+        const pinyin = (card.pinyin || '').toLowerCase();
+        
+        return word.includes(query) || 
+               english.includes(query) || 
+               pinyin.includes(query);
+      });
+    }
+    
+    return filtered;
+  };
 
-    const query = searchQuery.toLowerCase();
-    return availableWords.filter(card => {
-      const word = (card.word || '').toLowerCase();
-      const english = (card.english || '').toLowerCase();
-      const pinyin = (card.pinyin || '').toLowerCase();
-      const category = getCategoryName(card.categoryId).toLowerCase();
-      
-      return word.includes(query) || 
-             english.includes(query) || 
-             pinyin.includes(query) ||
-             category.includes(query);
+  const getWordCountByCategory = () => {
+    const counts = {};
+    availableWords.forEach(card => {
+      counts[card.categoryId] = (counts[card.categoryId] || 0) + 1;
     });
+    return counts;
   };
 
   if (loading) {
@@ -686,13 +702,50 @@ const DailyTrackerImproved = () => {
                       
                       {!showCreateWord ? (
                         <>
+                          {/* Search Bar */}
                           <input
                             type="text"
                             placeholder="Search words..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2"
+                            className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-3"
                           />
+                          
+                          {/* Category Filter Pills */}
+                          {availableWords.length > 0 && (
+                            <div className="mb-3">
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  onClick={() => setSelectedCategoryFilter('all')}
+                                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                                    selectedCategoryFilter === 'all'
+                                      ? 'bg-[hsl(var(--sprouttie-green))] text-white'
+                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                  }`}
+                                >
+                                  All ({availableWords.length})
+                                </button>
+                                {categories.map(cat => {
+                                  const count = getWordCountByCategory()[cat.id] || 0;
+                                  if (count === 0) return null;
+                                  return (
+                                    <button
+                                      key={cat.id}
+                                      onClick={() => setSelectedCategoryFilter(cat.id)}
+                                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                                        selectedCategoryFilter === cat.id
+                                          ? 'bg-[hsl(var(--sprouttie-green))] text-white'
+                                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                      }`}
+                                    >
+                                      {cat.name} ({count})
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
                           {availableWords.length === 0 ? (
                             <div className="text-center py-4">
                               <p className="text-gray-500 text-xs mb-2">No available words</p>
@@ -716,19 +769,53 @@ const DailyTrackerImproved = () => {
                                 + Create "{searchQuery}"
                               </button>
                             </div>
-                          ) : (
+                           ) : (
                             <>
-                              <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto mb-2">
-                                {getFilteredAvailableWords().map((card) => (
-                                  <button
-                                    key={card.id}
-                                    onClick={() => addWordToSet(card.id)}
-                                    className="px-2 py-1.5 bg-white border border-gray-300 hover:border-green-500 rounded text-xs text-left"
-                                  >
-                                    <div className="font-medium">{card.word}</div>
-                                    {card.english && <div className="text-[10px] text-gray-600">{card.english}</div>}
-                                  </button>
-                                ))}
+                              {/* Words Grid - Organized by Category */}
+                              <div className="max-h-80 overflow-y-auto mb-2 space-y-4">
+                                {selectedCategoryFilter === 'all' ? (
+                                  // Group by category when showing all
+                                  categories.map(cat => {
+                                    const categoryWords = getFilteredAvailableWords().filter(card => card.categoryId === cat.id);
+                                    if (categoryWords.length === 0) return null;
+                                    
+                                    return (
+                                      <div key={cat.id}>
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <h6 className="text-xs font-semibold text-gray-700">{cat.name}</h6>
+                                          <div className="flex-1 h-px bg-gray-200"></div>
+                                          <span className="text-[10px] text-gray-500">{categoryWords.length}</span>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                          {categoryWords.map((card) => (
+                                            <button
+                                              key={card.id}
+                                              onClick={() => addWordToSet(card.id)}
+                                              className="px-2 py-2 bg-white border-2 border-gray-200 hover:border-[hsl(var(--sprouttie-green))] hover:shadow-md rounded-lg text-xs text-left transition-all"
+                                            >
+                                              <div className="font-semibold text-[hsl(var(--foreground))]">{card.word}</div>
+                                              {card.english && <div className="text-[10px] text-gray-600 mt-0.5">{card.english}</div>}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                ) : (
+                                  // Show single category
+                                  <div className="grid grid-cols-3 gap-2">
+                                    {getFilteredAvailableWords().map((card) => (
+                                      <button
+                                        key={card.id}
+                                        onClick={() => addWordToSet(card.id)}
+                                        className="px-2 py-2 bg-white border-2 border-gray-200 hover:border-[hsl(var(--sprouttie-green))] hover:shadow-md rounded-lg text-xs text-left transition-all"
+                                      >
+                                        <div className="font-semibold text-[hsl(var(--foreground))]">{card.word}</div>
+                                        {card.english && <div className="text-[10px] text-gray-600 mt-0.5">{card.english}</div>}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                               {searchQuery.trim() && (
                                 <button
