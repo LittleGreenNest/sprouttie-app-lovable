@@ -598,6 +598,7 @@ const DailyTrackerImproved = () => {
                 sessions={sessions[set.id] || {}}
                 onToggleSession={toggleSession}
                 onManageWords={startEditingSet}
+                flashedWords={flashedWords}
               />
 
               {/* Edit Set Interface - shown when editing */}

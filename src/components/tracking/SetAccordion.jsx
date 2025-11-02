@@ -8,7 +8,8 @@ const SetAccordion = ({
   flashcards, 
   sessions, 
   onToggleSession,
-  onManageWords 
+  onManageWords,
+  flashedWords = new Set()
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   
@@ -86,17 +87,45 @@ const SetAccordion = ({
             <div className="p-4 pt-0 border-t-2 border-[hsl(var(--border))]">
               {/* Words list */}
               <div className="mb-4 flex flex-wrap gap-2">
-                {flashcards.map((card, idx) => (
-                  <div
-                    key={card.id}
-                    className="px-3 py-1 bg-[hsl(var(--sprouttie-cream))] text-[hsl(var(--foreground))] rounded-lg text-sm border border-[hsl(var(--border))]"
-                  >
-                    <span className="font-medium">{card.word}</span>
-                    {idx === 0 && (
-                      <span className="ml-1.5 text-xs text-amber-600">🌱 oldest</span>
-                    )}
-                  </div>
-                ))}
+                {flashcards.map((card, idx) => {
+                  const isFlashed = flashedWords.has(card.id);
+                  return (
+                    <div
+                      key={card.id}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border-2 transition-all ${
+                        isFlashed 
+                          ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-400' 
+                          : 'bg-[hsl(var(--sprouttie-cream))] border-[hsl(var(--border))]'
+                      }`}
+                    >
+                      {/* Flashed indicator */}
+                      <div className="flex-shrink-0">
+                        {isFlashed ? (
+                          <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[9px] font-bold">
+                            ✓
+                          </div>
+                        ) : (
+                          <div className="w-3.5 h-3.5 rounded-full border-2 border-gray-300 bg-white" />
+                        )}
+                      </div>
+                      
+                      <span className="font-medium text-[hsl(var(--foreground))]">{card.word}</span>
+                      
+                      {idx === 0 && (
+                        <span className="text-xs text-amber-600">🌱</span>
+                      )}
+                      
+                      {/* Status pill */}
+                      <span className={`text-[9px] px-1.5 py-0.5 font-semibold rounded-full ${
+                        isFlashed 
+                          ? 'bg-emerald-500 text-white' 
+                          : 'bg-slate-200 text-slate-600'
+                      }`}>
+                        {isFlashed ? '✓' : '○'}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Round chips */}
