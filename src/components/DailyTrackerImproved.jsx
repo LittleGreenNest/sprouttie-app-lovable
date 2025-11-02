@@ -618,17 +618,31 @@ const DailyTrackerImproved = () => {
                         const currentSet = sets.find(s => s.id === editingSetId);
                         const isOldest = currentSet?.flashcardIds[0] === card.id;
                         const dateAdded = currentSet?.flashcardDates?.[card.id];
+                        const isFlashed = flashedWords.has(card.id);
                         
                         return (
                           <div
                             key={card.id}
-                            className={`flex items-center gap-1.5 px-2 py-1.5 rounded text-xs border ${
-                              isOldest 
+                            className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs border-2 ${
+                              isFlashed
+                                ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-400'
+                                : isOldest 
                                 ? 'bg-amber-50 border-amber-300' 
                                 : 'bg-white border-gray-300'
                             }`}
                           >
-                            <div className="flex-1">
+                            {/* Flashed Status Indicator */}
+                            <div className="flex-shrink-0">
+                              {isFlashed ? (
+                                <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold">
+                                  ✓
+                                </div>
+                              ) : (
+                                <div className="w-4 h-4 rounded-full border-2 border-gray-300 bg-white" />
+                              )}
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
                               {isOldest && <span className="text-amber-600 font-bold mr-1">[Oldest]</span>}
                               <span className="font-medium">{card.word}</span>
                               {card.english && <span className="text-gray-600 ml-1">({card.english})</span>}
@@ -638,10 +652,20 @@ const DailyTrackerImproved = () => {
                                 </div>
                               )}
                             </div>
+                            
+                            {/* Flashed Status Pill */}
+                            <span className={`flex-shrink-0 text-[9px] px-1.5 py-0.5 font-semibold rounded-full ${
+                              isFlashed 
+                                ? 'bg-emerald-500 text-white' 
+                                : 'bg-slate-200 text-slate-600'
+                            }`}>
+                              {isFlashed ? 'Flashed' : 'Not yet'}
+                            </span>
+                            
                             <button
                               onClick={() => removeWordFromSet(card.id)}
                               disabled={!isOldest}
-                              className={`font-bold text-sm ${
+                              className={`flex-shrink-0 font-bold text-sm ${
                                 isOldest ? 'text-red-600 hover:text-red-800' : 'text-gray-300 cursor-not-allowed'
                               }`}
                               title={isOldest ? 'Remove' : 'Only oldest can be removed'}
