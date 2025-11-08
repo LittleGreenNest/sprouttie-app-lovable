@@ -197,9 +197,10 @@ const PronunciationPortal = () => {
             </div>
             </motion.div>
           )}
+        </div>
 
-      {/* Word List */}
-      <div className="max-w-6xl mx-auto">
+        {/* Word List */}
+        <div className="max-w-6xl mx-auto">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--sprouttie-green))]" />
