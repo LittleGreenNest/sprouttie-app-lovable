@@ -124,54 +124,60 @@ const PronunciationPortal = () => {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-3xl shadow-lg p-6 mb-6"
         >
-          <div className="flex flex-col md:flex-row gap-3">
+          {/* Search Bar */}
+          <div className="relative mb-4">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search for any word..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-4 text-lg rounded-xl border-2 border-slate-200 focus:border-emerald-300 focus:outline-none transition-colors"
+            />
+          </div>
 
-          {/* Search and Filters */}
-          <div className="flex flex-col md:flex-row gap-3">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search for any word..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-emerald-300 focus:outline-none transition-colors"
-              />
-            </div>
-            
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowFullLanguagesOnly(!showFullLanguagesOnly)}
-                className={`px-4 py-3 rounded-xl border-2 transition-all ${
-                  showFullLanguagesOnly
-                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                }`}
+          {/* Filter Options */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => setShowFullLanguagesOnly(!showFullLanguagesOnly)}
+              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 transition-all font-medium ${
+                showFullLanguagesOnly
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              <span className="text-sm">
+                {showFullLanguagesOnly ? 'Complete Words Only ✓' : 'Show All Words'}
+              </span>
+            </button>
+
+            <div className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-slate-200 bg-white">
+              <Play className="w-4 h-4 text-slate-600" />
+              <span className="text-sm font-medium text-slate-600">Repeat:</span>
+              <select
+                value={loopCount}
+                onChange={(e) => setLoopCount(Number(e.target.value))}
+                className="border-none bg-transparent text-sm text-slate-700 focus:outline-none font-medium cursor-pointer"
               >
-                <Filter className="w-5 h-5" />
-              </button>
-
-              <div className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-slate-200 bg-white">
-                <Play className="w-4 h-4 text-slate-600" />
-                <select
-                  value={loopCount}
-                  onChange={(e) => setLoopCount(Number(e.target.value))}
-                  className="border-none bg-transparent text-sm text-slate-700 focus:outline-none"
-                >
-                  <option value={1}>1x</option>
-                  <option value={2}>2x</option>
-                  <option value={3}>3x</option>
-                </select>
-              </div>
+                <option value={1}>1 time</option>
+                <option value={2}>2 times</option>
+                <option value={3}>3 times</option>
+              </select>
             </div>
           </div>
 
           {showFullLanguagesOnly && (
-            <p className="text-xs text-slate-500 mt-2">
-              Showing only words with all 4 languages available
-            </p>
+            <motion.p
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="text-sm text-emerald-600 mt-3 flex items-center gap-2"
+            >
+              <span className="text-emerald-500">✓</span>
+              Showing only words with all 4 languages (English, 华语, 粤语, 福建话)
+            </motion.p>
           )}
-        </div>
+        </motion.div>
       </motion.div>
 
         {/* Upgrade Banner for Free Users */}
