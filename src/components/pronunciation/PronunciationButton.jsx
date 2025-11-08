@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Volume2, VolumeX, Loader2, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'react-toastify';
 
 const PronunciationButton = ({ 
   wordId, 
@@ -46,10 +47,10 @@ const PronunciationButton = ({
         .select('audio_url')
         .eq('word_text', wordText)
         .eq('language', language)
-        .single();
+        .maybeSingle();
 
       if (error || !data?.audio_url) {
-        console.log('No audio available for this word');
+        toast.info('No audio available for this word yet. Audio files are being added!');
         setIsPlaying(false);
         return;
       }
