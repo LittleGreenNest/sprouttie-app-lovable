@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 export const useAllWordsUIState = (flashcardsByCategory, allCategories) => {
   const [query, setQuery] = useState('');
