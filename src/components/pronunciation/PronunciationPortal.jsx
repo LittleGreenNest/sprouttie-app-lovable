@@ -178,7 +178,6 @@ const PronunciationPortal = () => {
             </motion.p>
           )}
         </motion.div>
-      </motion.div>
 
         {/* Upgrade Banner for Free Users */}
         {isPlanUpgradeNeeded && (
