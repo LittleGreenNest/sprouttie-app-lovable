@@ -195,12 +195,10 @@ const PronunciationPortal = () => {
                 Upgrade Now
               </motion.button>
             </div>
-            </motion.div>
-          )}
-        </div>
+          </motion.div>
+        )}
 
         {/* Word List */}
-        <div className="max-w-6xl mx-auto">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--sprouttie-green))]" />
@@ -209,10 +207,19 @@ const PronunciationPortal = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center py-12 bg-white rounded-3xl shadow-lg"
+            className="text-center py-16 bg-white rounded-3xl shadow-lg"
           >
-            <Volume2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600 text-lg">No words found. Add flashcards to get started!</p>
+            <Volume2 className="w-20 h-20 text-gray-300 mx-auto mb-6" />
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">No Flashcards Yet</h3>
+            <p className="text-gray-600 text-lg mb-6">Create flashcards to start practicing pronunciation!</p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => window.location.href = '/flashcards'}
+              className="px-6 py-3 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white font-semibold rounded-xl hover:shadow-lg transition-all"
+            >
+              Create Flashcards
+            </motion.button>
           </motion.div>
         ) : (
           <div className="grid gap-4">
