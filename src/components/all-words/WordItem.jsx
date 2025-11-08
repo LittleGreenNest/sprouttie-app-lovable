@@ -1,23 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Edit2 } from 'lucide-react';
 import PronunciationButton from '../pronunciation/PronunciationButton';
+import TonePracticeModal from '../pronunciation/TonePracticeModal';
 
 const WordItem = ({ card, isFlashed, onEdit, index, isCompact = false, userPlan = 'free' }) => {
+  const [showPracticeModal, setShowPracticeModal] = useState(false);
+
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ delay: index * 0.02 }}
-      className={`group relative ${isCompact ? 'rounded-lg p-2 border' : 'rounded-xl p-3 border-2'} transition-all ${
-        isFlashed
-          ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-300'
-          : 'bg-white border-slate-200 hover:border-slate-300'
-      }`}
-      whileHover={{ scale: 1.01, x: 2 }}
-    >
+    <>
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ delay: index * 0.02 }}
+        onClick={() => !isCompact && setShowPracticeModal(true)}
+        className={`group relative cursor-pointer ${isCompact ? 'rounded-lg p-2 border' : 'rounded-xl p-3 border-2'} transition-all ${
+          isFlashed
+            ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-300'
+            : 'bg-white border-slate-200 hover:border-slate-300'
+        }`}
+        whileHover={{ scale: 1.01, x: 2 }}
+      >
       <div className={`flex items-start ${isCompact ? 'gap-2' : 'gap-3'}`}>
         {/* Status indicator - hidden in compact mode */}
         {!isCompact && (
@@ -75,7 +80,10 @@ const WordItem = ({ card, isFlashed, onEdit, index, isCompact = false, userPlan 
         {/* Edit button - hidden in compact mode */}
         {!isCompact && (
           <button
-            onClick={onEdit}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(card);
+            }}
             className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-slate-100 rounded-lg"
             title="Edit category"
           >
@@ -83,7 +91,22 @@ const WordItem = ({ card, isFlashed, onEdit, index, isCompact = false, userPlan 
           </button>
         )}
       </div>
+
+      {!isCompact && (
+        <div className="mt-2 text-[10px] text-emerald-600 font-medium text-center">
+          Tap to practice tones →
+        </div>
+      )}
     </motion.div>
+
+    {showPracticeModal && (
+      <TonePracticeModal
+        word={card}
+        onClose={() => setShowPracticeModal(false)}
+        userPlan={userPlan}
+      />
+    )}
+  </>
   );
 };
 

@@ -9,6 +9,7 @@ import StickyNoteButton from './tracking/StickyNoteButton';
 import NotesList from './tracking/NotesList';
 import UpgradeBanner from './tracking/UpgradeBanner';
 import PillToggle from './ui/PillToggle';
+import PronunciationButton from './pronunciation/PronunciationButton';
 
 const DailyTrackerImproved = () => {
   const { currentUser } = useAuth();
@@ -659,15 +660,25 @@ const DailyTrackerImproved = () => {
                               )}
                             </div>
                             
-                            <div className="flex-1 min-w-0">
-                              {isOldest && <span className="text-amber-600 font-bold mr-1">[Oldest]</span>}
-                              <span className="font-medium">{card.word}</span>
-                              {card.english && <span className="text-gray-600 ml-1">({card.english})</span>}
-                              {dateAdded && (
-                                <div className="text-[10px] text-gray-500 mt-0.5">
-                                  Added: {new Date(dateAdded).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                </div>
-                              )}
+                            <div className="flex-1 min-w-0 flex items-center gap-2">
+                              <div>
+                                {isOldest && <span className="text-amber-600 font-bold mr-1">[Oldest]</span>}
+                                <span className="font-medium">{card.word}</span>
+                                {card.english && <span className="text-gray-600 ml-1">({card.english})</span>}
+                                {dateAdded && (
+                                  <div className="text-[10px] text-gray-500 mt-0.5">
+                                    Added: {new Date(dateAdded).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </div>
+                                )}
+                              </div>
+                              <PronunciationButton
+                                wordId={card.id}
+                                wordText={card.word}
+                                language="en"
+                                userPlan={userPlan || 'free'}
+                                size="xs"
+                                showLabel={false}
+                              />
                             </div>
                             
                             {/* Flashed Status Pill */}

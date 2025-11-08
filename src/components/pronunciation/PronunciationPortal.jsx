@@ -104,19 +104,27 @@ const PronunciationPortal = () => {
   const isPlanUpgradeNeeded = userPlan === 'free';
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
-              <Volume2 className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800">🎧 Pronunciation Portal</h1>
-              <p className="text-sm text-slate-600">Hear and compare words across languages</p>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(168,60%,95%)] via-[hsl(45,60%,97%)] to-[hsl(40,40%,92%)] p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-8"
+        >
+          <div className="inline-block p-4 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] rounded-3xl mb-4">
+            <h1 className="text-4xl font-bold text-white mb-2">🎧 Practice Studio</h1>
           </div>
+          <p className="text-lg text-gray-700 font-medium">Master tones in 4 languages • Record • Get AI feedback</p>
+        </motion.div>
+
+        {/* Search and Filters Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-3xl shadow-lg p-6 mb-6"
+        >
+          <div className="flex flex-col md:flex-row gap-3">
 
           {/* Search and Filters */}
           <div className="flex flex-col md:flex-row gap-3">
@@ -166,42 +174,58 @@ const PronunciationPortal = () => {
         </div>
       </div>
 
-      {/* Upgrade Banner for Free Users */}
-      {isPlanUpgradeNeeded && (
-        <div className="bg-gradient-to-r from-amber-50 to-amber-100 border-b border-amber-200">
-          <div className="max-w-6xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Lock className="w-5 h-5 text-amber-600" />
-                <div>
-                  <p className="font-semibold text-amber-900">Unlock Full Pronunciation Library</p>
-                  <p className="text-sm text-amber-700">Hear Mandarin, Cantonese, and Hokkien instantly</p>
-                </div>
+        {/* Upgrade Banner for Free Users */}
+        {isPlanUpgradeNeeded && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-[hsl(var(--sprouttie-green))] via-[hsl(var(--sprouttie-coral))] to-[hsl(var(--sprouttie-green-dark))] rounded-3xl p-8 mb-6 shadow-2xl"
+          >
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="text-center md:text-left">
+                <h3 className="text-2xl font-bold text-white mb-2">🌟 Master All 4 Languages</h3>
+                <p className="text-white/95 text-lg">Unlock Mandarin, Cantonese & Hokkien • Get AI tone feedback</p>
               </div>
-              <button className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
-                View Plans
-              </button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => window.location.href = '/plans'}
+                className="px-8 py-4 bg-white text-[hsl(var(--sprouttie-green-dark))] font-bold rounded-2xl hover:shadow-xl transition-all text-lg"
+              >
+                Upgrade Now
+              </motion.button>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </motion.div>
 
       {/* Word List */}
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+            <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--sprouttie-green))]" />
           </div>
         ) : filteredWords.length === 0 ? (
-          <div className="text-center py-12">
-            <Volume2 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-600">No words found. Add flashcards to get started!</p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-12 bg-white rounded-3xl shadow-lg"
+          >
+            <Volume2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-600 text-lg">No words found. Add flashcards to get started!</p>
+          </motion.div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid gap-4">
             <AnimatePresence>
               {filteredWords.map((word, index) => {
                 const wordPronunciations = pronunciations[word.front] || {};
+                
+                const languagesWithColors = [
+                  { code: 'en', label: 'English', emoji: '🇬🇧', color: 'from-blue-500 to-blue-600' },
+                  { code: 'zh', label: '华语', emoji: '🇨🇳', color: 'from-red-500 to-red-600' },
+                  { code: 'yue', label: '粤语', emoji: '🇭🇰', color: 'from-yellow-500 to-yellow-600' },
+                  { code: 'nan', label: '福建话', emoji: '🌏', color: 'from-green-500 to-green-600' }
+                ];
                 
                 return (
                   <motion.div
@@ -210,31 +234,33 @@ const PronunciationPortal = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ delay: index * 0.02 }}
-                    className="bg-white rounded-xl border-2 border-slate-200 p-4 hover:border-emerald-200 hover:shadow-md transition-all"
+                    className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all border-2 border-transparent hover:border-[hsl(var(--sprouttie-green))]"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-slate-800 text-lg">{word.front}</h3>
+                        <h3 className="font-bold text-gray-800 text-2xl mb-1">{word.front}</h3>
                         {word.folder && (
-                          <span className="text-xs text-slate-500 mt-1 inline-block px-2 py-0.5 bg-slate-100 rounded">
+                          <span className="text-sm text-gray-600 inline-block px-3 py-1 bg-[hsl(var(--sprouttie-beige))] rounded-full">
                             {word.folder}
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        {languages.map(lang => (
-                          <div key={lang.code} className="flex flex-col items-center gap-1">
-                            <span className="text-xs text-slate-500">{lang.emoji}</span>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full md:w-auto">
+                        {languagesWithColors.map(lang => (
+                          <div key={lang.code} className="flex flex-col items-center gap-2 p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl">
+                            <span className="text-2xl">{lang.emoji}</span>
                             <PronunciationButton
                               wordId={word.id}
                               wordText={word.front}
                               language={lang.code}
                               userPlan={userPlan}
                               size="md"
+                              showLabel={false}
                             />
+                            <span className="text-xs font-medium text-gray-600">{lang.label}</span>
                             {wordPronunciations[lang.code]?.phonetic && (
-                              <span className="text-[10px] text-slate-400 max-w-[60px] truncate">
+                              <span className="text-[10px] text-gray-400 text-center">
                                 {wordPronunciations[lang.code].phonetic}
                               </span>
                             )}
