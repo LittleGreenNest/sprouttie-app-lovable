@@ -172,7 +172,7 @@ const PronunciationPortal = () => {
             </p>
           )}
         </div>
-      </div>
+      </motion.div>
 
         {/* Upgrade Banner for Free Users */}
         {isPlanUpgradeNeeded && (
@@ -195,9 +195,8 @@ const PronunciationPortal = () => {
                 Upgrade Now
               </motion.button>
             </div>
-          </motion.div>
-        )}
-      </motion.div>
+            </motion.div>
+          )}
 
       {/* Word List */}
       <div className="max-w-6xl mx-auto">
