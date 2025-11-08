@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Volume2, Lock, Loader2, Filter, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import PronunciationButton from './PronunciationButton';
+import PronunciationCSVImport from './PronunciationCSVImport';
 
 const PronunciationPortal = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -178,6 +179,9 @@ const PronunciationPortal = () => {
             </motion.p>
           )}
         </motion.div>
+
+        {/* CSV Import Section */}
+        <PronunciationCSVImport />
 
         {/* Upgrade Banner for Free Users */}
         {isPlanUpgradeNeeded && (
