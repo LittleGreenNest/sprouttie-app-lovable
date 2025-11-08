@@ -24,6 +24,9 @@ const AllWords = () => {
   const [categoryStats, setCategoryStats] = useState({});
   const [userPlan, setUserPlan] = useState('free');
 
+  // Initialize UI state management (must be before any conditional returns)
+  const uiState = useAllWordsUIState(flashcardsByCategory, allCategories);
+
   useEffect(() => {
     fetchFlashcardsAndTracking();
     if (currentUser) {
@@ -215,9 +218,6 @@ const AllWords = () => {
     }
   };
 
-  // Initialize UI state management
-  const uiState = useAllWordsUIState(flashcardsByCategory, allCategories);
-  
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
