@@ -22,10 +22,35 @@ const AllWords = () => {
   const [newCategory, setNewCategory] = useState('');
   const [allCategories, setAllCategories] = useState([]);
   const [categoryStats, setCategoryStats] = useState({});
+  const [userPlan, setUserPlan] = useState('free');
 
   useEffect(() => {
     fetchFlashcardsAndTracking();
+    if (currentUser) {
+      fetchUserPlan();
+    }
   }, [currentUser, localFlashcards, categories]);
+
+  const fetchUserPlan = async () => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('plan')
+        .eq('id', currentUser.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user plan:', error);
+        return;
+      }
+
+      if (profile?.plan) {
+        setUserPlan(profile.plan);
+      }
+    } catch (error) {
+      console.error('Error in fetchUserPlan:', error);
+    }
+  };
 
   const fetchFlashcardsAndTracking = async () => {
     setLoading(true);
@@ -272,6 +297,7 @@ const AllWords = () => {
                   onEditCard={handleEditClick}
                   filteredWords={uiState.getFilteredWords(flashcardsByCategory[category])}
                   index={idx}
+                  userPlan={userPlan}
                 />
               ))}
             </AnimatePresence>

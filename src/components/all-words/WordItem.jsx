@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Edit2 } from 'lucide-react';
+import PronunciationButton from '../pronunciation/PronunciationButton';
 
-const WordItem = ({ card, isFlashed, onEdit, index, isCompact = false }) => {
+const WordItem = ({ card, isFlashed, onEdit, index, isCompact = false, userPlan = 'free' }) => {
   return (
     <motion.div
       layout
@@ -46,6 +47,19 @@ const WordItem = ({ card, isFlashed, onEdit, index, isCompact = false }) => {
             </div>
           )}
         </div>
+
+        {/* Pronunciation button - hidden in compact mode */}
+        {!isCompact && (
+          <div className="flex-shrink-0">
+            <PronunciationButton
+              wordId={card.id}
+              wordText={card.label}
+              language="en"
+              userPlan={userPlan}
+              size="sm"
+            />
+          </div>
+        )}
 
         {/* Status pill - more compact in compact mode */}
         <div className={`flex-shrink-0 ${isCompact ? 'ml-auto' : ''}`}>

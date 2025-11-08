@@ -6,13 +6,14 @@ import WordItem from './WordItem';
 const CategoryCard = ({ 
   category, 
   words, 
-  flashedIds,
+  flashedIds, 
   isExpanded, 
   onToggle,
   isCompact,
   onEditCard,
   filteredWords,
-  index 
+  index,
+  userPlan = 'free'
 }) => {
   const flashedCount = words.filter(w => flashedIds.has(w.id)).length;
   const totalCount = words.length;
@@ -104,6 +105,7 @@ const CategoryCard = ({
                     onEdit={() => onEditCard(card, category)}
                     index={idx}
                     isCompact={isCompact}
+                    userPlan={userPlan}
                   />
                 ))}
               </AnimatePresence>

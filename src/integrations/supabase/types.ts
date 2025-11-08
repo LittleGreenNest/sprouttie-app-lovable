@@ -146,6 +146,53 @@ export type Database = {
         }
         Relationships: []
       }
+      pronunciations: {
+        Row: {
+          audio_url: string | null
+          created_at: string
+          example_sentence: string | null
+          id: string
+          is_free: boolean
+          language: string
+          phonetic: string | null
+          updated_at: string
+          word_id: string | null
+          word_text: string
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string
+          example_sentence?: string | null
+          id?: string
+          is_free?: boolean
+          language: string
+          phonetic?: string | null
+          updated_at?: string
+          word_id?: string | null
+          word_text: string
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string
+          example_sentence?: string | null
+          id?: string
+          is_free?: boolean
+          language?: string
+          phonetic?: string | null
+          updated_at?: string
+          word_id?: string | null
+          word_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pronunciations_word_id_fkey"
+            columns: ["word_id"]
+            isOneToOne: false
+            referencedRelation: "flashcards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       waitlist: {
         Row: {
           consent: boolean | null

@@ -31,6 +31,7 @@ import AllWords from './components/AllWords';
 import BingoCardGenerator from './components/BingoCardGenerator';
 import Plans from './components/subscription/Plans';
 import PrintFlashcards from './components/PrintFlashcards';
+import PronunciationPortal from './components/pronunciation/PronunciationPortal';
 
 // Supabase
 import { supabase } from '@/integrations/supabase/client';
@@ -64,6 +65,7 @@ const AppContent = () => {
     if (path.includes('/dashboard')) setActiveTab('dashboard');
     else if (path.includes('/daily-tracking')) setActiveTab('daily-tracking');
     else if (path.includes('/all-words')) setActiveTab('all-words');
+    else if (path.includes('/pronunciation')) setActiveTab('pronunciation');
     else if (path.includes('/bingo-generator')) setActiveTab('bingo-generator');
     else if (path.includes('/manage-flashcards')) setActiveTab('manage-flashcards');
     else if (path.includes('/history')) setActiveTab('history');
@@ -126,6 +128,12 @@ const AppContent = () => {
           All Words
         </button>
         <button 
+          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'pronunciation' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
+          onClick={() => handleTabChange('pronunciation')}
+        >
+          🎧 Pronunciation
+        </button>
+        <button 
           className={`px-4 py-2 whitespace-nowrap ${activeTab === 'bingo-generator' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
           onClick={() => handleTabChange('bingo-generator')}
         >
@@ -155,6 +163,7 @@ const AppContent = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/daily-tracking" element={<DailyTrackerImproved />} />
           <Route path="/all-words" element={<AllWords />} />
+          <Route path="/pronunciation" element={<PronunciationPortal />} />
           <Route path="/bingo-generator" element={<BingoCardGenerator />} />
           <Route path="/manage-flashcards" element={<FlashcardManager />} />
           <Route path="/history" element={<HistoryView />} />
