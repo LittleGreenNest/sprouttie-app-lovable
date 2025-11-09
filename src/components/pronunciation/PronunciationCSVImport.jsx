@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Download, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, Download, CheckCircle, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-toastify';
@@ -10,6 +10,8 @@ const PronunciationCSVImport = () => {
   const [preview, setPreview] = useState([]);
   const [showPreview, setShowPreview] = useState(false);
   const [importResults, setImportResults] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
 
   const downloadTemplate = () => {
     const template = `word_text,language,audio_url,phonetic,example_sentence
@@ -126,6 +128,63 @@ const PronunciationCSVImport = () => {
     }
   };
 
+  const handleAutoGenerate = async () => {
+    try {
+      setIsGenerating(true);
+      
+      // Get all words without audio
+      const { data: wordsWithoutAudio, error: fetchError } = await supabase
+        .from('pronunciations')
+        .select('word_text, language')
+        .is('audio_url', null)
+        .limit(100); // Limit to avoid overwhelming the API
+
+      if (fetchError) throw fetchError;
+
+      if (!wordsWithoutAudio || wordsWithoutAudio.length === 0) {
+        toast.info('All words already have audio recordings!');
+        setIsGenerating(false);
+        return;
+      }
+
+      setGenerationProgress({ current: 0, total: wordsWithoutAudio.length });
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (let i = 0; i < wordsWithoutAudio.length; i++) {
+        const { word_text, language } = wordsWithoutAudio[i];
+        
+        try {
+          const { data, error } = await supabase.functions.invoke('generate-pronunciation', {
+            body: { word_text, language }
+          });
+
+          if (error) throw error;
+          
+          if (data?.success) {
+            successCount++;
+          } else {
+            errorCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to generate audio for ${word_text}:`, err);
+          errorCount++;
+        }
+
+        setGenerationProgress({ current: i + 1, total: wordsWithoutAudio.length });
+      }
+
+      toast.success(`Generated ${successCount} audio files! ${errorCount > 0 ? `${errorCount} failed.` : ''}`);
+      
+    } catch (error) {
+      console.error('Auto-generation error:', error);
+      toast.error('Failed to auto-generate pronunciations');
+    } finally {
+      setIsGenerating(false);
+      setGenerationProgress({ current: 0, total: 0 });
+    }
+  };
+
   return (
     <div className="bg-white rounded-3xl shadow-lg p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
@@ -133,13 +192,32 @@ const PronunciationCSVImport = () => {
           <h2 className="text-2xl font-bold text-gray-800 mb-2">📁 Bulk Import Pronunciations</h2>
           <p className="text-gray-600">Upload a CSV file to add multiple pronunciation audio URLs at once</p>
         </div>
-        <button
-          onClick={downloadTemplate}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl hover:shadow-lg transition-all"
-        >
-          <Download className="w-4 h-4" />
-          Download Template
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={downloadTemplate}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl hover:shadow-lg transition-all"
+          >
+            <Download className="w-4 h-4" />
+            Download Template
+          </button>
+          <button
+            onClick={handleAutoGenerate}
+            disabled={isGenerating}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Generating {generationProgress.current}/{generationProgress.total}
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Auto-Generate Audio
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Upload Section */}
