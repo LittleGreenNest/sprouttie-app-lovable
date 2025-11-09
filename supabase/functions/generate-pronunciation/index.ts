@@ -114,7 +114,11 @@ serve(async (req) => {
       // Update existing record
       const { error: updateError } = await supabase
         .from('pronunciations')
-        .update({ audio_url: publicUrl, updated_at: new Date().toISOString() })
+        .update({ 
+          audio_url: publicUrl, 
+          updated_at: new Date().toISOString(),
+          is_ai_generated: true 
+        })
         .eq('id', existing.id);
 
       if (updateError) {
@@ -129,7 +133,8 @@ serve(async (req) => {
           word_text,
           language,
           audio_url: publicUrl,
-          is_free: language === 'en' // English is free by default
+          is_free: language === 'en', // English is free by default
+          is_ai_generated: true
         });
 
       if (insertError) {

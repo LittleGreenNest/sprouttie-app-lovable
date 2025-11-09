@@ -152,6 +152,7 @@ export type Database = {
           created_at: string
           example_sentence: string | null
           id: string
+          is_ai_generated: boolean
           is_free: boolean
           language: string
           phonetic: string | null
@@ -164,6 +165,7 @@ export type Database = {
           created_at?: string
           example_sentence?: string | null
           id?: string
+          is_ai_generated?: boolean
           is_free?: boolean
           language: string
           phonetic?: string | null
@@ -176,6 +178,7 @@ export type Database = {
           created_at?: string
           example_sentence?: string | null
           id?: string
+          is_ai_generated?: boolean
           is_free?: boolean
           language?: string
           phonetic?: string | null

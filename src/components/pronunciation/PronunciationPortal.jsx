@@ -68,7 +68,7 @@ const PronunciationPortal = () => {
       // Fetch all pronunciations
       const { data: pronunciationsData, error: pronunciationsError } = await supabase
         .from('pronunciations')
-        .select('word_text, language, audio_url, phonetic');
+        .select('word_text, language, audio_url, phonetic, is_ai_generated');
 
       if (pronunciationsError) throw pronunciationsError;
 
@@ -273,6 +273,7 @@ const PronunciationPortal = () => {
                               userPlan={userPlan}
                               size="md"
                               showLabel={false}
+                              isAiGenerated={wordPronunciations[lang.code]?.is_ai_generated || false}
                             />
                             <span className="text-xs font-medium text-gray-600">{lang.label}</span>
                             {wordPronunciations[lang.code]?.phonetic && (
