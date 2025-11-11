@@ -9,6 +9,7 @@ import TipsCarousel from './dashboard/TipsCarousel';
 import ProgressGarden from './dashboard/ProgressGarden';
 import CelebrationModal from './dashboard/CelebrationModal';
 import MilestoneModal from './gamification/MilestoneModal';
+import FlashedWordsGrid from './tracking/FlashedWordsGrid';
 import { checkForNewMilestone } from '../utils/milestones';
 import { getEncouragement } from '../utils/encouragements';
 import { useAccessibility, useSkipLinks } from '../hooks/useAccessibility';
@@ -366,6 +367,9 @@ const Dashboard = () => {
       
       {/* Progress Garden Visualization */}
       <ProgressGarden stats={stats} />
+      
+      {/* Flashed Words Progress Grid */}
+      <FlashedWordsGrid />
       
       {/* Create & Upload Flashcards Panel */}
       <motion.div
