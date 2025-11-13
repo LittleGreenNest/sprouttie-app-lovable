@@ -3,17 +3,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { useFlashcards } from '../context/FlashcardContext';
 import { toast } from 'react-toastify';
-import DayHeader from './tracking/DayHeader';
-import SetAccordion from './tracking/SetAccordion';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import PackCard from './tracking/PackCard';
 import StickyNoteButton from './tracking/StickyNoteButton';
 import NotesList from './tracking/NotesList';
-import UpgradeBanner from './tracking/UpgradeBanner';
 import PillToggle from './ui/PillToggle';
 import PronunciationButton from './pronunciation/PronunciationButton';
 
 const DailyTrackerImproved = () => {
   const { currentUser } = useAuth();
   const { sets, flashcards, getFlashcardsForSet, categories, updateSetFlashcards, addFlashcard, addCategory } = useFlashcards();
+  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [sessions, setSessions] = useState({}); // { setId: { round1: {completed, by, time}, round2: {}, round3: {} } }
   const [notes, setNotes] = useState([]);
@@ -30,6 +31,7 @@ const DailyTrackerImproved = () => {
   const [showCreateCategory, setShowCreateCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
+  const [streakDays, setStreakDays] = useState(0);
 
   const dailyGoal = sets.length * 3; // Each set should be done 3 times
 
@@ -46,15 +48,17 @@ const DailyTrackerImproved = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('plan')
+        .select('plan, current_streak')
         .eq('id', currentUser.id)
         .single();
 
       if (error) throw error;
       setUserPlan(data?.plan || 'free');
+      setStreakDays(data?.current_streak || 0);
     } catch (error) {
       console.error('Error loading user plan:', error);
       setUserPlan('free');
+      setStreakDays(0);
     }
   };
 
@@ -562,75 +566,173 @@ const DailyTrackerImproved = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+      <div className="flex items-center justify-center min-h-[400px] bg-[#FFF8EE]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5CBE7B]"></div>
       </div>
     );
   }
 
   const completedCount = getCompletedCount();
   const progressPercentage = dailyGoal > 0 ? (completedCount / dailyGoal) * 100 : 0;
+  
+  const formatDate = (date) => {
+    const today = new Date();
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    }
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const isToday = () => {
+    const today = new Date();
+    return selectedDate.toDateString() === today.toDateString();
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Upgrade Banner */}
-      <UpgradeBanner userPlan={userPlan} />
+    <div className="min-h-screen bg-[#FFF8EE] pb-32">
+      <div className="max-w-4xl mx-auto p-4 space-y-3">
+        {/* Promo strip: Family Tracking */}
+        {userPlan === 'free' && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-[#FFF2D9] border border-[#F9D9A5] rounded-xl px-4 py-3 flex items-center justify-between text-sm"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-lg">✨</span>
+              <div>
+                <p className="font-semibold text-[#5A3B1A]">Family Practice Log</p>
+                <p className="text-[#8A6440] text-xs">See who practiced with your child each day.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/plans')}
+              className="text-xs font-semibold px-3 py-1 rounded-full bg-[#5CBE7B] text-white hover:bg-[#46A362] transition-colors"
+            >
+              View Plans
+            </button>
+          </motion.div>
+        )}
 
-      {/* Day Header with Progress */}
-      <DayHeader
-        selectedDate={selectedDate}
-        onChangeDate={changeDate}
-        completedCount={completedCount}
-        totalGoal={dailyGoal}
-      />
+        {/* Day Summary card */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white border border-[#F1D7B8] rounded-2xl px-5 py-4 flex flex-col gap-3 shadow-sm"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">📒</span>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-[#8B7A65]">Today's Study Log</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => changeDate(-1)}
+                    className="text-lg text-[#6B5A43] hover:text-[#27333F] transition-colors"
+                  >
+                    ←
+                  </button>
+                  <p className="font-semibold text-lg text-[#27333F]">
+                    {formatDate(selectedDate)}
+                  </p>
+                  <button
+                    onClick={() => changeDate(1)}
+                    className="text-lg text-[#6B5A43] hover:text-[#27333F] transition-colors"
+                  >
+                    →
+                  </button>
+                  {!isToday() && (
+                    <button
+                      onClick={() => setSelectedDate(new Date())}
+                      className="ml-3 text-xs px-2 py-1 rounded-full border border-[#D6C3A5] text-[#6B5A43] hover:bg-[#FFF9F1] transition-colors"
+                    >
+                      Today
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
 
-      {/* Family Member Input */}
-      {(userPlan === 'print' || userPlan === 'pro') && (
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-            Who's tracking today? 👨‍👩‍👧
-          </label>
-          <input
-            type="text"
-            placeholder="Enter your name (e.g., Mom, Dad, Grandma)"
-            value={familyMember}
-            onChange={(e) => setFamilyMember(e.target.value)}
-            className="w-full border-2 border-[hsl(var(--border))] rounded-lg px-4 py-3 focus:outline-none focus:border-[hsl(var(--sprouttie-green))] transition-colors"
-          />
-        </div>
-      )}
+            <div className="text-right">
+              <p className="text-xs text-[#8B7A65]">Sessions today</p>
+              <p className="font-semibold text-[#27333F]">
+                {completedCount} of {dailyGoal}
+              </p>
+              <p className="text-xs text-[#8B7A65]">
+                Streak: <span className="font-semibold text-[#46A362]">
+                  {streakDays} days
+                </span>
+              </p>
+            </div>
+          </div>
 
-      {/* Sets Tracking */}
-      <div className="space-y-4">
-        {sets.map((set, index) => {
-          const setFlashcards = getFlashcardsForSet(set.id);
-          const isEditing = editingSetId === set.id;
-          
-          return (
-            <div key={set.id}>
-              <SetAccordion
-                set={set}
-                setIndex={index}
-                flashcards={setFlashcards}
-                sessions={sessions[set.id] || {}}
-                onToggleSession={toggleSession}
-                onManageWords={startEditingSet}
-                flashedWords={flashedWords}
+          <div>
+            <div className="h-2 w-full rounded-full bg-[#F3E3CF] overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPercentage}%` }}
+                className="h-full bg-[#5CBE7B] rounded-full"
               />
+            </div>
+            <p className="mt-1 text-xs text-[#8B7A65]">
+              Short, frequent sessions work best. Aim for 3 mini-sessions today.
+            </p>
+          </div>
+        </motion.div>
 
-              {/* Edit Set Interface - shown when editing */}
-              {isEditing && (
-                <div className="mt-2 bg-blue-50 rounded-xl border-2 border-blue-200 p-4">
-                  {/* Current Words with Remove Option */}
-                  <div className="mb-4">
-                    <h5 className="font-medium text-gray-700 mb-2">
-                      Manage Words ({setFlashcards.length}/5)
-                    </h5>
-                    {setFlashcards.length >= 5 && (
-                      <p className="text-xs text-amber-600 mb-2">
-                        Set is full. Remove oldest word to add new one.
-                      </p>
-                    )}
+        {/* Family Member Input */}
+        {(userPlan === 'print' || userPlan === 'pro') && (
+          <div className="bg-white border border-[#F1D7B8] rounded-2xl px-5 py-4 shadow-sm">
+            <label className="block text-sm font-medium text-[#27333F] mb-2">
+              Who's tracking today? 👨‍👩‍👧
+            </label>
+            <input
+              type="text"
+              placeholder="Enter your name (e.g., Mom, Dad, Grandma)"
+              value={familyMember}
+              onChange={(e) => setFamilyMember(e.target.value)}
+              className="w-full border-2 border-[#D6C3A5] rounded-lg px-4 py-3 focus:outline-none focus:border-[#5CBE7B] transition-colors bg-[#FFF9F1] text-[#27333F]"
+            />
+          </div>
+        )}
+
+        {/* Packs Tracking */}
+        <div className="space-y-4">
+          {sets.map((set, index) => {
+            const setFlashcards = getFlashcardsForSet(set.id);
+            const isEditing = editingSetId === set.id;
+            
+            return (
+              <div key={set.id}>
+                <PackCard
+                  index={index}
+                  set={set}
+                  flashcards={setFlashcards}
+                  sessions={sessions[set.id] || {}}
+                  onToggleSession={toggleSession}
+                  onManageWords={startEditingSet}
+                  flashedWords={flashedWords}
+                  categoryColor={setFlashcards[0]?.categoryColor || '#5CBE7B'}
+                  userPlan={userPlan || 'free'}
+                />
+
+                {/* Edit Set Interface - shown when editing */}
+                {isEditing && (
+                  <div className="mt-2 bg-[#FFF9F1] rounded-xl border-2 border-[#E5D3B5] p-4">
+                    {/* Current Words with Remove Option */}
+                    <div className="mb-4">
+                      <h5 className="font-medium text-[#27333F] mb-2">
+                        Manage Words ({setFlashcards.length}/5)
+                      </h5>
+                      {setFlashcards.length >= 5 && (
+                        <p className="text-xs text-amber-700 mb-2">
+                          Pack is full. Remove oldest word to add new one.
+                        </p>
+                      )}
                     <div className="flex flex-wrap gap-2">
                       {setFlashcards.map((card) => {
                         const currentSet = sets.find(s => s.id === editingSetId);
@@ -940,40 +1042,50 @@ const DailyTrackerImproved = () => {
                       )}
                     </div>
                   )}
-                  
-                  <button
-                    onClick={() => setEditingSetId(null)}
-                    className="mt-3 w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
-                  >
-                    Done Editing
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })}
+                    
+                    <button
+                      onClick={() => setEditingSetId(null)}
+                      className="mt-3 w-full px-4 py-2 bg-[#5CBE7B] hover:bg-[#46A362] text-white rounded-lg font-medium transition-colors"
+                    >
+                      Done Editing
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Notes List */}
+        <NotesList notes={notes} />
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h4 className="font-bold text-lg text-[hsl(var(--foreground))] mb-4">
-          ⚡ Quick Actions
-        </h4>
-        <div className="flex flex-wrap gap-3">
-          {[1, 2, 3].map((round) => (
-            <button
-              key={round}
-              onClick={() => markAllRound(round)}
-              className="px-6 py-3 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] hover:shadow-lg text-white rounded-lg font-medium transition-all"
-            >
-              Mark all Round {round}
-            </button>
-          ))}
+      {/* Sticky Quick Actions Bar */}
+      <div className="fixed bottom-4 inset-x-0 flex justify-center pointer-events-none z-40">
+        <div className="pointer-events-auto bg-[#27333F] text-white rounded-full px-4 py-2 shadow-lg flex items-center gap-2 text-xs">
+          <span className="text-[10px] uppercase tracking-wide text-[#E4D4BF] mr-1">
+            Quick actions
+          </span>
+          <button
+            onClick={() => markAllRound(1)}
+            className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/20 transition-all"
+          >
+            Mark all Warmup
+          </button>
+          <button
+            onClick={() => markAllRound(2)}
+            className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/20 transition-all"
+          >
+            Mark all Speed
+          </button>
+          <button
+            onClick={() => markAllRound(3)}
+            className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/20 transition-all"
+          >
+            Mark all Review
+          </button>
         </div>
       </div>
-
-      {/* Notes List */}
-      <NotesList notes={notes} />
 
       {/* Sticky Note Button */}
       <StickyNoteButton onAddNote={addNote} familyMember={familyMember} />
