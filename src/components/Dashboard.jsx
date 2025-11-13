@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useFlashcards } from '../context/FlashcardContext';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import ProgressHero from './dashboard/ProgressHero';
 import MetricsRow from './dashboard/MetricsRow';
 import TipsCarousel from './dashboard/TipsCarousel';
@@ -19,8 +20,7 @@ import { useAccessibility, useSkipLinks } from '../hooks/useAccessibility';
 const Dashboard = () => {
   const { 
     flashcards = [], 
-    history = [],
-    getFlashcardStats = () => ({})
+    categories = []
   } = useFlashcards() || {};
   
   const { currentUser } = useAuth() || {};
@@ -33,6 +33,7 @@ const Dashboard = () => {
   const [achievedMilestones, setAchievedMilestones] = useState([]);
   const [encouragement, setEncouragement] = useState(null);
   const [showCSVImport, setShowCSVImport] = useState(false);
+  const [trackingData, setTrackingData] = useState([]);
   
   const [stats, setStats] = useState({
     totalFlashcards: 0,
@@ -49,48 +50,86 @@ const Dashboard = () => {
   // Accessibility hooks
   const { announce } = useAccessibility();
   useSkipLinks();
+
+  // Fetch tracking data from Supabase
+  useEffect(() => {
+    if (currentUser) {
+      fetchTrackingData();
+    }
+  }, [currentUser]);
+
+  const fetchTrackingData = async () => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const dateString = thirtyDaysAgo.toISOString().split('T')[0];
+
+      const { data, error } = await supabase
+        .from('daily_tracking')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .gte('date', dateString)
+        .order('date', { ascending: true });
+
+      if (error) throw error;
+      setTrackingData(data || []);
+    } catch (error) {
+      console.error('Error fetching tracking data:', error);
+      setTrackingData([]);
+    }
+  };
   
   // Calculate statistics
   useEffect(() => {
     const calculateStats = () => {
-      const today = new Date().toDateString();
-      const todayHistory = history.filter(h => new Date(h.date).toDateString() === today);
+      const today = new Date().toISOString().split('T')[0];
+      const todayTracking = trackingData.filter(t => t.date === today);
       
-      // Calculate streak
-      const sortedHistory = [...history].sort((a, b) => new Date(b.date) - new Date(a.date));
+      // Calculate streak (consecutive days with any flashed activity)
+      const uniqueDates = [...new Set(trackingData
+        .filter(t => t.status === 'flashed')
+        .map(t => t.date))]
+        .sort((a, b) => new Date(b) - new Date(a));
+      
       let streak = 0;
       const now = new Date();
-      for (let i = 0; i < sortedHistory.length; i++) {
-        const dayDiff = Math.floor((now - new Date(sortedHistory[i].date)) / (1000 * 60 * 60 * 24));
+      for (let i = 0; i < uniqueDates.length; i++) {
+        const date = new Date(uniqueDates[i]);
+        const dayDiff = Math.floor((now - date) / (1000 * 60 * 60 * 24));
         if (dayDiff === i) streak++;
         else break;
       }
       
-      // Calculate avg engagement
-      const avgEngagement = history.length > 0
-        ? history.reduce((sum, h) => sum + (h.engagement || 0), 0) / history.length
+      // Calculate avg engagement from tracking data
+      const engagementRecords = trackingData.filter(t => t.engagement !== null);
+      const avgEngagement = engagementRecords.length > 0
+        ? engagementRecords.reduce((sum, t) => sum + t.engagement, 0) / engagementRecords.length
         : 0;
       
       // Get learned words (flashcards shown 5+ times)
-      const flashcardStats = getFlashcardStats();
-      const learnedWords = Object.values(flashcardStats).filter(count => count >= 5).length;
+      const flashcardCount = {};
+      trackingData.filter(t => t.status === 'flashed' && t.flashcard_id).forEach(t => {
+        flashcardCount[t.flashcard_id] = (flashcardCount[t.flashcard_id] || 0) + 1;
+      });
+      const learnedWords = Object.values(flashcardCount).filter(count => count >= 5).length;
       
       // Get best time of day
       const timeCount = {};
-      history.forEach(h => {
-        if (h.timeOfDay) {
-          timeCount[h.timeOfDay] = (timeCount[h.timeOfDay] || 0) + 1;
+      trackingData.forEach(t => {
+        if (t.time_of_day) {
+          timeCount[t.time_of_day] = (timeCount[t.time_of_day] || 0) + 1;
         }
       });
       const bestTime = Object.keys(timeCount).length > 0
         ? Object.entries(timeCount).sort((a, b) => b[1] - a[1])[0][0]
         : '';
       
-      // Get top categories (simplified - using folder field)
+      // Get top categories from flashcards
       const categoryCount = {};
       flashcards.forEach(f => {
-        const cat = f.folder || 'default';
-        categoryCount[cat] = (categoryCount[cat] || 0) + 1;
+        const cat = f.categoryId || 'default';
+        const categoryName = categories.find(c => c.id === cat)?.name || 'Other';
+        categoryCount[categoryName] = (categoryCount[categoryName] || 0) + 1;
       });
       const topCategories = Object.entries(categoryCount)
         .sort((a, b) => b[1] - a[1])
@@ -102,37 +141,62 @@ const Dashboard = () => {
       for (let i = 6; i >= 0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - i);
-        const dayHistory = history.filter(h => 
-          new Date(h.date).toDateString() === date.toDateString()
-        );
+        const dateString = date.toISOString().split('T')[0];
+        const dayTracking = trackingData.filter(t => t.date === dateString);
+        const dayName = date.toLocaleDateString('en', { weekday: 'short' });
+        
+        // Count unique sessions (based on set-round combinations)
+        const sessions = new Set(dayTracking
+          .filter(t => t.notes)
+          .map(t => {
+            try {
+              const metadata = JSON.parse(t.notes);
+              return `${metadata.setId}-${metadata.round}`;
+            } catch {
+              return null;
+            }
+          })
+          .filter(Boolean)
+        ).size;
+        
         weekData.push({
-          day: date.toLocaleDateString('en-US', { weekday: 'short' }),
-          engagement: dayHistory.length > 0 
-            ? dayHistory.reduce((sum, h) => sum + (h.engagement || 0), 0) / dayHistory.length 
+          day: dayName,
+          sessions,
+          engagement: dayTracking.length > 0 && dayTracking.some(t => t.engagement !== null)
+            ? Math.round(dayTracking.filter(t => t.engagement !== null).reduce((sum, t) => sum + t.engagement, 0) / dayTracking.filter(t => t.engagement !== null).length)
             : 0
         });
       }
       
-      // Today's flashes
-      const todayFlashes = todayHistory.reduce((sum, h) => {
-        return sum + Object.values(h.setUsage || {}).reduce((s, c) => s + c, 0);
-      }, 0);
+      // Count total unique sessions across all data
+      const allSessions = new Set(trackingData
+        .filter(t => t.notes)
+        .map(t => {
+          try {
+            const metadata = JSON.parse(t.notes);
+            return `${t.date}-${metadata.setId}-${metadata.round}`;
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean)
+      ).size;
       
       setStats({
         totalFlashcards: flashcards.length,
-        avgEngagement,
-        totalSessions: history.length,
+        avgEngagement: Math.round(avgEngagement),
+        totalSessions: allSessions,
         currentStreak: streak,
         learnedWords,
         topCategories,
         bestTime,
-        todayFlashes,
+        todayFlashes: todayTracking.filter(t => t.status === 'flashed').length,
         weekData
       });
     };
     
     calculateStats();
-  }, [flashcards, history, getFlashcardStats]);
+  }, [flashcards, trackingData, categories]);
 
   // Load achieved milestones from localStorage
   useEffect(() => {
