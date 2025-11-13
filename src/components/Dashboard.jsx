@@ -196,6 +196,25 @@ const Dashboard = () => {
     setCelebrationWords(wordsCount);
     setShowCelebration(true);
   };
+
+  const downloadExampleCSV = () => {
+    const exampleData = `english,pinyin,hanzi,folder
+apple,píng guǒ,苹果,Food
+cat,māo,猫,Animals
+red,hóng sè,红色,Colors
+mother,mā ma,妈妈,Family
+one,yī,一,Numbers`;
+    
+    const blob = new Blob([exampleData], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'sprouttie-flashcards-example.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
   
   return (
     <div className="min-h-screen pb-20" id="main-content">
@@ -397,6 +416,7 @@ const Dashboard = () => {
           <motion.button
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => setShowCSVImport(true)}
             className="bg-gradient-to-r from-sprouttie-green to-sprouttie-green-light text-white font-bold py-4 px-4 rounded-xl shadow-md hover:shadow-xl transition-all"
           >
             💾 Bulk Upload CSV
@@ -405,9 +425,10 @@ const Dashboard = () => {
           <motion.button
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
+            onClick={downloadExampleCSV}
             className="bg-white border-2 border-sprouttie-coral text-sprouttie-coral-dark font-semibold py-4 px-4 rounded-xl shadow-md hover:shadow-lg transition-all"
           >
-            📄 View Example
+            📄 Download Example
           </motion.button>
           
           <motion.button
