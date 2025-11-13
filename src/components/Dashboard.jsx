@@ -237,226 +237,246 @@ one,yī,一,Numbers`;
         <CSVImport onClose={() => setShowCSVImport(false)} />
       )}
 
-      {/* Header Section */}
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass rounded-3xl shadow-xl p-8 mb-6 border border-white/50"
-      >
-        <div className="flex items-center gap-4 mb-6">
-          <motion.div
-            animate={{ rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-            className="text-6xl"
-          >
-            🌱
-          </motion.div>
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-sprouttie-green-dark mb-2">
-              Hi {firstName} 👋
-            </h1>
-            <p className="text-lg text-gray-600">Ready to grow today's words?</p>
-          </div>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row gap-4">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/daily-tracking')}
-            className="flex-1 bg-gradient-to-r from-sprouttie-green to-sprouttie-green-light text-white font-bold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all text-lg"
-          >
-            🌿 Start Flashcard Session
-          </motion.button>
-          
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/manage-flashcards')}
-            className="bg-white text-sprouttie-green-dark font-semibold py-4 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all border-2 border-sprouttie-green"
-          >
-            + Add Flashcard
-          </motion.button>
-          
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowCSVImport(true)}
-            className="bg-white text-sprouttie-coral-dark font-semibold py-4 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all border-2 border-sprouttie-coral"
-          >
-            📥 Bulk Upload
-          </motion.button>
-        </div>
-      </motion.div>
-      
-      {/* Progress Hero - Words Learned & Current Streak */}
-      <ProgressHero stats={stats} progressPercent={progressPercent} />
-      
-      {/* Metrics Row - Engagement, Total Cards, Sessions */}
-      <MetricsRow stats={stats} />
-      
-      {/* Insights Section */}
-      <div className="grid md:grid-cols-2 gap-6 mb-6">
-        {/* Today's Summary + Chart */}
+      {/* Simple Page Header matching All Words */}
+      <h1 className="text-2xl font-semibold mb-4 text-slate-900">Dashboard</h1>
+
+      {/* Hero Row - Stats + Sprouttie Mascot */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)] gap-4 mb-6">
+        {/* Core stats card */}
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="glass rounded-2xl p-6 shadow-lg"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5"
         >
-          <h2 className="text-xl font-bold text-sprouttie-green-dark mb-4">Today's Summary</h2>
-          <div className="bg-sprouttie-coral-light/30 rounded-xl p-4 mb-4">
-            <p className="text-gray-700 leading-relaxed">
-              {stats.todayFlashes > 0 ? (
-                <>You've flashed <span className="font-bold text-sprouttie-green-dark">{stats.todayFlashes}</span> cards today — amazing consistency! 🌟</>
-              ) : (
-                <>Start your first session today and watch your garden grow! 🌱</>
-              )}
-            </p>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide">Overview</p>
+              <p className="text-sm text-slate-900 font-semibold">How things look today</p>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/daily-tracking')}
+                className="px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-colors"
+              >
+                Start session
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/manage-flashcards')}
+                className="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium bg-white hover:bg-slate-50 transition-colors"
+              >
+                Add flashcards
+              </motion.button>
+            </div>
           </div>
-          
-          <h3 className="text-sm font-semibold text-gray-600 mb-3">Weekly Engagement</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={stats.weekData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="day" stroke="#6b7280" fontSize={12} />
-              <YAxis stroke="#6b7280" fontSize={12} domain={[0, 5]} />
-              <Tooltip 
-                contentStyle={{ 
-                  background: 'rgba(255, 255, 255, 0.95)', 
-                  border: '1px solid #d1fae5',
-                  borderRadius: '12px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="engagement" 
-                stroke="hsl(168, 85%, 65%)" 
-                strokeWidth={3}
-                dot={{ fill: 'hsl(168, 85%, 65%)', strokeWidth: 2, r: 5 }}
-                activeDot={{ r: 7 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+
+          {/* 3 stats in a row */}
+          <div className="grid grid-cols-3 gap-3 text-sm">
+            <div className="bg-slate-50 rounded-xl px-3 py-2">
+              <p className="text-xs text-slate-500">Words learned</p>
+              <p className="text-lg font-semibold text-slate-900">
+                {stats.learnedWords}/{stats.totalFlashcards}
+              </p>
+            </div>
+            <div className="bg-slate-50 rounded-xl px-3 py-2">
+              <p className="text-xs text-slate-500">Current streak</p>
+              <p className="text-lg font-semibold text-slate-900">
+                {stats.currentStreak} days
+              </p>
+            </div>
+            <div className="bg-slate-50 rounded-xl px-3 py-2">
+              <p className="text-xs text-slate-500">Sessions</p>
+              <p className="text-lg font-semibold text-slate-900">
+                {stats.totalSessions}
+              </p>
+            </div>
+          </div>
         </motion.div>
-        
-        {/* Categories & Best Time */}
+
+        {/* Sprouttie mascot card */}
         <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="space-y-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5 flex flex-col items-center justify-center text-center"
         >
-          {/* Most Used Categories */}
-          <div className="glass rounded-2xl p-6 shadow-lg">
-            <h2 className="text-xl font-bold text-sprouttie-green-dark mb-4">Most Used Categories</h2>
-            {stats.topCategories.length > 0 ? (
-              <div className="space-y-3">
-                {stats.topCategories.map((cat, idx) => (
-                  <motion.div
-                    key={cat.name}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="flex items-center justify-between bg-gradient-to-r from-sprouttie-beige to-sprouttie-mint p-3 rounded-xl"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{categoryEmojis[cat.name.toLowerCase()] || categoryEmojis.default}</span>
-                      <span className="font-semibold text-gray-700 capitalize">{cat.name}</span>
-                    </div>
-                    <span className="bg-white px-3 py-1 rounded-full text-sm font-medium text-sprouttie-green-dark">
-                      {cat.count} cards
-                    </span>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-4">No categories yet. Start adding flashcards!</p>
-            )}
+          <motion.div
+            animate={{ rotate: [0, 5, -5, 0], y: [0, -5, 0] }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+            className="mb-2"
+          >
+            <img 
+              src="/images/sprouttie-mascot.png" 
+              alt="Sprouttie mascot" 
+              className="w-20 h-20 object-contain"
+            />
+          </motion.div>
+          <p className="text-sm font-semibold text-slate-900">Hi, I'm Sprouttie 🌱</p>
+          <p className="text-xs text-slate-500 mt-1">
+            Short, frequent sessions keep things fun. Aim for 2–3 mini sessions today.
+          </p>
+        </motion.div>
+      </div>
+      
+      {/* Middle Row - Today & Week */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        {/* Today's practice plan */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5"
+        >
+          <p className="text-xs text-slate-500 uppercase tracking-wide">Today</p>
+          <p className="text-sm font-semibold text-slate-900 mb-2">
+            Today's practice plan
+          </p>
+          <p className="text-sm text-slate-600 mb-3">
+            {stats.todayFlashes > 0 
+              ? `You've flashed ${stats.todayFlashes} cards today — amazing consistency!`
+              : `Start your first session today and watch your progress grow!`
+            }
+          </p>
+
+          <ul className="text-xs text-slate-600 space-y-1">
+            <li>• {stats.todayFlashes > 0 ? 'Keep going with' : 'Start with'} 2-3 mini sessions</li>
+            <li>• Review {Math.min(stats.learnedWords, 10)} previously learned words</li>
+            <li>• Add 3-5 new words if you have time</li>
+          </ul>
+        </motion.div>
+
+        {/* Week snapshot */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5"
+        >
+          <p className="text-xs text-slate-500 uppercase tracking-wide">This week</p>
+          <p className="text-sm font-semibold text-slate-900 mb-2">
+            Weekly snapshot
+          </p>
+
+          {/* Weekly chart - compact */}
+          <div className="mb-3">
+            <ResponsiveContainer width="100%" height={120}>
+              <LineChart data={stats.weekData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="day" stroke="#94a3b8" fontSize={11} />
+                <YAxis stroke="#94a3b8" fontSize={11} domain={[0, 5]} />
+                <Tooltip 
+                  contentStyle={{ 
+                    background: 'rgba(255, 255, 255, 0.95)', 
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    fontSize: '12px'
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="engagement" 
+                  stroke="#10b981" 
+                  strokeWidth={2}
+                  dot={{ fill: '#10b981', strokeWidth: 2, r: 3 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
-          
-          {/* Best Time of Day */}
-          <div className="glass rounded-2xl p-6 shadow-lg">
-            <h2 className="text-xl font-bold text-sprouttie-green-dark mb-4">Best Time of Day</h2>
-            {stats.bestTime ? (
-              <div className="flex items-center gap-4 bg-gradient-calm p-4 rounded-xl">
-                <span className="text-5xl">{timeEmojis[stats.bestTime] || '⏰'}</span>
-                <div>
-                  <p className="text-lg font-bold text-gray-700">{stats.bestTime}</p>
-                  <p className="text-sm text-gray-600">Peak engagement time ✨</p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-4">Complete sessions to discover your best time!</p>
+
+          <div className="flex flex-wrap gap-2 text-xs">
+            {stats.bestTime && (
+              <span className="inline-flex items-center rounded-full bg-slate-50 border border-slate-200 px-3 py-1">
+                Best time: <span className="ml-1 font-semibold text-slate-800">{stats.bestTime}</span>
+              </span>
+            )}
+            {stats.topCategories[0] && (
+              <span className="inline-flex items-center rounded-full bg-slate-50 border border-slate-200 px-3 py-1">
+                Top category: <span className="ml-1 font-semibold text-slate-800 capitalize">{stats.topCategories[0].name}</span>
+              </span>
             )}
           </div>
         </motion.div>
       </div>
       
-      {/* Sprouttie Tips Carousel */}
-      <TipsCarousel />
-      
-      {/* Progress Garden Visualization */}
-      <ProgressGarden stats={stats} />
-      
-      {/* Flashed Words Progress Grid */}
-      <FlashedWordsGrid />
-      
-      {/* Create & Upload Flashcards Panel */}
+      {/* Progress Garden - flat style */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-sprouttie-beige to-sprouttie-cream rounded-2xl p-6 shadow-lg mb-6 border-2 border-sprouttie-beige-dark"
+        transition={{ delay: 0.4 }}
+        className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5 mb-6"
       >
-        <h2 className="text-xl font-bold text-sprouttie-green-dark mb-2">Create & Upload Flashcards</h2>
-        <p className="text-gray-600 mb-4 text-sm">
-          💡 Helper tip: Upload ~20 new words weekly to keep learning fresh.
+        <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Your Progress</p>
+        <p className="text-sm font-semibold text-slate-900 mb-3">Learning journey</p>
+        
+        <ProgressGarden stats={stats} />
+      </motion.div>
+
+      {/* Flashed Words Progress Grid */}
+      <div className="mb-6">
+        <FlashedWordsGrid />
+      </div>
+      
+      {/* Create & Upload Flashcards - flat style */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5 mb-6"
+      >
+        <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Flashcard Tools</p>
+        <p className="text-sm font-semibold text-slate-900 mb-2">Create & Upload</p>
+        <p className="text-xs text-slate-500 mb-4">
+          💡 Tip: Upload ~20 new words weekly to keep learning fresh
         </p>
         
-        <div className="grid sm:grid-cols-3 gap-4">
+        <div className="flex flex-wrap gap-2">
           <motion.button
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => setShowCSVImport(true)}
-            className="bg-gradient-to-r from-sprouttie-green to-sprouttie-green-light text-white font-bold py-4 px-4 rounded-xl shadow-md hover:shadow-xl transition-all"
+            className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-colors"
           >
             💾 Bulk Upload CSV
           </motion.button>
           
           <motion.button
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={downloadExampleCSV}
-            className="bg-white border-2 border-sprouttie-coral text-sprouttie-coral-dark font-semibold py-4 px-4 rounded-xl shadow-md hover:shadow-lg transition-all"
+            className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium bg-white hover:bg-slate-50 transition-colors"
           >
             📄 Download Example
           </motion.button>
           
-          <motion.button
-            className="bg-gray-100 border-2 border-gray-300 text-gray-500 font-semibold py-4 px-4 rounded-xl shadow-md cursor-not-allowed opacity-60"
+          <button
+            className="px-4 py-2 rounded-lg border border-slate-200 text-slate-400 text-sm font-medium bg-slate-50 cursor-not-allowed"
             disabled
           >
             🪴 AI Generate (Soon)
-          </motion.button>
+          </button>
         </div>
       </motion.div>
       
-      {/* Encouragement Bar */}
+      {/* Encouragement Bar - flat style */}
       {encouragement && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass rounded-2xl p-4 shadow-lg"
+          className="bg-white border border-slate-100 rounded-2xl shadow-sm p-4"
           role="status"
           aria-live="polite"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-2xl" aria-hidden="true">{encouragement.icon}</span>
-              <p className="text-gray-700 font-medium">{encouragement.message}</p>
+              <span className="text-xl" aria-hidden="true">{encouragement.icon}</span>
+              <p className="text-slate-700 text-sm font-medium">{encouragement.message}</p>
             </div>
             <button 
               onClick={() => setShowMilestone(true)}
-              className="text-sprouttie-green-dark hover:text-sprouttie-green font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-sprouttie-green rounded-lg px-2 py-1"
+              className="text-emerald-600 hover:text-emerald-700 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded-lg px-2 py-1 transition-colors"
               aria-label="View milestones and achievements"
             >
               View Milestones →
@@ -470,7 +490,8 @@ one,yī,一,Numbers`;
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="w-full bg-gradient-to-r from-sprouttie-green to-sprouttie-green-light text-white font-bold py-4 px-8 rounded-2xl shadow-2xl focus:outline-none focus:ring-4 focus:ring-sprouttie-green/50"
+          onClick={() => navigate('/daily-tracking')}
+          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 px-8 rounded-2xl shadow-lg focus:outline-none focus:ring-4 focus:ring-emerald-500/50 transition-colors"
           aria-label="Start flashcard learning session"
         >
           🌿 Start Session
