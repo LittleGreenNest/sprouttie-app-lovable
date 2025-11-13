@@ -9,7 +9,7 @@ import SearchFilterBar from './all-words/SearchFilterBar';
 import GlobalProgressBar from './all-words/GlobalProgressBar';
 import CategoryCard from './all-words/CategoryCard';
 import StatsSummary from './all-words/StatsSummary';
-import { useAllWordsUIState } from '../hooks/all-words/useAllWordsUIState';
+import { useAllWordsUIState } from '../hooks/all-words/useAllWordsUIState.jsx';
 
 const AllWords = () => {
   const { currentUser } = useAuth();
