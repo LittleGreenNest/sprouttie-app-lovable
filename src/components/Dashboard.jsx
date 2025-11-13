@@ -264,7 +264,7 @@ one,yī,一,Numbers`;
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate('/daily-tracking')}
-            className="flex-1 bg-gradient-to-r from-sprouttie-green to-sprouttie-green-light text-white font-bold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all text-lg"
+            className="flex-1 bg-[#5CBE7B] text-white font-bold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all text-lg"
           >
             🌿 Start Flashcard Session
           </motion.button>
@@ -304,7 +304,7 @@ one,yī,一,Numbers`;
           className="glass rounded-2xl p-6 shadow-lg"
         >
           <h2 className="text-xl font-bold text-sprouttie-green-dark mb-4">Today's Summary</h2>
-          <div className="bg-sprouttie-coral-light/30 rounded-xl p-4 mb-4">
+          <div className="bg-[#FFF3E0] rounded-xl p-4 mb-4">
             <p className="text-gray-700 leading-relaxed">
               {stats.todayFlashes > 0 ? (
                 <>You've flashed <span className="font-bold text-sprouttie-green-dark">{stats.todayFlashes}</span> cards today — amazing consistency! 🌟</>
@@ -357,7 +357,7 @@ one,yī,一,Numbers`;
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: idx * 0.1 }}
-                    className="flex items-center justify-between bg-gradient-to-r from-sprouttie-beige to-sprouttie-mint p-3 rounded-xl"
+                    className="flex items-center justify-between bg-[#F5EFE6] p-3 rounded-xl"
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{categoryEmojis[cat.name.toLowerCase()] || categoryEmojis.default}</span>
@@ -378,7 +378,7 @@ one,yī,一,Numbers`;
           <div className="glass rounded-2xl p-6 shadow-lg">
             <h2 className="text-xl font-bold text-sprouttie-green-dark mb-4">Best Time of Day</h2>
             {stats.bestTime ? (
-              <div className="flex items-center gap-4 bg-gradient-calm p-4 rounded-xl">
+              <div className="flex items-center gap-4 bg-[#E8F4F8] p-4 rounded-xl">
                 <span className="text-5xl">{timeEmojis[stats.bestTime] || '⏰'}</span>
                 <div>
                   <p className="text-lg font-bold text-gray-700">{stats.bestTime}</p>
@@ -405,7 +405,7 @@ one,yī,一,Numbers`;
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-sprouttie-beige to-sprouttie-cream rounded-2xl p-6 shadow-lg mb-6 border-2 border-sprouttie-beige-dark"
+        className="bg-[#FFF9F0] rounded-2xl p-6 shadow-lg mb-6 border-2 border-[#E8DCC8]"
       >
         <h2 className="text-xl font-bold text-sprouttie-green-dark mb-2">Create & Upload Flashcards</h2>
         <p className="text-gray-600 mb-4 text-sm">
@@ -417,7 +417,7 @@ one,yī,一,Numbers`;
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowCSVImport(true)}
-            className="bg-gradient-to-r from-sprouttie-green to-sprouttie-green-light text-white font-bold py-4 px-4 rounded-xl shadow-md hover:shadow-xl transition-all"
+            className="bg-[#5CBE7B] text-white font-bold py-4 px-4 rounded-xl shadow-md hover:shadow-xl transition-all"
           >
             💾 Bulk Upload CSV
           </motion.button>
