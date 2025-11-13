@@ -9,8 +9,8 @@ const MetricsRow = ({ stats }) => {
       value: stats.avgEngagement.toFixed(1),
       subtext: 'out of 5',
       color: 'yellow',
-      bgColor: 'bg-[#FFF9E6]',
-      iconBg: 'bg-[#FFE7B3]',
+      bgColor: 'bg-gradient-to-br from-yellow-50 to-amber-100',
+      iconBg: 'bg-yellow-200',
       delay: 0.1
     },
     {
@@ -19,8 +19,8 @@ const MetricsRow = ({ stats }) => {
       value: stats.totalFlashcards,
       subtext: 'cards',
       color: 'green',
-      bgColor: 'bg-[#E8F5E9]',
-      iconBg: 'bg-[#B9E5BD]',
+      bgColor: 'bg-gradient-to-br from-green-50 to-emerald-100',
+      iconBg: 'bg-green-200',
       delay: 0.2
     },
     {
@@ -29,8 +29,8 @@ const MetricsRow = ({ stats }) => {
       value: stats.totalSessions,
       subtext: 'completed',
       color: 'blue',
-      bgColor: 'bg-[#E3F2FD]',
-      iconBg: 'bg-[#B3D9F3]',
+      bgColor: 'bg-gradient-to-br from-blue-50 to-cyan-100',
+      iconBg: 'bg-blue-200',
       delay: 0.3
     }
   ];
