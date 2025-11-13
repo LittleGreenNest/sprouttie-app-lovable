@@ -206,16 +206,17 @@ const CSVImport = ({ onClose }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-gray-800">Import Flashcards from CSV</h2>
-        <button 
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-700"
-        >
-          ✕
-        </button>
-      </div>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full my-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-800">Import Flashcards from CSV</h2>
+          <button 
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 text-2xl"
+          >
+            ✕
+          </button>
+        </div>
       
       {/* File Upload */}
       <div className="mb-6">
@@ -403,6 +404,7 @@ const CSVImport = ({ onClose }) => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
