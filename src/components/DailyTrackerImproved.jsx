@@ -573,10 +573,13 @@ const DailyTrackerImproved = () => {
 
   return (
     <div className="space-y-6">
+      {/* Simple Page Header matching All Words */}
+      <h1 className="text-2xl font-semibold mb-4 text-slate-900">Daily Tracking</h1>
+
       {/* Upgrade Banner */}
       <UpgradeBanner userPlan={userPlan} />
 
-      {/* Day Header with Progress */}
+      {/* Day Header with Progress - flat style */}
       <DayHeader
         selectedDate={selectedDate}
         onChangeDate={changeDate}
@@ -586,8 +589,8 @@ const DailyTrackerImproved = () => {
 
       {/* Family Member Input */}
       {(userPlan === 'print' || userPlan === 'pro') && (
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
             Who's tracking today? 👨‍👩‍👧
           </label>
           <input
@@ -595,7 +598,7 @@ const DailyTrackerImproved = () => {
             placeholder="Enter your name (e.g., Mom, Dad, Grandma)"
             value={familyMember}
             onChange={(e) => setFamilyMember(e.target.value)}
-            className="w-full border-2 border-[hsl(var(--border))] rounded-lg px-4 py-3 focus:outline-none focus:border-[hsl(var(--sprouttie-green))] transition-colors"
+            className="w-full border border-slate-200 rounded-lg px-4 py-3 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
           />
         </div>
       )}

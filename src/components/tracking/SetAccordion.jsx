@@ -24,53 +24,69 @@ const SetAccordion = ({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-xl shadow-md overflow-hidden border-2 border-[hsl(var(--border))] hover:border-[hsl(var(--sprouttie-green-light))] transition-colors"
+      transition={{ delay: setIndex * 0.05 }}
+      className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-200"
     >
-      {/* Header */}
+      {/* Header - matching All Words CategoryCard */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full p-4 flex items-center justify-between hover:bg-[hsl(var(--sprouttie-mint))] transition-colors"
+        className="w-full text-left p-5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-inset transition-colors hover:bg-slate-50"
       >
-        <div className="flex items-center gap-4 flex-1">
-          <motion.div
-            animate={{ rotate: isOpen ? 90 : 0 }}
-            transition={{ duration: 0.2 }}
-            className="text-[hsl(var(--muted-foreground))]"
-          >
-            ▶
-          </motion.div>
-          
-          <div className="text-left flex-1">
-            <div className="font-bold text-lg text-[hsl(var(--foreground))]">
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-bold text-slate-800 truncate mb-1">
               Set {setIndex + 1}
-              <span className="ml-2 text-sm font-normal text-[hsl(var(--muted-foreground))]">
-                ({flashcards.length} words)
-              </span>
-            </div>
-            
-            {/* Mini progress bar */}
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex-1 h-2 bg-[hsl(var(--muted))] rounded-full overflow-hidden max-w-[200px]">
-                <div 
-                  className="h-full bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <div className="text-xs font-semibold text-[hsl(var(--sprouttie-green))]">
-                {completedRounds}/{totalRounds}
-              </div>
-            </div>
+            </h3>
+            <p className="text-sm text-slate-500">
+              {flashcards.length} words · {Math.round(progress)}% completed
+            </p>
           </div>
+          
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {progress === 100 && (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring" }}
+                className="text-2xl"
+              >
+                🌸
+              </motion.span>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onManageWords(set.id);
+              }}
+              className="px-3 py-1 text-sm bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg transition-colors border border-slate-200"
+            >
+              ✏️ Manage
+            </button>
+            <motion.div
+              animate={{ rotate: isOpen ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+              className="text-slate-400"
+            >
+              <span className="text-xl">▼</span>
+            </motion.div>
+          </div>
+        </div>
 
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onManageWords(set.id);
-            }}
-            className="px-3 py-1 text-sm bg-[hsl(var(--sprouttie-beige))] hover:bg-[hsl(var(--sprouttie-beige-dark))] text-[hsl(var(--foreground))] rounded-full transition-colors"
-          >
-            ✏️ Manage
-          </button>
+        {/* Preview words when collapsed */}
+        {!isOpen && flashcards.length > 0 && (
+          <div className="text-sm text-slate-600 truncate mb-3 opacity-70">
+            {flashcards.slice(0, 6).map(f => f.word).join('、')}{flashcards.length > 6 ? '...' : ''}
+          </div>
+        )}
+
+        {/* Progress bar matching All Words */}
+        <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.8, delay: setIndex * 0.05 }}
+          />
         </div>
       </button>
 

@@ -19,55 +19,59 @@ const DayHeader = ({ selectedDate, onChangeDate, completedCount, totalGoal }) =>
   const progress = totalGoal > 0 ? (completedCount / totalGoal) * 100 : 0;
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 mb-6 sticky top-4 z-10">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => onChangeDate(-1)}
-            className="w-10 h-10 rounded-full bg-[hsl(var(--sprouttie-mint))] hover:bg-[hsl(var(--sprouttie-green-light))] flex items-center justify-center transition-colors"
-          >
-            ←
-          </motion.button>
-          
+    <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-4 mb-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">📅</span>
           <div>
-            <h2 className="text-2xl font-bold text-[hsl(var(--foreground))]">
-              {formatDate(selectedDate)}
-            </h2>
-            {isToday() && (
-              <div className="text-sm text-[hsl(var(--sprouttie-green))] font-semibold">
-                Today 🌱
-              </div>
-            )}
+            <p className="text-xs text-slate-500 uppercase tracking-wide">Today</p>
+            <div className="flex items-center gap-2 text-sm text-slate-900">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => onChangeDate(-1)}
+                className="text-lg text-slate-600 hover:text-slate-900 transition-colors"
+                aria-label="Previous day"
+              >
+                ←
+              </motion.button>
+              <span className="font-medium">{formatDate(selectedDate)}</span>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => onChangeDate(1)}
+                className="text-lg text-slate-600 hover:text-slate-900 transition-colors"
+                aria-label="Next day"
+              >
+                →
+              </motion.button>
+              {isToday() && (
+                <button
+                  onClick={() => onChangeDate(0)}
+                  className="ml-2 text-xs px-2 py-1 rounded-full border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 transition-colors"
+                >
+                  Today
+                </button>
+              )}
+            </div>
           </div>
-
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => onChangeDate(1)}
-            className="w-10 h-10 rounded-full bg-[hsl(var(--sprouttie-mint))] hover:bg-[hsl(var(--sprouttie-green-light))] flex items-center justify-center transition-colors"
-          >
-            →
-          </motion.button>
         </div>
 
-        <div className="text-right">
-          <div className="text-3xl font-bold text-[hsl(var(--sprouttie-green))]">
-            {completedCount}/{totalGoal}
+        <div className="text-sm text-slate-700">
+          <p>
+            <span className="font-semibold">{completedCount}</span> of{" "}
+            <span className="font-semibold">{totalGoal}</span> sessions
+          </p>
+          {/* Progress bar matching All Words style */}
+          <div className="mt-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              className="h-full bg-emerald-500 rounded-full"
+            />
           </div>
-          <div className="text-sm text-[hsl(var(--muted-foreground))]">Sessions</div>
         </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="w-full h-3 bg-[hsl(var(--muted))] rounded-full overflow-hidden">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="h-full bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] rounded-full"
-        />
       </div>
     </div>
   );
