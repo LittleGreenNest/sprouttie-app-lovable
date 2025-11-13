@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useFlashcards } from '../context/FlashcardContext';
 import { useAuth } from '../hooks/useAuth';
@@ -10,6 +11,7 @@ import ProgressGarden from './dashboard/ProgressGarden';
 import CelebrationModal from './dashboard/CelebrationModal';
 import MilestoneModal from './gamification/MilestoneModal';
 import FlashedWordsGrid from './tracking/FlashedWordsGrid';
+import CSVImport from './CSVImport';
 import { checkForNewMilestone } from '../utils/milestones';
 import { getEncouragement } from '../utils/encouragements';
 import { useAccessibility, useSkipLinks } from '../hooks/useAccessibility';
@@ -22,6 +24,7 @@ const Dashboard = () => {
   } = useFlashcards() || {};
   
   const { currentUser } = useAuth() || {};
+  const navigate = useNavigate();
   
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebrationWords, setCelebrationWords] = useState(0);
@@ -29,6 +32,7 @@ const Dashboard = () => {
   const [currentMilestone, setCurrentMilestone] = useState(null);
   const [achievedMilestones, setAchievedMilestones] = useState([]);
   const [encouragement, setEncouragement] = useState(null);
+  const [showCSVImport, setShowCSVImport] = useState(false);
   
   const [stats, setStats] = useState({
     totalFlashcards: 0,
@@ -209,6 +213,11 @@ const Dashboard = () => {
         milestone={currentMilestone}
       />
 
+      {/* CSV Import Modal */}
+      {showCSVImport && (
+        <CSVImport onClose={() => setShowCSVImport(false)} />
+      )}
+
       {/* Header Section */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
@@ -235,7 +244,7 @@ const Dashboard = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => triggerCelebration(3)}
+            onClick={() => navigate('/daily-tracking')}
             className="flex-1 bg-gradient-to-r from-sprouttie-green to-sprouttie-green-light text-white font-bold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all text-lg"
           >
             🌿 Start Flashcard Session
@@ -244,6 +253,7 @@ const Dashboard = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => navigate('/manage-flashcards')}
             className="bg-white text-sprouttie-green-dark font-semibold py-4 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all border-2 border-sprouttie-green"
           >
             + Add Flashcard
@@ -252,6 +262,7 @@ const Dashboard = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => setShowCSVImport(true)}
             className="bg-white text-sprouttie-coral-dark font-semibold py-4 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all border-2 border-sprouttie-coral"
           >
             📥 Bulk Upload
