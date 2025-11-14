@@ -65,36 +65,42 @@ export type Database = {
       flashcards: {
         Row: {
           back: string
+          card_type: string
           created_at: string | null
           folder: string | null
           front: string
           id: string
           last_reviewed_at: string | null
           mastery_level: number | null
+          phrase_group: string | null
           review_count: number | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           back: string
+          card_type?: string
           created_at?: string | null
           folder?: string | null
           front: string
           id?: string
           last_reviewed_at?: string | null
           mastery_level?: number | null
+          phrase_group?: string | null
           review_count?: number | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           back?: string
+          card_type?: string
           created_at?: string | null
           folder?: string | null
           front?: string
           id?: string
           last_reviewed_at?: string | null
           mastery_level?: number | null
+          phrase_group?: string | null
           review_count?: number | null
           updated_at?: string | null
           user_id?: string
