@@ -193,13 +193,15 @@ export const FlashcardProvider = ({ children }) => {
   };
   
   // Flashcard CRUD operations
-  const addFlashcard = (word, categoryId, english = '', pinyin = '') => {
+  const addFlashcard = (word, categoryId, english = '', pinyin = '', cardType = 'word', phraseGroup = null) => {
 const newFlashcard = {
 id: `f${Date.now()}`,
 word,
 english,
 pinyin,
 categoryId,
+card_type: cardType,
+phrase_group: phraseGroup,
 };
     setFlashcards([...flashcards, newFlashcard]);
     return newFlashcard;

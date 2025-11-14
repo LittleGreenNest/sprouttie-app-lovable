@@ -25,15 +25,19 @@ const FlashcardManager = () => {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newFlashcardWord, setNewFlashcardWord] = useState('');
   const [newFlashcardCategory, setNewFlashcardCategory] = useState('');
-const [newFlashcardEnglish, setNewFlashcardEnglish] = useState('');
-const [newFlashcardPinyin, setNewFlashcardPinyin] = useState('');
+  const [newFlashcardEnglish, setNewFlashcardEnglish] = useState('');
+  const [newFlashcardPinyin, setNewFlashcardPinyin] = useState('');
+  const [newCardType, setNewCardType] = useState('word');
+  const [newPhraseGroup, setNewPhraseGroup] = useState('');
   const [editCategoryId, setEditCategoryId] = useState(null);
   const [editCategoryName, setEditCategoryName] = useState('');
   const [editFlashcardId, setEditFlashcardId] = useState(null);
   const [editFlashcardWord, setEditFlashcardWord] = useState('');
   const [editFlashcardCategory, setEditFlashcardCategory] = useState('');
-const [editFlashcardEnglish, setEditFlashcardEnglish] = useState('');
-const [editFlashcardPinyin, setEditFlashcardPinyin] = useState('');
+  const [editFlashcardEnglish, setEditFlashcardEnglish] = useState('');
+  const [editFlashcardPinyin, setEditFlashcardPinyin] = useState('');
+  const [editCardType, setEditCardType] = useState('word');
+  const [editPhraseGroup, setEditPhraseGroup] = useState('');
 
   
   // Message state
@@ -175,12 +179,21 @@ const [editFlashcardPinyin, setEditFlashcardPinyin] = useState('');
     e.preventDefault();
     if (!newFlashcardWord.trim() || !newFlashcardCategory) return;
     
-    addFlashcard(newFlashcardWord, newFlashcardCategory, newFlashcardEnglish, newFlashcardPinyin);
+    addFlashcard(
+      newFlashcardWord, 
+      newFlashcardCategory, 
+      newFlashcardEnglish, 
+      newFlashcardPinyin,
+      newCardType,
+      newCardType === 'phrase' ? newPhraseGroup : null
+    );
     setNewFlashcardWord('');
-setNewFlashcardEnglish('');
-setNewFlashcardPinyin('');
+    setNewFlashcardEnglish('');
+    setNewFlashcardPinyin('');
+    setNewCardType('word');
+    setNewPhraseGroup('');
 
-    showMessage('Flashcard added successfully');
+    showMessage(`${newCardType === 'phrase' ? 'Phrase' : 'Flashcard'} added successfully`);
   };
   
  const handleEditFlashcard = (flashcard) => {
@@ -189,6 +202,8 @@ setNewFlashcardPinyin('');
   setEditFlashcardCategory(flashcard.categoryId);
   setEditFlashcardEnglish(flashcard.english || '');
   setEditFlashcardPinyin(flashcard.pinyin || '');
+  setEditCardType(flashcard.card_type || 'word');
+  setEditPhraseGroup(flashcard.phrase_group || '');
 };
   
   const handleUpdateFlashcard = (e) => {
@@ -199,13 +214,17 @@ setNewFlashcardPinyin('');
   word: editFlashcardWord,
   english: editFlashcardEnglish,
   pinyin: editFlashcardPinyin,
-  categoryId: editFlashcardCategory
+  categoryId: editFlashcardCategory,
+  card_type: editCardType,
+  phrase_group: editCardType === 'phrase' ? editPhraseGroup : null
 });
 
     
     setEditFlashcardId(null);
     setEditFlashcardWord('');
     setEditFlashcardCategory('');
+    setEditCardType('word');
+    setEditPhraseGroup('');
     showMessage('Flashcard updated successfully');
   };
   
@@ -395,51 +414,104 @@ setNewFlashcardPinyin('');
       {activeTab === 'flashcards' && (
         <div className="space-y-6">
           {/* Add Flashcard Form */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="font-medium mb-3">Add New Flashcard</h3>
-            <form onSubmit={handleAddFlashcard} className="space-y-3">
+          <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5">
+            <h3 className="text-lg font-semibold mb-4">Add New Card</h3>
+            <form onSubmit={handleAddFlashcard} className="space-y-4">
+              {/* Card Type Toggle */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Card Type</label>
+                <div className="inline-flex items-center rounded-full bg-slate-100 p-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setNewCardType('word')}
+                    className={`px-3 py-1.5 rounded-full transition ${
+                      newCardType === 'word' 
+                        ? 'bg-white shadow-sm font-semibold text-slate-900' 
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    Single Word
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewCardType('phrase')}
+                    className={`px-3 py-1.5 rounded-full transition ${
+                      newCardType === 'phrase' 
+                        ? 'bg-white shadow-sm font-semibold text-slate-900' 
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    Phrase / Sentence
+                  </button>
+                </div>
+              </div>
+
+              {/* Main Text Field */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-  Flashcard Word <span className="text-gray-500 text-xs">(input any English or Chinese word of your choice)</span>
-</label>
-
+                  {newCardType === 'word' ? 'Word (Chinese)' : 'Phrase (Chinese)'}
+                </label>
                 <input
                   type="text"
-                  placeholder="Flashcard word"
-                  className="w-full border rounded-md px-3 py-2"
+                  placeholder={newCardType === 'word' ? '狗' : '喝水, 坐下, 我们走走'}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   value={newFlashcardWord}
                   onChange={(e) => setNewFlashcardWord(e.target.value)}
                   required
                 />
+                {newCardType === 'phrase' && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    Short toddler phrases like "喝水", "坐下", "我们走走"
+                  </p>
+                )}
               </div>
-              <div>
-<label className="block text-sm font-medium mb-1">
-  English <span className="text-gray-500 text-xs">(for the back of the card, use with Chinese words)</span>
-</label>  <input
-    type="text"
-    placeholder="English word"
-    className="w-full border rounded-md px-3 py-2"
-    value={newFlashcardEnglish}
-    onChange={(e) => setNewFlashcardEnglish(e.target.value)}
-  />
-</div>
 
-<div>
-<label className="block text-sm font-medium mb-1">
-  Pinyin <span className="text-gray-500 text-xs">(for the back of the card, use with Chinese words)</span>
-</label>
-  <input
-    type="text"
-    placeholder="Pinyin"
-    className="w-full border rounded-md px-3 py-2"
-    value={newFlashcardPinyin}
-    onChange={(e) => setNewFlashcardPinyin(e.target.value)}
-  />
-</div>
+              {/* English Meaning */}
+              <div>
+                <label className="block text-sm font-medium mb-1">English Meaning</label>
+                <input
+                  type="text"
+                  placeholder={newCardType === 'word' ? 'dog' : 'drink water, sit down, let\'s go for a walk'}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  value={newFlashcardEnglish}
+                  onChange={(e) => setNewFlashcardEnglish(e.target.value)}
+                />
+              </div>
+
+              {/* Pinyin */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Pinyin</label>
+                <input
+                  type="text"
+                  placeholder="Pinyin"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  value={newFlashcardPinyin}
+                  onChange={(e) => setNewFlashcardPinyin(e.target.value)}
+                />
+              </div>
+
+              {/* Phrase Group - only for phrases */}
+              {newCardType === 'phrase' && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Phrase Group (optional)</label>
+                  <input
+                    type="text"
+                    placeholder="Daily Routine, Actions, Feelings"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    value={newPhraseGroup}
+                    onChange={(e) => setNewPhraseGroup(e.target.value)}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Group related phrases together for easier organization
+                  </p>
+                </div>
+              )}
+
+              {/* Category */}
               <div>
                 <label className="block text-sm font-medium mb-1">Category</label>
                 <select
-                  className="w-full border rounded-md px-3 py-2"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   value={newFlashcardCategory}
                   onChange={(e) => setNewFlashcardCategory(e.target.value)}
                   required
@@ -453,12 +525,14 @@ setNewFlashcardPinyin('');
                 </select>
               </div>
               
-              <button 
-                type="submit"
-                className="bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600"
->
-                Add Flashcard
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition"
+                >
+                  Add {newCardType === 'phrase' ? 'Phrase' : 'Card'}
+                </button>
+              </div>
             </form>
           </div>
           
@@ -495,47 +569,89 @@ setNewFlashcardPinyin('');
                     return (
                       <div key={flashcard.id} className="border rounded-md p-3">
                         {editFlashcardId === flashcard.id ? (
-                          <form onSubmit={handleUpdateFlashcard} className="space-y-2">
+                          <form onSubmit={handleUpdateFlashcard} className="space-y-3">
+                            {/* Card Type Toggle */}
                             <div>
-                              <label className="block text-sm font-medium mb-1">Word</label>
+                              <label className="block text-sm font-medium mb-2">Card Type</label>
+                              <div className="inline-flex items-center rounded-full bg-slate-100 p-1 text-xs">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditCardType('word')}
+                                  className={`px-3 py-1.5 rounded-full transition ${
+                                    editCardType === 'word' 
+                                      ? 'bg-white shadow-sm font-semibold text-slate-900' 
+                                      : 'text-slate-500 hover:text-slate-700'
+                                  }`}
+                                >
+                                  Single Word
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditCardType('phrase')}
+                                  className={`px-3 py-1.5 rounded-full transition ${
+                                    editCardType === 'phrase' 
+                                      ? 'bg-white shadow-sm font-semibold text-slate-900' 
+                                      : 'text-slate-500 hover:text-slate-700'
+                                  }`}
+                                >
+                                  Phrase / Sentence
+                                </button>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium mb-1">
+                                {editCardType === 'word' ? 'Word (Chinese)' : 'Phrase (Chinese)'}
+                              </label>
                               <input
                                 type="text"
-                                className="w-full border rounded-md px-3 py-1"
+                                className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 value={editFlashcardWord}
                                 onChange={(e) => setEditFlashcardWord(e.target.value)}
                                 required
                               />
-{/* English field for back of CN cards */}
-<label className="block text-sm font-medium mb-1 mt-4">
-  English <span className="text-gray-500 text-xs">(for the back of the card, use with Chinese words)</span>
-</label>
-<input
-  type="text"
-  value={editFlashcardEnglish}
-  onChange={(e) => setEditFlashcardEnglish(e.target.value)}
-  placeholder="English meaning"
-  className="w-full border rounded-md px-3 py-2"
-/>
-
-{/* Pinyin field for back of CN cards */}
-<label className="block text-sm font-medium mb-1 mt-4">
-  Pinyin <span className="text-gray-500 text-xs">(for the back of the card, use with Chinese words)</span>
-</label>
-<input
-  type="text"
-  value={editFlashcardPinyin}
-  onChange={(e) => setEditFlashcardPinyin(e.target.value)}
-  placeholder="Pinyin"
-  className="w-full border rounded-md px-3 py-2"
-/>
-
-
                             </div>
+
+                            <div>
+                              <label className="block text-sm font-medium mb-1">English Meaning</label>
+                              <input
+                                type="text"
+                                value={editFlashcardEnglish}
+                                onChange={(e) => setEditFlashcardEnglish(e.target.value)}
+                                placeholder="English meaning"
+                                className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium mb-1">Pinyin</label>
+                              <input
+                                type="text"
+                                value={editFlashcardPinyin}
+                                onChange={(e) => setEditFlashcardPinyin(e.target.value)}
+                                placeholder="Pinyin"
+                                className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                              />
+                            </div>
+
+                            {/* Phrase Group - only for phrases */}
+                            {editCardType === 'phrase' && (
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Phrase Group (optional)</label>
+                                <input
+                                  type="text"
+                                  placeholder="Daily Routine, Actions, Feelings"
+                                  className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                  value={editPhraseGroup}
+                                  onChange={(e) => setEditPhraseGroup(e.target.value)}
+                                />
+                              </div>
+                            )}
                             
                             <div>
                               <label className="block text-sm font-medium mb-1">Category</label>
                               <select
-                                className="w-full border rounded-md px-3 py-1"
+                                className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 value={editFlashcardCategory}
                                 onChange={(e) => setEditFlashcardCategory(e.target.value)}
                                 required
@@ -551,17 +667,19 @@ setNewFlashcardPinyin('');
                             <div className="flex gap-2">
                               <button 
                                 type="submit"
-                                className="bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600"
+                                className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition"
                               >
                                 Save
                               </button>
                               <button 
                                 type="button"
-                                className="bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300"
+                                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium transition"
                                 onClick={() => {
                                   setEditFlashcardId(null);
                                   setEditFlashcardWord('');
                                   setEditFlashcardCategory('');
+                                  setEditCardType('word');
+                                  setEditPhraseGroup('');
                                 }}
                               >
                                 Cancel
@@ -570,10 +688,22 @@ setNewFlashcardPinyin('');
                           </form>
                         ) : (
                           <div className="flex justify-between items-center">
-                            <div>
-                              <div className="font-medium">{flashcard.word}</div>
-                              <div className="text-xs text-gray-500">
-                                Category: {category ? category.name : 'Unknown'}
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="font-medium">{flashcard.word}</div>
+                                {flashcard.card_type === 'phrase' && (
+                                  <span className="inline-flex items-center rounded-full bg-purple-50 border border-purple-200 px-2 py-0.5 text-xs font-medium text-purple-700">
+                                    Phrase
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-sm text-slate-600 space-y-0.5">
+                                {flashcard.english && <div>English: {flashcard.english}</div>}
+                                {flashcard.pinyin && <div>Pinyin: {flashcard.pinyin}</div>}
+                                {flashcard.phrase_group && <div>Group: {flashcard.phrase_group}</div>}
+                                <div className="text-xs text-slate-500">
+                                  Category: {category ? category.name : 'Unknown'}
+                                </div>
                               </div>
                             </div>
                             <div className="flex gap-2">
