@@ -89,6 +89,20 @@ const SetAccordion = ({
               <div className="mb-4 flex flex-wrap gap-2">
                 {flashcards.map((card, idx) => {
                   const isFlashed = flashedWords.has(card.id);
+                  const addedDate = card.created_at ? new Date(card.created_at) : null;
+                  const timeAgo = addedDate ? (() => {
+                    const now = new Date();
+                    const diffMs = now - addedDate;
+                    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                    const diffMins = Math.floor(diffMs / (1000 * 60));
+                    
+                    if (diffDays > 0) return `${diffDays}d ago`;
+                    if (diffHours > 0) return `${diffHours}h ago`;
+                    if (diffMins > 0) return `${diffMins}m ago`;
+                    return 'just now';
+                  })() : null;
+                  
                   return (
                     <div
                       key={card.id}
@@ -109,7 +123,14 @@ const SetAccordion = ({
                         )}
                       </div>
                       
-                      <span className="font-medium text-[hsl(var(--foreground))]">{card.word}</span>
+                      <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                        <span className="font-medium text-[hsl(var(--foreground))]">{card.word}</span>
+                        {timeAgo && (
+                          <span className="text-[9px] text-[hsl(var(--muted-foreground))] opacity-70">
+                            Added {timeAgo}
+                          </span>
+                        )}
+                      </div>
                       
                       {idx === 0 && (
                         <span className="text-xs text-amber-600">🌱</span>

@@ -51,6 +51,16 @@ const WordItem = ({ card, isFlashed, onEdit, index, isCompact = false, userPlan 
               {card.title}
             </div>
           )}
+          {!isCompact && card.created_at && (
+            <div className="text-[9px] text-slate-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              Added {new Date(card.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              {card.updated_at && card.updated_at !== card.created_at && (
+                <span className="ml-1.5">
+                  • Edited {new Date(card.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Pronunciation button - hidden in compact mode */}
