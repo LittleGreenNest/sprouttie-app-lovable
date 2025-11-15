@@ -95,14 +95,21 @@ const AllWords = () => {
       // Fetch all tracking data (ever flashed) from backend
       const { data: tracking, error: trackingError } = await supabase
         .from('daily_tracking')
-        .select('flashcard_id')
+        .select('flashcard_id, flashed_at')
         .eq('user_id', currentUser.id)
-        .eq('status', 'flashed');
+        .eq('status', 'flashed')
+        .order('flashed_at', { ascending: true });
 
       if (trackingError) throw trackingError;
 
-      // Create a set of ever-flashed flashcard IDs
+      // Create a set of ever-flashed flashcard IDs and map of first flashed dates
       const flashedIds = new Set(tracking?.map(t => t.flashcard_id) || []);
+      const firstFlashedDates = {};
+      tracking?.forEach(t => {
+        if (!firstFlashedDates[t.flashcard_id]) {
+          firstFlashedDates[t.flashcard_id] = t.flashed_at;
+        }
+      });
       console.log('Flashed flashcard IDs from tracking:', Array.from(flashedIds));
       setFlashedEver(flashedIds);
 
@@ -121,6 +128,9 @@ const AllWords = () => {
             label: card.front, 
             title: card.back,
             folder: card.folder,
+            created_at: card.created_at,
+            updated_at: card.updated_at,
+            first_flashed_at: firstFlashedDates[card.id] || null,
             rawData: card
           });
         });

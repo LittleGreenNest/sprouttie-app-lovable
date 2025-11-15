@@ -51,13 +51,19 @@ const WordItem = ({ card, isFlashed, onEdit, index, isCompact = false, userPlan 
               {card.title}
             </div>
           )}
-          {!isCompact && card.created_at && (
-            <div className="text-[9px] text-slate-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              Added {new Date(card.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              {card.updated_at && card.updated_at !== card.created_at && (
-                <span className="ml-1.5">
-                  • Edited {new Date(card.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </span>
+          {!isCompact && (card.created_at || card.first_flashed_at) && (
+            <div className="text-[9px] text-slate-400 mt-1.5 space-y-0.5">
+              {card.created_at && (
+                <div>
+                  <span className="font-medium text-slate-500">Added to app:</span>{' '}
+                  {new Date(card.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </div>
+              )}
+              {card.first_flashed_at && (
+                <div>
+                  <span className="font-medium text-emerald-600">First flashed:</span>{' '}
+                  {new Date(card.first_flashed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </div>
               )}
             </div>
           )}
