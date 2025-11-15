@@ -47,6 +47,10 @@ const SearchFilterBar = ({
           <option value="za">Z → A</option>
           <option value="most">Most Words First</option>
           <option value="least">Least Words First</option>
+          <option value="dateAdded">Date Added to App (Newest)</option>
+          <option value="dateAddedOld">Date Added to App (Oldest)</option>
+          <option value="dateFlashed">Date First Flashed (Newest)</option>
+          <option value="dateFlashedOld">Date First Flashed (Oldest)</option>
         </select>
       </div>
     </div>

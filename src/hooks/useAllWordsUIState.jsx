@@ -79,6 +79,12 @@ export const useAllWordsUIState = (flashcardsByCategory, allCategories) => {
           return flashcardsByCategory[b].length - flashcardsByCategory[a].length;
         case 'least':
           return flashcardsByCategory[a].length - flashcardsByCategory[b].length;
+        case 'dateAdded':
+        case 'dateAddedOld':
+        case 'dateFlashed':
+        case 'dateFlashedOld':
+          // For date-based sorting, we'll sort within categories, not category names
+          return a.localeCompare(b);
         default:
           return 0;
       }
@@ -89,13 +95,51 @@ export const useAllWordsUIState = (flashcardsByCategory, allCategories) => {
 
   // Filter words within categories based on search
   const getFilteredWords = (categoryWords) => {
-    if (!debouncedQuery) return categoryWords;
+    let filtered = categoryWords;
     
-    const lowerQuery = debouncedQuery.toLowerCase();
-    return categoryWords.filter(card =>
-      card.label.toLowerCase().includes(lowerQuery) ||
-      (card.title || '').toLowerCase().includes(lowerQuery)
-    );
+    if (debouncedQuery) {
+      const lowerQuery = debouncedQuery.toLowerCase();
+      filtered = categoryWords.filter(card =>
+        card.label.toLowerCase().includes(lowerQuery) ||
+        (card.title || '').toLowerCase().includes(lowerQuery)
+      );
+    }
+
+    // Apply word-level sorting based on sortBy
+    const sorted = [...filtered];
+    switch (sortBy) {
+      case 'dateAdded':
+        sorted.sort((a, b) => {
+          const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+          const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+          return dateB - dateA; // Newest first
+        });
+        break;
+      case 'dateAddedOld':
+        sorted.sort((a, b) => {
+          const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+          const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+          return dateA - dateB; // Oldest first
+        });
+        break;
+      case 'dateFlashed':
+        sorted.sort((a, b) => {
+          const dateA = a.first_flashed_at ? new Date(a.first_flashed_at) : new Date(0);
+          const dateB = b.first_flashed_at ? new Date(b.first_flashed_at) : new Date(0);
+          return dateB - dateA; // Newest first
+        });
+        break;
+      case 'dateFlashedOld':
+        sorted.sort((a, b) => {
+          const dateA = a.first_flashed_at ? new Date(a.first_flashed_at) : new Date(0);
+          const dateB = b.first_flashed_at ? new Date(b.first_flashed_at) : new Date(0);
+          return dateA - dateB; // Oldest first
+        });
+        break;
+      // Default: keep original order (already sorted by label in most cases)
+    }
+
+    return sorted;
   };
 
   return {
