@@ -202,6 +202,33 @@ export type Database = {
           },
         ]
       }
+      spoken_words: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          started_saying_at: string
+          user_id: string
+          word: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          started_saying_at?: string
+          user_id: string
+          word: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          started_saying_at?: string
+          user_id?: string
+          word?: string
+        }
+        Relationships: []
+      }
       waitlist: {
         Row: {
           consent: boolean | null

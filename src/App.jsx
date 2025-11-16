@@ -28,6 +28,7 @@ import DailyTrackerImproved from './components/DailyTrackerImproved';
 import FlashcardManager from './components/FlashcardManager';
 import HistoryView from './components/HistoryView';
 import AllWords from './components/AllWords';
+import SpokenWords from './components/SpokenWords';
 import BingoCardGenerator from './components/BingoCardGenerator';
 import Plans from './components/subscription/Plans';
 import PrintFlashcards from './components/PrintFlashcards';
@@ -65,6 +66,7 @@ const AppContent = () => {
     if (path.includes('/dashboard')) setActiveTab('dashboard');
     else if (path.includes('/daily-tracking')) setActiveTab('daily-tracking');
     else if (path.includes('/all-words')) setActiveTab('all-words');
+    else if (path.includes('/spoken-words')) setActiveTab('spoken-words');
     else if (path.includes('/pronunciation')) setActiveTab('pronunciation');
     else if (path.includes('/bingo-generator')) setActiveTab('bingo-generator');
     else if (path.includes('/manage-flashcards')) setActiveTab('manage-flashcards');
@@ -128,6 +130,12 @@ const AppContent = () => {
           All Words
         </button>
         <button 
+          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'spoken-words' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
+          onClick={() => handleTabChange('spoken-words')}
+        >
+          Words He Says
+        </button>
+        <button 
           className={`px-4 py-2 whitespace-nowrap ${activeTab === 'pronunciation' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
           onClick={() => handleTabChange('pronunciation')}
         >
@@ -163,6 +171,7 @@ const AppContent = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/daily-tracking" element={<DailyTrackerImproved />} />
           <Route path="/all-words" element={<AllWords />} />
+          <Route path="/spoken-words" element={<SpokenWords />} />
           <Route path="/pronunciation" element={<PronunciationPortal />} />
           <Route path="/bingo-generator" element={<BingoCardGenerator />} />
           <Route path="/manage-flashcards" element={<FlashcardManager />} />
