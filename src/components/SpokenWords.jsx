@@ -107,8 +107,8 @@ const SpokenWords = () => {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-foreground">Words He's Saying</h1>
-          <p className="text-muted-foreground">Track the words your son is actively using</p>
+          <h1 className="text-3xl font-bold text-foreground">Words & Phrases He's Saying</h1>
+          <p className="text-muted-foreground">Track the words and phrases your son knows and uses</p>
         </div>
 
         {/* Add New Word Form */}
@@ -116,13 +116,13 @@ const SpokenWords = () => {
           <form onSubmit={addSpokenWord} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                Word
+                Word or Phrase
               </label>
               <input
                 type="text"
                 value={newWord}
                 onChange={(e) => setNewWord(e.target.value)}
-                placeholder="Enter a word..."
+                placeholder="Enter a word or phrase..."
                 className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-foreground"
               />
             </div>
@@ -134,7 +134,7 @@ const SpokenWords = () => {
                 type="text"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Context, pronunciation, etc..."
+                placeholder="When/where he said it, context..."
                 className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-foreground"
               />
             </div>
@@ -143,7 +143,7 @@ const SpokenWords = () => {
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <Plus size={20} />
-              Add Word
+              Add Word/Phrase
             </button>
           </form>
         </div>
@@ -158,7 +158,7 @@ const SpokenWords = () => {
 
           {spokenWords.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              No words added yet. Start tracking your son's vocabulary!
+              No words or phrases added yet. Start tracking what your son is saying!
             </div>
           ) : (
             <div className="space-y-3">
