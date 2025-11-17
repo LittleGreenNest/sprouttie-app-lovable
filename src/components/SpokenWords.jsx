@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../context/AuthContext';
 import { Plus, Trash2, Calendar } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const SpokenWords = () => {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [spokenWords, setSpokenWords] = useState([]);
   const [newWord, setNewWord] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (currentUser) {
       fetchSpokenWords();
     }
-  }, [user]);
+  }, [currentUser]);
 
   const fetchSpokenWords = async () => {
     try {
@@ -23,7 +23,7 @@ const SpokenWords = () => {
       const { data, error } = await supabase
         .from('spoken_words')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .order('started_saying_at', { ascending: false });
 
       if (error) throw error;
@@ -44,7 +44,7 @@ const SpokenWords = () => {
       const { error } = await supabase
         .from('spoken_words')
         .insert({
-          user_id: user.id,
+          user_id: currentUser.id,
           word: newWord.trim(),
           notes: notes.trim() || null,
         });
