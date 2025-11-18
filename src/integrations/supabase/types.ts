@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_flashing_sessions: {
+        Row: {
+          cards_introduced: number | null
+          cards_retired: number | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          session_date: string
+          session_occurred: boolean
+          user_id: string
+        }
+        Insert: {
+          cards_introduced?: number | null
+          cards_retired?: number | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          session_date: string
+          session_occurred?: boolean
+          user_id: string
+        }
+        Update: {
+          cards_introduced?: number | null
+          cards_retired?: number | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          session_date?: string
+          session_occurred?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_tracking: {
         Row: {
           created_at: string | null
@@ -64,9 +97,13 @@ export type Database = {
       }
       flashcards: {
         Row: {
+          active_day_count: number | null
           back: string
+          card_status: string | null
           card_type: string
           created_at: string | null
+          date_introduced: string | null
+          date_retired: string | null
           folder: string | null
           front: string
           id: string
@@ -78,9 +115,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active_day_count?: number | null
           back: string
+          card_status?: string | null
           card_type?: string
           created_at?: string | null
+          date_introduced?: string | null
+          date_retired?: string | null
           folder?: string | null
           front: string
           id?: string
@@ -92,9 +133,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active_day_count?: number | null
           back?: string
+          card_status?: string | null
           card_type?: string
           created_at?: string | null
+          date_introduced?: string | null
+          date_retired?: string | null
           folder?: string | null
           front?: string
           id?: string
