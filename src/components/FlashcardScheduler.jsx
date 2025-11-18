@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import PronunciationButton from './pronunciation/PronunciationButton';
 
 const FlashcardScheduler = () => {
   const { currentUser } = useAuth();
@@ -16,10 +17,15 @@ const FlashcardScheduler = () => {
     cardsRetiredToday: 0,
     cardsIntroducedToday: 0
   });
+  const [sessions, setSessions] = useState({}); // { setIndex: { round1: {}, round2: {}, round3: {} } }
+  const [flashedWords, setFlashedWords] = useState(new Set());
+  const [familyMember, setFamilyMember] = useState('');
+  const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     if (currentUser) {
       loadScheduleData();
+      loadTrackingData();
     }
   }, [currentUser]);
 
@@ -92,6 +98,140 @@ const FlashcardScheduler = () => {
       toast.error('Failed to load schedule data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTrackingData = async () => {
+    try {
+      // Load today's tracking data
+      const { data: trackingData, error } = await supabase
+        .from('daily_tracking')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('date', today);
+
+      if (error) throw error;
+
+      // Organize sessions by set and round
+      const sessionsMap = {};
+      const flashedWordsSet = new Set();
+      
+      (trackingData || []).forEach(record => {
+        if (record.status === 'flashed' && record.flashcard_id && record.flashcard_id !== 'shared-note') {
+          flashedWordsSet.add(record.flashcard_id);
+        }
+        
+        if (record.notes && record.status === 'flashed') {
+          try {
+            const metadata = JSON.parse(record.notes);
+            if (metadata.setIndex !== undefined && metadata.round) {
+              if (!sessionsMap[metadata.setIndex]) {
+                sessionsMap[metadata.setIndex] = {};
+              }
+              sessionsMap[metadata.setIndex][metadata.round] = {
+                completed: true,
+                by: record.flashed_by,
+                time: record.time_of_day,
+                engagement: record.engagement
+              };
+            }
+          } catch (e) {
+            // Not valid JSON, skip
+          }
+        }
+      });
+
+      setSessions(sessionsMap);
+      setFlashedWords(flashedWordsSet);
+    } catch (error) {
+      console.error('Error loading tracking data:', error);
+    }
+  };
+
+  const toggleCardFlashed = async (card, setIndex, round) => {
+    const isFlashed = flashedWords.has(card.id);
+    
+    if (isFlashed) {
+      // Remove from tracking
+      setFlashedWords(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(card.id);
+        return newSet;
+      });
+      
+      // Delete from database
+      await supabase
+        .from('daily_tracking')
+        .delete()
+        .eq('user_id', currentUser.id)
+        .eq('date', today)
+        .eq('flashcard_id', card.id);
+    } else {
+      // Add to tracking
+      setFlashedWords(prev => new Set([...prev, card.id]));
+      
+      // Insert into database
+      const metadata = { setIndex, round };
+      await supabase
+        .from('daily_tracking')
+        .insert({
+          user_id: currentUser.id,
+          date: today,
+          flashcard_id: card.id,
+          status: 'flashed',
+          flashed_by: familyMember || 'Parent',
+          time_of_day: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          engagement: 3,
+          notes: JSON.stringify(metadata)
+        });
+    }
+    
+    loadTrackingData();
+  };
+
+  const markRoundComplete = async (setIndex, round) => {
+    try {
+      const set = activeSets[setIndex];
+      if (!set) return;
+
+      // Mark all cards in the set as flashed for this round
+      const insertPromises = set.cards.map(card => {
+        const metadata = { setIndex, round };
+        return supabase
+          .from('daily_tracking')
+          .insert({
+            user_id: currentUser.id,
+            date: today,
+            flashcard_id: card.id,
+            status: 'flashed',
+            flashed_by: familyMember || 'Parent',
+            time_of_day: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            engagement: 3,
+            notes: JSON.stringify(metadata)
+          });
+      });
+
+      await Promise.all(insertPromises);
+      
+      // Update sessions state
+      setSessions(prev => ({
+        ...prev,
+        [setIndex]: {
+          ...prev[setIndex],
+          [round]: {
+            completed: true,
+            by: familyMember || 'Parent',
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            engagement: 3
+          }
+        }
+      }));
+
+      toast.success(`Set ${setIndex + 1} - ${round} completed!`);
+      loadTrackingData();
+    } catch (error) {
+      console.error('Error marking round complete:', error);
+      toast.error('Failed to mark round complete');
     }
   };
 
@@ -306,24 +446,66 @@ const FlashcardScheduler = () => {
         </div>
       </div>
 
-      {/* Active Sets Display */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-slate-900 mb-4">
-          Active Card Sets ({activeSets.length} sets)
+      {/* Family Member Selector */}
+      <div className="bg-white rounded-lg shadow p-4">
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Who is flashing today?
+        </label>
+        <select
+          value={familyMember}
+          onChange={(e) => setFamilyMember(e.target.value)}
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+        >
+          <option value="Parent">Parent</option>
+          <option value="Grandparent">Grandparent</option>
+          <option value="Nanny">Nanny</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      {/* Active Sets with Tracking */}
+      <div className="space-y-6">
+        <h2 className="text-xl font-bold text-slate-900">
+          Active Card Sets ({activeSets.length} / 5 sets)
         </h2>
-        <div className="space-y-4">
-          {activeSets.map((set, index) => (
+        
+        {activeSets.map((set, setIndex) => {
+          const setSession = sessions[setIndex] || {};
+          const roundsCompleted = ['round1', 'round2', 'round3'].filter(r => setSession[r]?.completed).length;
+          
+          return (
             <div
               key={set.dateIntroduced}
-              className="border border-slate-200 rounded-lg p-4"
+              className="border border-slate-200 rounded-lg p-6 bg-white shadow"
             >
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h3 className="font-semibold text-slate-900">
-                    Set {index + 1}
-                  </h3>
-                  <p className="text-sm text-slate-600">
-                    Introduced: {new Date(set.dateIntroduced).toLocaleDateString()}
+              {/* Set Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <h3 className="font-bold text-lg text-slate-900">
+                      Set {setIndex + 1}
+                    </h3>
+                    <div className="flex gap-1">
+                      {['round1', 'round2', 'round3'].map((round, idx) => (
+                        <button
+                          key={round}
+                          onClick={() => markRoundComplete(setIndex, round)}
+                          disabled={setSession[round]?.completed}
+                          className={`w-8 h-8 rounded-full font-bold text-sm transition-colors ${
+                            setSession[round]?.completed
+                              ? 'bg-green-500 text-white'
+                              : 'bg-slate-200 text-slate-600 hover:bg-green-100'
+                          }`}
+                        >
+                          {idx + 1}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-sm text-slate-600 mt-1">
+                    Introduced: {new Date(set.dateIntroduced).toLocaleDateString()} • 
+                    Day {set.activeCount} of 5 • 
+                    {roundsCompleted}/3 rounds completed today
                   </p>
                 </div>
                 <div className="text-right">
@@ -333,34 +515,66 @@ const FlashcardScheduler = () => {
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
-                {set.cards.map((card) => (
+
+              {/* Progress Bar */}
+              <div className="mb-4">
+                <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
                   <div
-                    key={card.id}
-                    className="bg-slate-50 rounded p-3 border border-slate-200"
-                  >
-                    <div className="font-medium text-slate-900 text-sm">
-                      {card.front}
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1">
-                      {card.back}
-                    </div>
-                  </div>
-                ))}
+                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all"
+                    style={{ width: `${(set.activeCount / 5) * 100}%` }}
+                  />
+                </div>
               </div>
+
+              {/* Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                {set.cards.map((card) => {
+                  const isFlashed = flashedWords.has(card.id);
+                  
+                  return (
+                    <div
+                      key={card.id}
+                      onClick={() => toggleCardFlashed(card, setIndex, 'round1')}
+                      className={`rounded-lg p-4 border-2 cursor-pointer transition-all ${
+                        isFlashed
+                          ? 'border-green-500 bg-green-50'
+                          : 'border-slate-200 bg-white hover:border-purple-300'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="font-medium text-slate-900">
+                          {card.front}
+                        </div>
+                        {isFlashed && (
+                          <div className="text-green-500 text-xl">✓</div>
+                        )}
+                      </div>
+                      <div className="text-sm text-slate-600 mb-2">
+                        {card.back}
+                      </div>
+                      <PronunciationButton word={card.front} />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Set Status Warning */}
               {set.activeCount === 5 && (
-                <div className="mt-3 bg-orange-50 border border-orange-200 rounded p-2 text-sm text-orange-700">
+                <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-orange-700">
                   ⚠️ This set will be retired on the next flashing day
                 </div>
               )}
             </div>
-          ))}
-          {activeSets.length === 0 && (
-            <div className="text-center py-8 text-slate-500">
-              No active card sets yet. Record a flashing session to begin!
-            </div>
-          )}
-        </div>
+          );
+        })}
+        
+        {activeSets.length === 0 && (
+          <div className="text-center py-12 text-slate-500 bg-white rounded-lg border-2 border-dashed border-slate-200">
+            <div className="text-4xl mb-3">📚</div>
+            <p className="font-medium">No active card sets yet</p>
+            <p className="text-sm mt-1">Record a flashing session to begin!</p>
+          </div>
+        )}
       </div>
 
       {/* Waiting Cards */}
