@@ -30,6 +30,14 @@ const DailyTrackerImproved = () => {
   const [showCreateCategory, setShowCreateCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
+  
+  // 🔄 Rotation Engine State
+  const [sessionOccurred, setSessionOccurred] = useState(false);
+  const [rotationSummary, setRotationSummary] = useState({
+    retiredToday: 0,
+    introducedToday: 0,
+    activeCards: 0
+  });
 
   const dailyGoal = sets.length * 3; // Each set should be done 3 times
 
@@ -70,10 +78,22 @@ const DailyTrackerImproved = () => {
     }
   }, [flashcards, sets, editingSetId]);
 
+  // 🔄 ROTATION ENGINE: Load session status and calculate summary
   const loadDayData = async () => {
     try {
       setLoading(true);
       const dateString = selectedDate.toISOString().split('T')[0];
+
+      // Check if session occurred for this date
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('daily_flashing_sessions')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('session_date', dateString)
+        .maybeSingle();
+
+      if (sessionError && sessionError.code !== 'PGRST116') throw sessionError;
+      setSessionOccurred(sessionData?.session_occurred || false);
 
       // Load session tracking
       const { data: trackingData, error: trackingError } = await supabase
@@ -83,6 +103,9 @@ const DailyTrackerImproved = () => {
         .eq('date', dateString);
 
       if (trackingError) throw trackingError;
+      
+      // Calculate rotation summary
+      await calculateRotationSummary(dateString);
 
       // Organize sessions by set and round
       const sessionsMap = {};
@@ -560,6 +583,163 @@ const DailyTrackerImproved = () => {
     return counts;
   };
 
+  // 🔄 ROTATION ENGINE: Calculate rotation summary
+  const calculateRotationSummary = async (dateString) => {
+    try {
+      // Get all active flashcards
+      const { data: activeCards, error: activeError } = await supabase
+        .from('flashcards')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('card_status', 'active');
+
+      if (activeError) throw activeError;
+
+      // Cards retired today
+      const retiredToday = activeCards?.filter(card => 
+        card.date_retired === dateString
+      ).length || 0;
+
+      // Cards introduced today
+      const introducedToday = activeCards?.filter(card => 
+        card.date_introduced === dateString
+      ).length || 0;
+
+      setRotationSummary({
+        retiredToday,
+        introducedToday,
+        activeCards: activeCards?.length || 0
+      });
+    } catch (error) {
+      console.error('Error calculating rotation summary:', error);
+    }
+  };
+
+  // 🔄 ROTATION ENGINE: Handle session toggle
+  const handleSessionToggle = async (occurred) => {
+    const dateString = selectedDate.toISOString().split('T')[0];
+    
+    try {
+      setSessionOccurred(occurred);
+
+      // Save session status
+      const { data: existingSession } = await supabase
+        .from('daily_flashing_sessions')
+        .select('id')
+        .eq('user_id', currentUser.id)
+        .eq('session_date', dateString)
+        .maybeSingle();
+
+      if (existingSession) {
+        await supabase
+          .from('daily_flashing_sessions')
+          .update({ session_occurred: occurred })
+          .eq('id', existingSession.id);
+      } else {
+        await supabase
+          .from('daily_flashing_sessions')
+          .insert({
+            user_id: currentUser.id,
+            session_date: dateString,
+            session_occurred: occurred
+          });
+      }
+
+      // If session occurred, run rotation engine
+      if (occurred) {
+        await runRotationEngine(dateString);
+      }
+    } catch (error) {
+      console.error('Error handling session toggle:', error);
+      toast.error('Failed to update session status');
+    }
+  };
+
+  // 🔄 ROTATION ENGINE: Main rotation logic
+  const runRotationEngine = async (dateString) => {
+    try {
+      // TASK 1: Find and retire cards with active_day_count = 5
+      const { data: cardsToRetire, error: retireQueryError } = await supabase
+        .from('flashcards')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('card_status', 'active')
+        .eq('active_day_count', 5);
+
+      if (retireQueryError) throw retireQueryError;
+
+      const retireCount = cardsToRetire?.length || 0;
+
+      if (retireCount > 0) {
+        const retireIds = cardsToRetire.map(card => card.id);
+        
+        await supabase
+          .from('flashcards')
+          .update({
+            card_status: 'retired',
+            date_retired: dateString
+          })
+          .in('id', retireIds);
+      }
+
+      // TASK 2: Introduce new cards from waiting queue
+      if (retireCount > 0) {
+        const { data: waitingCards, error: waitingError } = await supabase
+          .from('flashcards')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .eq('card_status', 'waiting')
+          .order('created_at', { ascending: true })
+          .limit(retireCount);
+
+        if (waitingError) throw waitingError;
+
+        if (waitingCards && waitingCards.length > 0) {
+          const introduceIds = waitingCards.map(card => card.id);
+          
+          await supabase
+            .from('flashcards')
+            .update({
+              card_status: 'active',
+              active_day_count: 1,
+              date_introduced: dateString
+            })
+            .in('id', introduceIds);
+        }
+      }
+
+      // TASK 3: Increment active_day_count for remaining active cards
+      const { data: remainingActive, error: remainingError } = await supabase
+        .from('flashcards')
+        .select('id, active_day_count')
+        .eq('user_id', currentUser.id)
+        .eq('card_status', 'active')
+        .neq('date_introduced', dateString); // Don't increment cards introduced today
+
+      if (remainingError) throw remainingError;
+
+      if (remainingActive && remainingActive.length > 0) {
+        // Update each card's count
+        for (const card of remainingActive) {
+          await supabase
+            .from('flashcards')
+            .update({
+              active_day_count: (card.active_day_count || 0) + 1
+            })
+            .eq('id', card.id);
+        }
+      }
+
+      // Recalculate summary
+      await calculateRotationSummary(dateString);
+      
+      toast.success(`Rotation complete! ${retireCount} cards retired, ${retireCount} new cards introduced.`);
+    } catch (error) {
+      console.error('Error running rotation engine:', error);
+      toast.error('Failed to run rotation engine');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -584,6 +764,69 @@ const DailyTrackerImproved = () => {
         totalGoal={dailyGoal}
       />
 
+      {/* 🔄 ROTATION ENGINE: Session Occurred Toggle + Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Session Toggle */}
+        <div className="md:col-span-2 bg-white rounded-xl shadow-md p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-1">
+                Did today's flashing session occur?
+              </h3>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                {sessionOccurred ? (
+                  <span className="text-green-600">✅ Session completed - rotation applied</span>
+                ) : (
+                  <span className="text-gray-500">❌ No session - counts unchanged</span>
+                )}
+              </p>
+            </div>
+            <PillToggle
+              options={[
+                { value: false, label: 'No' },
+                { value: true, label: 'Yes' }
+              ]}
+              selected={sessionOccurred}
+              onChange={handleSessionToggle}
+            />
+          </div>
+          
+          {!sessionOccurred && (
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                ⏸️ <strong>Skipped day</strong> — All card active day counts remain unchanged. 
+                Toggle to "Yes" to trigger the 5-day rotation.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Rotation Summary */}
+        <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl shadow-md p-6">
+          <h3 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4 flex items-center gap-2">
+            📊 Rotation Summary
+          </h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-[hsl(var(--muted-foreground))]">Active Cards</span>
+              <span className="text-lg font-bold text-green-600">{rotationSummary.activeCards} / 25</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-[hsl(var(--muted-foreground))]">Retired Today</span>
+              <span className="text-lg font-bold text-red-600">{rotationSummary.retiredToday}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-[hsl(var(--muted-foreground))]">New Today</span>
+              <span className="text-lg font-bold text-blue-600">{rotationSummary.introducedToday}</span>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+              <span className="text-sm text-[hsl(var(--muted-foreground))]">Total Sets</span>
+              <span className="text-lg font-bold text-[hsl(var(--foreground))]">{sets.length}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Family Member Input */}
       {(userPlan === 'print' || userPlan === 'pro') && (
         <div className="bg-white rounded-xl shadow-md p-6">
@@ -600,18 +843,30 @@ const DailyTrackerImproved = () => {
         </div>
       )}
 
-      {/* Sets Tracking */}
+      {/* Sets Tracking with Enhanced Cards Display */}
       <div className="space-y-4">
         {sets.map((set, index) => {
           const setFlashcards = getFlashcardsForSet(set.id);
           const isEditing = editingSetId === set.id;
+          
+          // Get flashcard details with active day count
+          const enrichedFlashcards = setFlashcards.map(card => {
+            const fullCard = flashcards.find(f => f.id === card.id);
+            return {
+              ...card,
+              active_day_count: fullCard?.active_day_count || 0,
+              card_status: fullCard?.card_status || 'waiting',
+              date_introduced: fullCard?.date_introduced,
+              date_retired: fullCard?.date_retired
+            };
+          });
           
           return (
             <div key={set.id}>
               <SetAccordion
                 set={set}
                 setIndex={index}
-                flashcards={setFlashcards}
+                flashcards={enrichedFlashcards}
                 sessions={sessions[set.id] || {}}
                 onToggleSession={toggleSession}
                 onManageWords={startEditingSet}
