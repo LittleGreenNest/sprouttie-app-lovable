@@ -368,78 +368,94 @@ const FlashcardScheduler = () => {
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg p-6">
+      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-lg p-6">
         <h1 className="text-3xl font-bold mb-2">Flashcard Schedule Manager</h1>
-        <p className="text-purple-100">
+        <p className="opacity-90">
           Manage your daily rotation of flashcards with 5-day cycles
         </p>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-          <div className="text-sm text-slate-600 mb-1">Active Cards</div>
-          <div className="text-3xl font-bold text-slate-900">
-            {stats.totalActive} / 25
+      {/* Rotation Summary */}
+      <div className="bg-card rounded-lg shadow border border-border p-6">
+        <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+          📊 Rotation Summary
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-primary mb-1">
+              {stats.totalActive} / 25
+            </div>
+            <div className="text-sm text-muted-foreground">Active Cards</div>
           </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-          <div className="text-sm text-slate-600 mb-1">Cards Introduced Today</div>
-          <div className="text-3xl font-bold text-green-600">
-            {stats.cardsIntroducedToday}
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600 mb-1">
+              {stats.cardsIntroducedToday}
+            </div>
+            <div className="text-sm text-muted-foreground">New Today 🌱</div>
           </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
-          <div className="text-sm text-slate-600 mb-1">Cards Retired Today</div>
-          <div className="text-3xl font-bold text-orange-600">
-            {stats.cardsRetiredToday}
+          <div className="text-center">
+            <div className="text-2xl font-bold text-orange-600 mb-1">
+              {stats.cardsRetiredToday}
+            </div>
+            <div className="text-sm text-muted-foreground">Retired Today 🏁</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-primary mb-1">
+              {activeSets.length} / 5
+            </div>
+            <div className="text-sm text-muted-foreground">Active Sets</div>
           </div>
         </div>
       </div>
 
       {/* Daily Session Recording */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-slate-900 mb-4">
-          Today's Flashing Session
+      <div className="bg-card rounded-lg shadow border border-border p-6">
+        <h2 className="text-xl font-bold text-foreground mb-4">
+          📅 Today's Flashing Session
         </h2>
         <div className="space-y-4">
           <div>
-            <p className="text-slate-700 mb-3">Did a flashing session occur today?</p>
+            <p className="text-foreground mb-3 font-medium">Did a flashing session occur today?</p>
+            {todaySession && !sessionOccurred && (
+              <div className="mb-3 bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-orange-700">
+                ⏸️ Skipped day — Active Day Counts remain unchanged
+              </div>
+            )}
             <div className="flex gap-3">
               <button
                 onClick={() => recordSession(true)}
                 disabled={sessionOccurred}
-                className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                className={`px-6 py-2 rounded-lg font-medium transition-all ${
                   sessionOccurred
-                    ? 'bg-green-500 text-white'
-                    : 'bg-slate-200 text-slate-700 hover:bg-green-100'
+                    ? 'bg-green-500 text-white shadow-md'
+                    : 'bg-secondary text-secondary-foreground hover:bg-green-100 hover:shadow'
                 }`}
               >
-                {sessionOccurred ? '✓ Yes (Recorded)' : 'Yes'}
+                {sessionOccurred ? '✓ Yes (Session Recorded)' : 'Yes'}
               </button>
               <button
                 onClick={() => recordSession(false)}
                 disabled={todaySession && !sessionOccurred}
-                className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                className={`px-6 py-2 rounded-lg font-medium transition-all ${
                   todaySession && !sessionOccurred
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-slate-200 text-slate-700 hover:bg-orange-100'
+                    ? 'bg-orange-500 text-white shadow-md'
+                    : 'bg-secondary text-secondary-foreground hover:bg-orange-100 hover:shadow'
                 }`}
               >
-                {todaySession && !sessionOccurred ? '✓ No (Skipped)' : 'No'}
+                {todaySession && !sessionOccurred ? '✓ No (Day Skipped)' : 'No'}
               </button>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Session Notes (Optional)
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add any notes about today's session..."
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-foreground"
               rows={3}
             />
           </div>
@@ -447,14 +463,14 @@ const FlashcardScheduler = () => {
       </div>
 
       {/* Family Member Selector */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <label className="block text-sm font-medium text-slate-700 mb-2">
-          Who is flashing today?
+      <div className="bg-card rounded-lg shadow border border-border p-4">
+        <label className="block text-sm font-medium text-foreground mb-2">
+          👤 Who is flashing today?
         </label>
         <select
           value={familyMember}
           onChange={(e) => setFamilyMember(e.target.value)}
-          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-foreground"
         >
           <option value="Parent">Parent</option>
           <option value="Grandparent">Grandparent</option>
@@ -465,62 +481,76 @@ const FlashcardScheduler = () => {
 
       {/* Active Sets with Tracking */}
       <div className="space-y-6">
-        <h2 className="text-xl font-bold text-slate-900">
-          Active Card Sets ({activeSets.length} / 5 sets)
+        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+          📚 Active Card Sets ({activeSets.length} / 5 sets)
         </h2>
         
         {activeSets.map((set, setIndex) => {
           const setSession = sessions[setIndex] || {};
           const roundsCompleted = ['round1', 'round2', 'round3'].filter(r => setSession[r]?.completed).length;
           
+          const isNewSet = set.activeCount === 1 && stats.cardsIntroducedToday > 0;
+          const isRetiringSet = set.activeCount === 5;
+          
           return (
             <div
               key={set.dateIntroduced}
-              className="border border-slate-200 rounded-lg p-6 bg-white shadow"
+              className="border border-border rounded-lg p-6 bg-card shadow-md transition-all hover:shadow-lg"
             >
               {/* Set Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <h3 className="font-bold text-lg text-slate-900">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h3 className="font-bold text-lg text-foreground">
                       Set {setIndex + 1}
                     </h3>
+                    {isNewSet && (
+                      <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full animate-fade-in">
+                        🌱 New Today
+                      </span>
+                    )}
+                    {isRetiringSet && (
+                      <span className="px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full">
+                        🏁 Retiring Next Session
+                      </span>
+                    )}
                     <div className="flex gap-1">
                       {['round1', 'round2', 'round3'].map((round, idx) => (
                         <button
                           key={round}
                           onClick={() => markRoundComplete(setIndex, round)}
                           disabled={setSession[round]?.completed}
-                          className={`w-8 h-8 rounded-full font-bold text-sm transition-colors ${
+                          className={`w-8 h-8 rounded-full font-bold text-sm transition-all ${
                             setSession[round]?.completed
-                              ? 'bg-green-500 text-white'
-                              : 'bg-slate-200 text-slate-600 hover:bg-green-100'
+                              ? 'bg-green-500 text-white shadow-md scale-110'
+                              : 'bg-secondary text-secondary-foreground hover:bg-green-100 hover:shadow'
                           }`}
+                          title={`Round ${idx + 1}`}
                         >
                           {idx + 1}
                         </button>
                       ))}
                     </div>
                   </div>
-                  <p className="text-sm text-slate-600 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     Introduced: {new Date(set.dateIntroduced).toLocaleDateString()} • 
                     Day {set.activeCount} of 5 • 
                     {roundsCompleted}/3 rounds completed today
                   </p>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm text-slate-600">Active Day Count</div>
-                  <div className="text-2xl font-bold text-purple-600">
-                    {set.activeCount} / 5
+                  <div className="text-sm text-muted-foreground">Active Day</div>
+                  <div className="text-3xl font-bold text-primary">
+                    D{set.activeCount}
                   </div>
                 </div>
               </div>
 
               {/* Progress Bar */}
               <div className="mb-4">
-                <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div className="h-2 bg-secondary rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all"
+                    className="h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500"
                     style={{ width: `${(set.activeCount / 5) * 100}%` }}
                   />
                 </div>
@@ -535,21 +565,34 @@ const FlashcardScheduler = () => {
                     <div
                       key={card.id}
                       onClick={() => toggleCardFlashed(card, setIndex, 'round1')}
-                      className={`rounded-lg p-4 border-2 cursor-pointer transition-all ${
+                      className={`rounded-lg p-4 border-2 cursor-pointer transition-all relative ${
                         isFlashed
-                          ? 'border-green-500 bg-green-50'
-                          : 'border-slate-200 bg-white hover:border-purple-300'
+                          ? 'border-green-500 bg-green-50 shadow-md scale-105'
+                          : 'border-border bg-card hover:border-primary hover:shadow'
                       }`}
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="font-medium text-slate-900">
+                      {/* Day Badge */}
+                      <div className="absolute top-2 right-2">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                          set.activeCount === 1 ? 'bg-blue-100 text-blue-700' :
+                          set.activeCount === 2 ? 'bg-purple-100 text-purple-700' :
+                          set.activeCount === 3 ? 'bg-indigo-100 text-indigo-700' :
+                          set.activeCount === 4 ? 'bg-pink-100 text-pink-700' :
+                          'bg-orange-100 text-orange-700'
+                        }`}>
+                          D{set.activeCount}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-start justify-between mb-2 pr-10">
+                        <div className="font-medium text-foreground text-lg">
                           {card.front}
                         </div>
                         {isFlashed && (
-                          <div className="text-green-500 text-xl">✓</div>
+                          <div className="text-green-500 text-2xl animate-scale-in">✓</div>
                         )}
                       </div>
-                      <div className="text-sm text-slate-600 mb-2">
+                      <div className="text-sm text-muted-foreground mb-3">
                         {card.back}
                       </div>
                       <PronunciationButton word={card.front} />
@@ -560,8 +603,9 @@ const FlashcardScheduler = () => {
 
               {/* Set Status Warning */}
               {set.activeCount === 5 && (
-                <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-orange-700">
-                  ⚠️ This set will be retired on the next flashing day
+                <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-orange-700 flex items-center gap-2">
+                  <span className="text-lg">🏁</span>
+                  <span>This set will be retired after the next flashing session and replaced with new cards</span>
                 </div>
               )}
             </div>
@@ -569,35 +613,35 @@ const FlashcardScheduler = () => {
         })}
         
         {activeSets.length === 0 && (
-          <div className="text-center py-12 text-slate-500 bg-white rounded-lg border-2 border-dashed border-slate-200">
+          <div className="text-center py-12 text-muted-foreground bg-card rounded-lg border-2 border-dashed border-border">
             <div className="text-4xl mb-3">📚</div>
-            <p className="font-medium">No active card sets yet</p>
+            <p className="font-medium text-foreground">No active card sets yet</p>
             <p className="text-sm mt-1">Record a flashing session to begin!</p>
           </div>
         )}
       </div>
 
       {/* Waiting Cards */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-slate-900 mb-4">
-          Waiting Cards ({waitingCards.length})
+      <div className="bg-card rounded-lg shadow border border-border p-6">
+        <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+          ⏳ Waiting Cards ({waitingCards.length})
         </h2>
-        <p className="text-slate-600 mb-4">
+        <p className="text-muted-foreground mb-4">
           These cards will be introduced as active cards are retired (max 5 per day)
         </p>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2 max-h-64 overflow-y-auto">
           {waitingCards.slice(0, 25).map((card) => (
             <div
               key={card.id}
-              className="bg-slate-50 rounded p-2 border border-slate-200 text-sm"
+              className="bg-secondary/50 rounded p-2 border border-border text-sm hover:bg-secondary transition-colors"
             >
-              <div className="font-medium text-slate-900">{card.front}</div>
-              <div className="text-xs text-slate-500">{card.back}</div>
+              <div className="font-medium text-foreground">{card.front}</div>
+              <div className="text-xs text-muted-foreground">{card.back}</div>
             </div>
           ))}
         </div>
         {waitingCards.length > 25 && (
-          <p className="text-sm text-slate-500 mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             ... and {waitingCards.length - 25} more
           </p>
         )}
@@ -605,14 +649,30 @@ const FlashcardScheduler = () => {
 
       {/* Info Panel */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h3 className="font-bold text-blue-900 mb-2">How It Works</h3>
+        <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
+          💡 How the Rotation Works
+        </h3>
         <ul className="space-y-2 text-sm text-blue-800">
-          <li>• Maximum 25 active cards at any time (5 sets of 5 cards)</li>
-          <li>• Each card has a 5-day active cycle (5 flashing sessions)</li>
-          <li>• Cards are retired after 5 successful flashing days</li>
-          <li>• New cards replace retired ones automatically</li>
-          <li>• Skipped days don't affect the active day count</li>
-          <li>• Up to 5 new cards can be introduced per flashing day</li>
+          <li className="flex items-start gap-2">
+            <span className="font-bold">•</span>
+            <span><strong>5 Active Sets:</strong> Maximum 25 active cards (5 sets × 5 cards)</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-bold">•</span>
+            <span><strong>5-Day Cycle:</strong> Each card goes through D1 → D2 → D3 → D4 → D5</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-bold">•</span>
+            <span><strong>Auto Rotation:</strong> D5 cards retire, new cards introduced automatically</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-bold">•</span>
+            <span><strong>Skipped Days:</strong> Day counts freeze — no retirement or introduction</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-bold">•</span>
+            <span><strong>Staggered Start:</strong> Up to 5 new cards per session until 25 cards active</span>
+          </li>
         </ul>
       </div>
     </div>
