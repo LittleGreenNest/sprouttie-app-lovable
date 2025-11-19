@@ -8,7 +8,6 @@ import SetAccordion from './tracking/SetAccordion';
 import StickyNoteButton from './tracking/StickyNoteButton';
 import NotesList from './tracking/NotesList';
 import UpgradeBanner from './tracking/UpgradeBanner';
-import PillToggle from './ui/PillToggle';
 import PronunciationButton from './pronunciation/PronunciationButton';
 
 const DailyTrackerImproved = () => {
@@ -203,6 +202,11 @@ const DailyTrackerImproved = () => {
 
         if (error) throw error;
       } else {
+        // 🔄 Auto-trigger rotation engine on first tracking of the day
+        if (!sessionOccurred) {
+          await handleSessionToggle(true);
+        }
+
         // Add the session
         const newSessions = { ...sessions };
         if (!newSessions[setId]) newSessions[setId] = {};
@@ -276,6 +280,12 @@ const DailyTrackerImproved = () => {
     const trackedBy = familyMember.trim() || 'User';
 
     try {
+      // 🔄 Auto-trigger rotation engine on first tracking of the day
+      if (!sessionOccurred) {
+        const dateString = selectedDate.toISOString().split('T')[0];
+        await handleSessionToggle(true);
+      }
+
       const dateString = selectedDate.toISOString().split('T')[0];
       const roundKey = `round${round}`;
       const newSessions = { ...sessions };
@@ -764,65 +774,40 @@ const DailyTrackerImproved = () => {
         totalGoal={dailyGoal}
       />
 
-      {/* 🔄 ROTATION ENGINE: Session Occurred Toggle + Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Session Toggle */}
-        <div className="md:col-span-2 bg-white rounded-xl shadow-md p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-1">
-                Did today's flashing session occur?
-              </h3>
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                {sessionOccurred ? (
-                  <span className="text-green-600">✅ Session completed - rotation applied</span>
-                ) : (
-                  <span className="text-gray-500">❌ No session - counts unchanged</span>
-                )}
-              </p>
-            </div>
-            <PillToggle
-              options={[
-                { value: false, label: 'No' },
-                { value: true, label: 'Yes' }
-              ]}
-              selected={sessionOccurred}
-              onChange={handleSessionToggle}
-            />
+      {/* 🔄 ROTATION SUMMARY */}
+      <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl shadow-md p-6">
+        <h3 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3 flex items-center gap-2">
+          📊 Rotation Summary
+        </h3>
+        {!sessionOccurred ? (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800">
+              ⏸️ <strong>No tracking yet today</strong> — Mark any round to automatically trigger the 5-day rotation.
+            </p>
           </div>
-          
-          {!sessionOccurred && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800">
-                ⏸️ <strong>Skipped day</strong> — All card active day counts remain unchanged. 
-                Toggle to "Yes" to trigger the 5-day rotation.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Rotation Summary */}
-        <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl shadow-md p-6">
-          <h3 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4 flex items-center gap-2">
-            📊 Rotation Summary
-          </h3>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-[hsl(var(--muted-foreground))]">Active Cards</span>
-              <span className="text-lg font-bold text-green-600">{rotationSummary.activeCards} / 25</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-[hsl(var(--muted-foreground))]">Retired Today</span>
-              <span className="text-lg font-bold text-red-600">{rotationSummary.retiredToday}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-[hsl(var(--muted-foreground))]">New Today</span>
-              <span className="text-lg font-bold text-blue-600">{rotationSummary.introducedToday}</span>
-            </div>
-            <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-              <span className="text-sm text-[hsl(var(--muted-foreground))]">Total Sets</span>
-              <span className="text-lg font-bold text-[hsl(var(--foreground))]">{sets.length}</span>
-            </div>
+        ) : (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-800">
+              ✅ <strong>Rotation applied</strong> — Cards have been updated for today.
+            </p>
+          </div>
+        )}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-[hsl(var(--muted-foreground))]">Active Cards</span>
+            <span className="text-lg font-bold text-green-600">{rotationSummary.activeCards} / 25</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-[hsl(var(--muted-foreground))]">Retired Today</span>
+            <span className="text-lg font-bold text-red-600">{rotationSummary.retiredToday}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-[hsl(var(--muted-foreground))]">New Today</span>
+            <span className="text-lg font-bold text-blue-600">{rotationSummary.introducedToday}</span>
+          </div>
+          <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+            <span className="text-sm text-[hsl(var(--muted-foreground))]">Total Sets</span>
+            <span className="text-lg font-bold text-[hsl(var(--foreground))]">{sets.length}</span>
           </div>
         </div>
       </div>
