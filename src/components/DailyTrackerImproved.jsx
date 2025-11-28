@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { useFlashcards } from '../context/FlashcardContext';
 import { toast } from 'react-toastify';
 import DayHeader from './tracking/DayHeader';
-import SetAccordion from './tracking/SetAccordion';
 import StickyNoteButton from './tracking/StickyNoteButton';
 import NotesList from './tracking/NotesList';
 import UpgradeBanner from './tracking/UpgradeBanner';
@@ -775,441 +774,245 @@ const DailyTrackerImproved = () => {
       />
 
       {/* 🔄 ROTATION SUMMARY */}
-      <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl shadow-md p-6">
-        <h3 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3 flex items-center gap-2">
-          📊 Rotation Summary
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">
+          Rotation Summary
         </h3>
         {!sessionOccurred ? (
           <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800">
-              ⏸️ <strong>No tracking yet today</strong> — Mark any round to automatically trigger the 5-day rotation.
+              <strong>No tracking yet today</strong> — Mark any round to automatically trigger the 5-day rotation.
             </p>
           </div>
         ) : (
           <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
             <p className="text-sm text-green-800">
-              ✅ <strong>Rotation applied</strong> — Cards have been updated for today.
+              <strong>Rotation applied</strong> — Cards have been updated for today.
             </p>
           </div>
         )}
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-[hsl(var(--muted-foreground))]">Active Cards</span>
-            <span className="text-lg font-bold text-green-600">{rotationSummary.activeCards} / 25</span>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center p-3 bg-green-50 rounded-lg">
+            <div className="text-2xl font-bold text-green-700">
+              {rotationSummary.activeCards}
+            </div>
+            <div className="text-xs text-slate-600 mt-1">Active Cards</div>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-[hsl(var(--muted-foreground))]">Retired Today</span>
-            <span className="text-lg font-bold text-red-600">{rotationSummary.retiredToday}</span>
+          <div className="text-center p-3 bg-orange-50 rounded-lg">
+            <div className="text-2xl font-bold text-orange-700">
+              {rotationSummary.retiredToday}
+            </div>
+            <div className="text-xs text-slate-600 mt-1">Retired Today</div>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-[hsl(var(--muted-foreground))]">New Today</span>
-            <span className="text-lg font-bold text-blue-600">{rotationSummary.introducedToday}</span>
+          <div className="text-center p-3 bg-blue-50 rounded-lg">
+            <div className="text-2xl font-bold text-blue-700">
+              {rotationSummary.introducedToday}
+            </div>
+            <div className="text-xs text-slate-600 mt-1">New Today</div>
           </div>
-          <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-            <span className="text-sm text-[hsl(var(--muted-foreground))]">Total Sets</span>
-            <span className="text-lg font-bold text-[hsl(var(--foreground))]">{sets.length}</span>
+          <div className="text-center p-3 bg-purple-50 rounded-lg">
+            <div className="text-2xl font-bold text-purple-700">
+              {sets.length}
+            </div>
+            <div className="text-xs text-slate-600 mt-1">Total Sets</div>
           </div>
         </div>
       </div>
 
       {/* Family Member Input */}
       {(userPlan === 'print' || userPlan === 'pro') && (
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-            Who's tracking today? 👨‍👩‍👧
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Who's tracking today?
           </label>
           <input
             type="text"
             placeholder="Enter your name (e.g., Mom, Dad, Grandma)"
             value={familyMember}
             onChange={(e) => setFamilyMember(e.target.value)}
-            className="w-full border-2 border-[hsl(var(--border))] rounded-lg px-4 py-3 focus:outline-none focus:border-[hsl(var(--sprouttie-green))] transition-colors"
+            className="w-full border-2 border-slate-200 rounded-lg px-4 py-3 focus:outline-none focus:border-green-500 transition-colors"
           />
         </div>
       )}
 
-      {/* Sets Tracking with Enhanced Cards Display */}
-      <div className="space-y-4">
-        {sets.map((set, index) => {
-          const setFlashcards = getFlashcardsForSet(set.id);
-          const isEditing = editingSetId === set.id;
-          
-          // Get flashcard details with active day count
-          const enrichedFlashcards = setFlashcards.map(card => {
-            const fullCard = flashcards.find(f => f.id === card.id);
-            return {
-              ...card,
-              active_day_count: fullCard?.active_day_count || 0,
-              card_status: fullCard?.card_status || 'waiting',
-              date_introduced: fullCard?.date_introduced,
-              date_retired: fullCard?.date_retired
-            };
-          });
-          
-          return (
-            <div key={set.id}>
-              <SetAccordion
-                set={set}
-                setIndex={index}
-                flashcards={enrichedFlashcards}
-                sessions={sessions[set.id] || {}}
-                onToggleSession={toggleSession}
-                onManageWords={startEditingSet}
-                flashedWords={flashedWords}
-              />
+      {/* Spreadsheet-Style Tracking Table */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider w-16">
+                  Set
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  Word
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider w-20">
+                  Day
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider w-16">
+                  R1
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider w-16">
+                  R2
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider w-16">
+                  R3
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider w-16">
+                  R4
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider w-16">
+                  R5
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {sets.map((set, setIdx) => {
+                const setFlashcards = getFlashcardsForSet(set.id);
+                const setSessionData = sessions[set.id] || {};
 
-              {/* Edit Set Interface - shown when editing */}
-              {isEditing && (
-                <div className="mt-2 bg-blue-50 rounded-xl border-2 border-blue-200 p-4">
-                  {/* Current Words with Remove Option */}
-                  <div className="mb-4">
-                    <h5 className="font-medium text-gray-700 mb-2">
-                      Manage Words ({setFlashcards.length}/5)
-                    </h5>
-                    {setFlashcards.length >= 5 && (
-                      <p className="text-xs text-amber-600 mb-2">
-                        Set is full. Remove oldest word to add new one.
-                      </p>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      {setFlashcards.map((card) => {
-                        const currentSet = sets.find(s => s.id === editingSetId);
-                        const isOldest = currentSet?.flashcardIds[0] === card.id;
-                        const dateAdded = currentSet?.flashcardDates?.[card.id];
-                        const isFlashed = flashedWords.has(card.id);
+                return setFlashcards.map((card, cardIdx) => {
+                  const fullCard = flashcards.find(f => f.id === card.id);
+                  const dayCount = fullCard?.active_day_count || 0;
+                  const status = fullCard?.card_status || 'waiting';
+                  const isNewToday = fullCard?.date_introduced === selectedDate.toISOString().split('T')[0];
+                  const isRetiringNext = dayCount === 5 && status === 'active';
+                  const isRetired = status === 'retired' && fullCard?.date_retired === selectedDate.toISOString().split('T')[0];
+
+                  const getDayBadgeColor = () => {
+                    if (status !== 'active') return 'bg-slate-100 text-slate-500';
+                    const colors = [
+                      'bg-green-100 text-green-700',
+                      'bg-blue-100 text-blue-700',
+                      'bg-purple-100 text-purple-700',
+                      'bg-orange-100 text-orange-700',
+                      'bg-red-100 text-red-700'
+                    ];
+                    return colors[Math.min(dayCount - 1, 4)] || colors[0];
+                  };
+
+                  return (
+                    <tr 
+                      key={card.id}
+                      className={`hover:bg-slate-50 transition-colors ${
+                        cardIdx === 0 && setIdx > 0 ? 'border-t-2 border-slate-300' : ''
+                      }`}
+                    >
+                      {/* Set Number - only show on first card of each set */}
+                      <td className="px-4 py-3 text-sm">
+                        {cardIdx === 0 && (
+                          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-700 font-bold text-sm">
+                            {set.index}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Word */}
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-slate-900">
+                            {card.word}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            {card.english}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Day Count Badge */}
+                      <td className="px-4 py-3 text-center">
+                        {status === 'active' && dayCount > 0 && (
+                          <span className={`inline-flex items-center justify-center w-10 h-6 rounded-full text-xs font-bold ${getDayBadgeColor()}`}>
+                            D{dayCount}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Round Checkboxes */}
+                      {[1, 2, 3, 4, 5].map((round) => {
+                        const roundKey = `round${round}`;
+                        const isCompleted = setSessionData[roundKey]?.completed || false;
                         
                         return (
-                          <div
-                            key={card.id}
-                            className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs border-2 ${
-                              isFlashed
-                                ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-400'
-                                : isOldest 
-                                ? 'bg-amber-50 border-amber-300' 
-                                : 'bg-white border-gray-300'
-                            }`}
-                          >
-                            {/* Flashed Status Indicator */}
-                            <div className="flex-shrink-0">
-                              {isFlashed ? (
-                                <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold">
-                                  ✓
-                                </div>
-                              ) : (
-                                <div className="w-4 h-4 rounded-full border-2 border-gray-300 bg-white" />
-                              )}
-                            </div>
-                            
-                            <div className="flex-1 min-w-0 flex items-center gap-2">
-                              <div>
-                                {isOldest && <span className="text-amber-600 font-bold mr-1">[Oldest]</span>}
-                                <span className="font-medium">{card.word}</span>
-                                {card.english && <span className="text-gray-600 ml-1">({card.english})</span>}
-                                {dateAdded && (
-                                  <div className="text-[10px] text-gray-500 mt-0.5">
-                                    Added: {new Date(dateAdded).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                  </div>
-                                )}
-                              </div>
-                              <PronunciationButton
-                                wordId={card.id}
-                                wordText={card.word}
-                                language="en"
-                                userPlan={userPlan || 'free'}
-                                size="xs"
-                                showLabel={false}
-                              />
-                            </div>
-                            
-                            {/* Flashed Status Pill */}
-                            <span className={`flex-shrink-0 text-[9px] px-1.5 py-0.5 font-semibold rounded-full ${
-                              isFlashed 
-                                ? 'bg-emerald-500 text-white' 
-                                : 'bg-slate-200 text-slate-600'
-                            }`}>
-                              {isFlashed ? 'Flashed' : 'Not yet'}
-                            </span>
-                            
+                          <td key={round} className="px-4 py-3 text-center">
                             <button
-                              onClick={() => removeWordFromSet(card.id)}
-                              disabled={!isOldest}
-                              className={`flex-shrink-0 font-bold text-sm ${
-                                isOldest ? 'text-red-600 hover:text-red-800' : 'text-gray-300 cursor-not-allowed'
+                              onClick={() => toggleSession(set.id, round)}
+                              className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all mx-auto ${
+                                isCompleted
+                                  ? 'bg-green-500 border-green-500'
+                                  : 'border-slate-300 hover:border-green-400 hover:bg-green-50'
                               }`}
-                              title={isOldest ? 'Remove' : 'Only oldest can be removed'}
+                              aria-label={`Toggle round ${round} for set ${set.index}`}
                             >
-                              ×
+                              {isCompleted && (
+                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                                </svg>
+                              )}
                             </button>
-                          </div>
+                          </td>
                         );
                       })}
-                    </div>
-                  </div>
 
-                  {/* Add Words Section */}
-                  {setFlashcards.length < 5 && (
-                    <div>
-                      <h5 className="font-medium text-gray-700 mb-2 text-sm">Add Word</h5>
-                      
-                      {!showCreateWord ? (
-                        <>
-                          {/* Search Bar */}
-                          <input
-                            type="text"
-                            placeholder="Search words..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-3"
-                          />
-                          
-                          {/* Category Filter Pills */}
-                          {availableWords.length > 0 && (
-                            <div className="mb-3">
-                              <div className="flex flex-wrap gap-2">
-                                <button
-                                  onClick={() => setSelectedCategoryFilter('all')}
-                                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                                    selectedCategoryFilter === 'all'
-                                      ? 'bg-[hsl(var(--sprouttie-green))] text-white'
-                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                  }`}
-                                >
-                                  All ({availableWords.length})
-                                </button>
-                                {categories.map(cat => {
-                                  const count = getWordCountByCategory()[cat.id] || 0;
-                                  if (count === 0) return null;
-                                  return (
-                                    <button
-                                      key={cat.id}
-                                      onClick={() => setSelectedCategoryFilter(cat.id)}
-                                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                                        selectedCategoryFilter === cat.id
-                                          ? 'bg-[hsl(var(--sprouttie-green))] text-white'
-                                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                      }`}
-                                    >
-                                      {cat.name} ({count})
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
+                      {/* Status Badges */}
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {isNewToday && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                              New
+                            </span>
                           )}
-
-                          {availableWords.length === 0 ? (
-                            <div className="text-center py-4">
-                              <p className="text-gray-500 text-xs mb-2">No available words</p>
-                              <button
-                                onClick={() => setShowCreateWord(true)}
-                                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
-                              >
-                                + Create New Word
-                              </button>
-                            </div>
-                          ) : getFilteredAvailableWords().length === 0 && searchQuery.trim() ? (
-                            <div className="text-center py-4">
-                              <p className="text-gray-500 text-xs mb-2">No matches for "{searchQuery}"</p>
-                              <button
-                                onClick={() => {
-                                  setShowCreateWord(true);
-                                  setNewWordData({ ...newWordData, word: searchQuery });
-                                }}
-                                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
-                              >
-                                + Create "{searchQuery}"
-                              </button>
-                            </div>
-                           ) : (
-                            <>
-                              {/* Words Grid - Organized by Category */}
-                              <div className="max-h-80 overflow-y-auto mb-2 space-y-4">
-                                {selectedCategoryFilter === 'all' ? (
-                                  // Group by category when showing all
-                                  categories.map(cat => {
-                                    const categoryWords = getFilteredAvailableWords().filter(card => card.categoryId === cat.id);
-                                    if (categoryWords.length === 0) return null;
-                                    
-                                    return (
-                                      <div key={cat.id}>
-                                        <div className="flex items-center gap-2 mb-2">
-                                          <h6 className="text-xs font-semibold text-gray-700">{cat.name}</h6>
-                                          <div className="flex-1 h-px bg-gray-200"></div>
-                                          <span className="text-[10px] text-gray-500">{categoryWords.length}</span>
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-2">
-                                          {categoryWords.map((card) => (
-                                            <button
-                                              key={card.id}
-                                              onClick={() => addWordToSet(card.id)}
-                                              className="px-2 py-2 bg-white border-2 border-gray-200 hover:border-[hsl(var(--sprouttie-green))] hover:shadow-md rounded-lg text-xs text-left transition-all"
-                                            >
-                                              <div className="font-semibold text-[hsl(var(--foreground))]">{card.word}</div>
-                                              {card.english && <div className="text-[10px] text-gray-600 mt-0.5">{card.english}</div>}
-                                            </button>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    );
-                                  })
-                                ) : (
-                                  // Show single category
-                                  <div className="grid grid-cols-3 gap-2">
-                                    {getFilteredAvailableWords().map((card) => (
-                                      <button
-                                        key={card.id}
-                                        onClick={() => addWordToSet(card.id)}
-                                        className="px-2 py-2 bg-white border-2 border-gray-200 hover:border-[hsl(var(--sprouttie-green))] hover:shadow-md rounded-lg text-xs text-left transition-all"
-                                      >
-                                        <div className="font-semibold text-[hsl(var(--foreground))]">{card.word}</div>
-                                        {card.english && <div className="text-[10px] text-gray-600 mt-0.5">{card.english}</div>}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                              {searchQuery.trim() && (
-                                <button
-                                  onClick={() => {
-                                    setShowCreateWord(true);
-                                    setNewWordData({ ...newWordData, word: searchQuery });
-                                  }}
-                                  className="w-full px-2 py-1.5 bg-green-50 border border-green-300 hover:bg-green-100 text-green-700 rounded text-xs"
-                                >
-                                  + Create New Word
-                                </button>
-                              )}
-                            </>
+                          {isRetiringNext && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                              Next
+                            </span>
                           )}
-                        </>
-                      ) : (
-                        <div className="bg-green-50 border border-green-200 rounded p-3 space-y-2">
-                          <div className="flex justify-between items-center mb-2">
-                            <h6 className="font-medium text-sm text-green-900">Create New Word</h6>
-                            <button
-                              onClick={() => {
-                                setShowCreateWord(false);
-                                setShowCreateCategory(false);
-                                setNewCategoryName('');
-                                setNewWordData({ word: '', english: '', pinyin: '', categoryId: categories[0]?.id || '' });
-                              }}
-                              className="text-gray-500 hover:text-gray-700 text-sm"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                          
-                          <input
-                            type="text"
-                            placeholder="Chinese word *"
-                            value={newWordData.word}
-                            onChange={(e) => setNewWordData({ ...newWordData, word: e.target.value })}
-                            className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
-                          />
-                          
-                          <input
-                            type="text"
-                            placeholder="English translation"
-                            value={newWordData.english}
-                            onChange={(e) => setNewWordData({ ...newWordData, english: e.target.value })}
-                            className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
-                          />
-                          
-                          <input
-                            type="text"
-                            placeholder="Pinyin"
-                            value={newWordData.pinyin}
-                            onChange={(e) => setNewWordData({ ...newWordData, pinyin: e.target.value })}
-                            className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
-                          />
-                          
-                          {!showCreateCategory ? (
-                            <>
-                              <select
-                                value={newWordData.categoryId}
-                                onChange={(e) => {
-                                  if (e.target.value === 'CREATE_NEW') {
-                                    setShowCreateCategory(true);
-                                    setNewWordData({ ...newWordData, categoryId: '' });
-                                  } else {
-                                    setNewWordData({ ...newWordData, categoryId: e.target.value });
-                                  }
-                                }}
-                                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
-                              >
-                                <option value="">Select Category *</option>
-                                {categories.map(cat => (
-                                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                ))}
-                                <option value="CREATE_NEW" className="text-green-600 font-medium">+ Create New Category</option>
-                              </select>
-                            </>
-                          ) : (
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <label className="text-xs font-medium text-gray-700">New Category Name *</label>
-                                <button
-                                  onClick={() => {
-                                    setShowCreateCategory(false);
-                                    setNewCategoryName('');
-                                    setNewWordData({ ...newWordData, categoryId: categories[0]?.id || '' });
-                                  }}
-                                  className="text-xs text-gray-500 hover:text-gray-700"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                              <input
-                                type="text"
-                                placeholder="Enter category name (e.g., Food, Colors)"
-                                value={newCategoryName}
-                                onChange={(e) => setNewCategoryName(e.target.value)}
-                                className="w-full border border-green-300 rounded px-2 py-1.5 text-sm focus:border-green-500 focus:outline-none"
-                                autoFocus
-                              />
-                            </div>
+                          {isRetired && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                              Retired
+                            </span>
                           )}
-                          
-                          <button
-                            onClick={createAndAddWord}
-                            className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium"
-                          >
-                            Create and Add to Set
-                          </button>
                         </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  <button
-                    onClick={() => setEditingSetId(null)}
-                    className="mt-3 w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
-                  >
-                    Done Editing
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })}
+                      </td>
+                    </tr>
+                  );
+                });
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* No sets message */}
+        {sets.length === 0 && (
+          <div className="text-center py-12 text-slate-500">
+            <p className="text-sm">No flashcard sets yet. Create your first set to get started!</p>
+          </div>
+        )}
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h4 className="font-bold text-lg text-[hsl(var(--foreground))] mb-4">
-          ⚡ Quick Actions
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+        <h4 className="font-bold text-lg text-slate-800 mb-4">
+          Quick Actions
         </h4>
-        <div className="flex flex-wrap gap-3">
-          {[1, 2, 3].map((round) => (
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          {[1, 2, 3, 4, 5].map((round) => (
             <button
               key={round}
               onClick={() => markAllRound(round)}
-              className="px-6 py-3 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] hover:shadow-lg text-white rounded-lg font-medium transition-all"
+              className="px-4 py-3 bg-green-100 hover:bg-green-200 text-green-800 rounded-lg font-medium transition-colors text-sm"
             >
-              Mark all Round {round}
+              R{round}
             </button>
           ))}
         </div>
+        <p className="text-xs text-slate-500 mt-3">
+          Mark all sets as complete for a specific round
+        </p>
       </div>
 
       {/* Notes List */}
