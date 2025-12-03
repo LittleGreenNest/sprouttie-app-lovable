@@ -868,119 +868,238 @@ const DailyTrackerImproved = () => {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                   Status
                 </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider w-20">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {sets.map((set, setIdx) => {
                 const setFlashcards = getFlashcardsForSet(set.id);
                 const setSessionData = sessions[set.id] || {};
+                const isEditing = editingSetId === set.id;
 
-                return setFlashcards.map((card, cardIdx) => {
-                  const fullCard = flashcards.find(f => f.id === card.id);
-                  const dayCount = fullCard?.active_day_count || 0;
-                  const status = fullCard?.card_status || 'waiting';
-                  const isNewToday = fullCard?.date_introduced === selectedDate.toISOString().split('T')[0];
-                  const isRetiringNext = dayCount === 5 && status === 'active';
-                  const isRetired = status === 'retired' && fullCard?.date_retired === selectedDate.toISOString().split('T')[0];
+                return (
+                  <React.Fragment key={set.id}>
+                    {setFlashcards.map((card, cardIdx) => {
+                      const fullCard = flashcards.find(f => f.id === card.id);
+                      const dayCount = fullCard?.active_day_count || 0;
+                      const status = fullCard?.card_status || 'waiting';
+                      const isNewToday = fullCard?.date_introduced === selectedDate.toISOString().split('T')[0];
+                      const isRetiringNext = dayCount === 5 && status === 'active';
+                      const isRetired = status === 'retired' && fullCard?.date_retired === selectedDate.toISOString().split('T')[0];
+                      const isOldest = cardIdx === 0; // First card is oldest
 
-                  const getDayBadgeColor = () => {
-                    if (status !== 'active') return 'bg-slate-100 text-slate-500';
-                    const colors = [
-                      'bg-green-100 text-green-700',
-                      'bg-blue-100 text-blue-700',
-                      'bg-purple-100 text-purple-700',
-                      'bg-orange-100 text-orange-700',
-                      'bg-red-100 text-red-700'
-                    ];
-                    return colors[Math.min(dayCount - 1, 4)] || colors[0];
-                  };
+                      const getDayBadgeColor = () => {
+                        if (status !== 'active') return 'bg-slate-100 text-slate-500';
+                        const colors = [
+                          'bg-green-100 text-green-700',
+                          'bg-blue-100 text-blue-700',
+                          'bg-purple-100 text-purple-700',
+                          'bg-orange-100 text-orange-700',
+                          'bg-red-100 text-red-700'
+                        ];
+                        return colors[Math.min(dayCount - 1, 4)] || colors[0];
+                      };
 
-                  return (
-                    <tr 
-                      key={card.id}
-                      className={`hover:bg-slate-50 transition-colors ${
-                        cardIdx === 0 && setIdx > 0 ? 'border-t-2 border-slate-300' : ''
-                      }`}
-                    >
-                      {/* Set Number - only show on first card of each set */}
-                      <td className="px-4 py-3 text-sm">
-                        {cardIdx === 0 && (
-                          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-700 font-bold text-sm">
-                            {set.index}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Word */}
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-slate-900">
-                            {card.word}
-                          </span>
-                          <span className="text-xs text-slate-500">
-                            {card.english}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Day Count Badge */}
-                      <td className="px-4 py-3 text-center">
-                        {status === 'active' && dayCount > 0 && (
-                          <span className={`inline-flex items-center justify-center w-10 h-6 rounded-full text-xs font-bold ${getDayBadgeColor()}`}>
-                            D{dayCount}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Round Checkboxes */}
-                      {[1, 2, 3, 4, 5].map((round) => {
-                        const roundKey = `round${round}`;
-                        const isCompleted = setSessionData[roundKey]?.completed || false;
-                        
-                        return (
-                          <td key={round} className="px-4 py-3 text-center">
-                            <button
-                              onClick={() => toggleSession(set.id, round)}
-                              className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all mx-auto ${
-                                isCompleted
-                                  ? 'bg-green-500 border-green-500'
-                                  : 'border-slate-300 hover:border-green-400 hover:bg-green-50'
-                              }`}
-                              aria-label={`Toggle round ${round} for set ${set.index}`}
-                            >
-                              {isCompleted && (
-                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                                </svg>
-                              )}
-                            </button>
+                      return (
+                        <tr 
+                          key={card.id}
+                          className={`hover:bg-slate-50 transition-colors ${
+                            cardIdx === 0 && setIdx > 0 ? 'border-t-2 border-slate-300' : ''
+                          } ${isOldest && isEditing ? 'bg-red-50' : ''}`}
+                        >
+                          {/* Set Number - only show on first card of each set */}
+                          <td className="px-4 py-3 text-sm">
+                            {cardIdx === 0 && (
+                              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-700 font-bold text-sm">
+                                {set.index}
+                              </div>
+                            )}
                           </td>
-                        );
-                      })}
 
-                      {/* Status Badges */}
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {isNewToday && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                              New
-                            </span>
-                          )}
-                          {isRetiringNext && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-                              Next
-                            </span>
-                          )}
-                          {isRetired && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-                              Retired
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                });
+                          {/* Word */}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="flex flex-col flex-1">
+                                <span className="text-sm font-medium text-slate-900">
+                                  {card.word}
+                                </span>
+                                <span className="text-xs text-slate-500">
+                                  {card.english}
+                                </span>
+                              </div>
+                              {isOldest && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-200 text-slate-600">
+                                  Oldest
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Day Count Badge */}
+                          <td className="px-4 py-3 text-center">
+                            {status === 'active' && dayCount > 0 && (
+                              <span className={`inline-flex items-center justify-center w-10 h-6 rounded-full text-xs font-bold ${getDayBadgeColor()}`}>
+                                D{dayCount}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Round Checkboxes */}
+                          {[1, 2, 3, 4, 5].map((round) => {
+                            const roundKey = `round${round}`;
+                            const isCompleted = setSessionData[roundKey]?.completed || false;
+                            
+                            return (
+                              <td key={round} className="px-4 py-3 text-center">
+                                <button
+                                  onClick={() => toggleSession(set.id, round)}
+                                  className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all mx-auto ${
+                                    isCompleted
+                                      ? 'bg-green-500 border-green-500'
+                                      : 'border-slate-300 hover:border-green-400 hover:bg-green-50'
+                                  }`}
+                                  aria-label={`Toggle round ${round} for set ${set.index}`}
+                                >
+                                  {isCompleted && (
+                                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                                    </svg>
+                                  )}
+                                </button>
+                              </td>
+                            );
+                          })}
+
+                          {/* Status Badges */}
+                          <td className="px-4 py-3">
+                            <div className="flex flex-wrap gap-1">
+                              {isNewToday && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                  New
+                                </span>
+                              )}
+                              {isRetiringNext && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                                  Next
+                                </span>
+                              )}
+                              {isRetired && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                                  Retired
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Actions - only show on first card */}
+                          <td className="px-4 py-3 text-center">
+                            {cardIdx === 0 && (
+                              <button
+                                onClick={() => isEditing ? setEditingSetId(null) : startEditingSet(set.id)}
+                                className={`p-1.5 rounded transition-colors ${
+                                  isEditing 
+                                    ? 'bg-green-100 text-green-700' 
+                                    : 'hover:bg-slate-100 text-slate-500'
+                                }`}
+                                title={isEditing ? 'Done editing' : 'Edit set'}
+                              >
+                                {isEditing ? (
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                                  </svg>
+                                ) : (
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                  </svg>
+                                )}
+                              </button>
+                            )}
+                            {isEditing && isOldest && setFlashcards.length > 0 && (
+                              <button
+                                onClick={() => removeWordFromSet(card.id)}
+                                className="p-1.5 rounded hover:bg-red-100 text-red-500 transition-colors ml-1"
+                                title="Remove oldest card"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    
+                    {/* Add Card Row - shown when editing this set */}
+                    {isEditing && (
+                      <tr className="bg-green-50 border-t border-green-200">
+                        <td colSpan={10} className="px-4 py-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-green-800">
+                                Add cards to Set {set.index} ({setFlashcards.length}/5 cards)
+                              </span>
+                              {setFlashcards.length >= 5 && (
+                                <span className="text-xs text-orange-600">Remove the oldest card first to add new ones</span>
+                              )}
+                            </div>
+                            
+                            {setFlashcards.length < 5 && (
+                              <>
+                                {/* Search and Filter */}
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    placeholder="Search words..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-green-500"
+                                  />
+                                  <select
+                                    value={selectedCategoryFilter}
+                                    onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                                    className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-green-500"
+                                  >
+                                    <option value="all">All Categories</option>
+                                    {categories.map(cat => (
+                                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                
+                                {/* Available Words */}
+                                <div className="max-h-40 overflow-y-auto">
+                                  <div className="flex flex-wrap gap-2">
+                                    {getFilteredAvailableWords().slice(0, 20).map(word => (
+                                      <button
+                                        key={word.id}
+                                        onClick={() => addWordToSet(word.id)}
+                                        className="px-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition-colors"
+                                      >
+                                        <span className="font-medium">{word.word}</span>
+                                        <span className="text-slate-400 ml-1">({word.english})</span>
+                                      </button>
+                                    ))}
+                                    {getFilteredAvailableWords().length === 0 && (
+                                      <span className="text-sm text-slate-500">No available words found</span>
+                                    )}
+                                    {getFilteredAvailableWords().length > 20 && (
+                                      <span className="text-xs text-slate-400 px-2 py-1">
+                                        +{getFilteredAvailableWords().length - 20} more
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
               })}
             </tbody>
           </table>
