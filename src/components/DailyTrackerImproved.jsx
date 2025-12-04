@@ -882,12 +882,11 @@ const DailyTrackerImproved = () => {
                 return (
                   <React.Fragment key={set.id}>
                     {setFlashcards.map((card, cardIdx) => {
-                      const fullCard = flashcards.find(f => f.id === card.id);
-                      const dayCount = fullCard?.active_day_count || 0;
-                      const status = fullCard?.card_status || 'waiting';
-                      const isNewToday = fullCard?.date_introduced === selectedDate.toISOString().split('T')[0];
+                      const dayCount = card?.active_day_count || 0;
+                      const status = card?.card_status || 'waiting';
+                      const isNewToday = card?.date_introduced === selectedDate.toISOString().split('T')[0];
                       const isRetiringNext = dayCount === 5 && status === 'active';
-                      const isRetired = status === 'retired' && fullCard?.date_retired === selectedDate.toISOString().split('T')[0];
+                      const isRetired = status === 'retired' && card?.date_retired === selectedDate.toISOString().split('T')[0];
                       const isOldest = cardIdx === 0; // First card is oldest
 
                       const getDayBadgeColor = () => {
@@ -929,11 +928,11 @@ const DailyTrackerImproved = () => {
                                   {card.english}
                                 </span>
                                 <div className="flex gap-3 text-[10px] text-slate-400 mt-0.5">
-                                  {fullCard?.created_at && (
-                                    <span>Added: {new Date(fullCard.created_at).toLocaleDateString()}</span>
+                                  {card?.created_at && (
+                                    <span>Added: {new Date(card.created_at).toLocaleDateString()}</span>
                                   )}
-                                  {fullCard?.date_introduced && (
-                                    <span>Started: {new Date(fullCard.date_introduced).toLocaleDateString()}</span>
+                                  {card?.date_introduced && (
+                                    <span>Started: {new Date(card.date_introduced).toLocaleDateString()}</span>
                                   )}
                                 </div>
                               </div>
