@@ -928,6 +928,14 @@ const DailyTrackerImproved = () => {
                                 <span className="text-xs text-slate-500">
                                   {card.english}
                                 </span>
+                                <div className="flex gap-3 text-[10px] text-slate-400 mt-0.5">
+                                  {fullCard?.created_at && (
+                                    <span>Added: {new Date(fullCard.created_at).toLocaleDateString()}</span>
+                                  )}
+                                  {fullCard?.date_introduced && (
+                                    <span>Started: {new Date(fullCard.date_introduced).toLocaleDateString()}</span>
+                                  )}
+                                </div>
                               </div>
                               {isOldest && (
                                 <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-200 text-slate-600">
