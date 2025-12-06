@@ -51,18 +51,20 @@ const DailyTrackerImproved = () => {
   }, [currentUser, selectedDate]);
 
   // Load flashcard metadata from Supabase (for created_at, date_introduced)
+  // Maps by word text (front field) since localStorage uses different IDs than Supabase UUIDs
   const loadSupabaseFlashcards = async () => {
     try {
       const { data, error } = await supabase
         .from('flashcards')
-        .select('id, created_at, date_introduced, date_retired, card_status, active_day_count')
+        .select('id, front, created_at, date_introduced, date_retired, card_status, active_day_count')
         .eq('user_id', currentUser.id);
 
       if (error) throw error;
 
       const flashcardMap = {};
       (data || []).forEach(card => {
-        flashcardMap[card.id] = card;
+        // Map by word text (front field) to match localStorage cards
+        flashcardMap[card.front] = card;
       });
       setSupabaseFlashcards(flashcardMap);
     } catch (error) {
@@ -950,11 +952,11 @@ const DailyTrackerImproved = () => {
                                   {card.english}
                                 </span>
                                 <div className="flex gap-3 text-[10px] text-slate-400 mt-0.5">
-                                  {supabaseFlashcards[card.id]?.created_at && (
-                                    <span>Added: {new Date(supabaseFlashcards[card.id].created_at).toLocaleDateString()}</span>
+                                  {supabaseFlashcards[card.word]?.created_at && (
+                                    <span>Added: {new Date(supabaseFlashcards[card.word].created_at).toLocaleDateString()}</span>
                                   )}
-                                  {supabaseFlashcards[card.id]?.date_introduced && (
-                                    <span>Started: {new Date(supabaseFlashcards[card.id].date_introduced).toLocaleDateString()}</span>
+                                  {supabaseFlashcards[card.word]?.date_introduced && (
+                                    <span>Started: {new Date(supabaseFlashcards[card.word].date_introduced).toLocaleDateString()}</span>
                                   )}
                                 </div>
                               </div>
