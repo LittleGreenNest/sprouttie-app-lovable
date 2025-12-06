@@ -6,7 +6,8 @@ import PrintFlashcards from './PrintFlashcards';
 
 const FlashcardManager = () => {
   const { 
-    categories, 
+    categories,
+    setCategories,
     flashcards, 
     addCategory,
     updateCategory,
@@ -165,13 +166,27 @@ const FlashcardManager = () => {
   };
   
   const handleDeleteCategory = (categoryId) => {
-    const result = deleteCategory(categoryId);
+    // Check if there are flashcards using this category
+    const categoryFlashcards = flashcards.filter(card => card.categoryId === categoryId);
     
-    if (result.success) {
-      showMessage('Category deleted successfully');
-    } else {
-      showMessage(result.message, 'error');
+    if (categoryFlashcards.length > 0) {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete this category? There are ${categoryFlashcards.length} word(s) tied to this category. Deleting will also remove all associated flashcards.`
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+      
+      // Delete all flashcards in this category first
+      categoryFlashcards.forEach(card => {
+        deleteFlashcard(card.id);
+      });
     }
+    
+    // Now delete the category
+    setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+    showMessage('Category deleted successfully');
   };
   
   // Handlers for Flashcards
