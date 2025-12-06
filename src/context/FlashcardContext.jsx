@@ -313,6 +313,7 @@ phrase_group: phraseGroup,
   
   const contextValue = {
     categories,
+    setCategories,
     flashcards,
     sets,
     history,
