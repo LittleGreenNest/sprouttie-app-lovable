@@ -902,9 +902,31 @@ const DailyTrackerImproved = () => {
                 const setFlashcards = getFlashcardsForSet(set.id);
                 const setSessionData = sessions[set.id] || {};
                 const isEditing = editingSetId === set.id;
+                const isEmpty = setFlashcards.length === 0;
 
                 return (
                   <React.Fragment key={set.id}>
+                    {/* Empty Set Row - Show when set has no cards */}
+                    {isEmpty && !isEditing && (
+                      <tr className={`hover:bg-slate-50 transition-colors ${setIdx > 0 ? 'border-t-2 border-slate-300' : ''}`}>
+                        <td className="px-4 py-3 text-sm">
+                          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-700 font-bold text-sm">
+                            {set.index}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3" colSpan={7}>
+                          <span className="text-sm text-slate-400 italic">No cards in this set</span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => startEditingSet(set.id)}
+                            className="px-3 py-1.5 text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors font-medium"
+                          >
+                            + Add Cards
+                          </button>
+                        </td>
+                      </tr>
+                    )}
                     {setFlashcards.map((card, cardIdx) => {
                       const dayCount = card?.active_day_count || 0;
                       const status = card?.card_status || 'waiting';
@@ -1065,16 +1087,31 @@ const DailyTrackerImproved = () => {
                     
                     {/* Add Card Row - shown when editing this set */}
                     {isEditing && (
-                      <tr className="bg-green-50 border-t border-green-200">
+                      <tr className={`bg-green-50 ${isEmpty ? '' : 'border-t'} border-green-200`}>
                         <td colSpan={10} className="px-4 py-4">
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-green-800">
-                                Add cards to Set {set.index} ({setFlashcards.length}/5 cards)
-                              </span>
-                              {setFlashcards.length >= 5 && (
-                                <span className="text-xs text-orange-600">Remove the oldest card first to add new ones</span>
-                              )}
+                              <div className="flex items-center gap-3">
+                                {isEmpty && (
+                                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-200 text-green-800 font-bold text-sm">
+                                    {set.index}
+                                  </div>
+                                )}
+                                <span className="text-sm font-medium text-green-800">
+                                  Add cards to Set {set.index} ({setFlashcards.length}/5 cards)
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {setFlashcards.length >= 5 && (
+                                  <span className="text-xs text-orange-600">Remove the oldest card first to add new ones</span>
+                                )}
+                                <button
+                                  onClick={() => setEditingSetId(null)}
+                                  className="px-3 py-1 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                >
+                                  Done
+                                </button>
+                              </div>
                             </div>
                             
                             {setFlashcards.length < 5 && (
