@@ -33,6 +33,7 @@ import BingoCardGenerator from './components/BingoCardGenerator';
 import Plans from './components/subscription/Plans';
 import PrintFlashcards from './components/PrintFlashcards';
 import PronunciationPortal from './components/pronunciation/PronunciationPortal';
+import FlashedHistory from './components/FlashedHistory';
 
 
 // Supabase
@@ -66,7 +67,7 @@ const AppContent = () => {
     const path = location.pathname;
     if (path.includes('/dashboard')) setActiveTab('dashboard');
     else if (path.includes('/daily-tracking')) setActiveTab('daily-tracking');
-    
+    else if (path.includes('/flashed-history')) setActiveTab('flashed-history');
     else if (path.includes('/all-words')) setActiveTab('all-words');
     else if (path.includes('/spoken-words')) setActiveTab('spoken-words');
     else if (path.includes('/pronunciation')) setActiveTab('pronunciation');
@@ -126,6 +127,12 @@ const AppContent = () => {
           Daily Tracking
         </button>
         <button 
+          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'flashed-history' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
+          onClick={() => handleTabChange('flashed-history')}
+        >
+          Flashed History
+        </button>
+        <button
           className={`px-4 py-2 whitespace-nowrap ${activeTab === 'all-words' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
           onClick={() => handleTabChange('all-words')}
         >
@@ -172,7 +179,7 @@ const AppContent = () => {
           {/* tab pages */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/daily-tracking" element={<DailyTrackerImproved />} />
-          
+          <Route path="/flashed-history" element={<FlashedHistory />} />
           <Route path="/all-words" element={<AllWords />} />
           <Route path="/spoken-words" element={<SpokenWords />} />
           <Route path="/pronunciation" element={<PronunciationPortal />} />

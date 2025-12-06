@@ -28,6 +28,7 @@ const DailyTrackerImproved = () => {
   const [showCreateCategory, setShowCreateCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
+  const [supabaseFlashcards, setSupabaseFlashcards] = useState({}); // Map of flashcard IDs to Supabase data
   
   // 🔄 Rotation Engine State
   const [sessionOccurred, setSessionOccurred] = useState(false);
@@ -43,10 +44,31 @@ const DailyTrackerImproved = () => {
     if (currentUser) {
       loadDayData();
       loadUserPlan();
+      loadSupabaseFlashcards();
     } else {
       setLoading(false);
     }
   }, [currentUser, selectedDate]);
+
+  // Load flashcard metadata from Supabase (for created_at, date_introduced)
+  const loadSupabaseFlashcards = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('flashcards')
+        .select('id, created_at, date_introduced, date_retired, card_status, active_day_count')
+        .eq('user_id', currentUser.id);
+
+      if (error) throw error;
+
+      const flashcardMap = {};
+      (data || []).forEach(card => {
+        flashcardMap[card.id] = card;
+      });
+      setSupabaseFlashcards(flashcardMap);
+    } catch (error) {
+      console.error('Error loading Supabase flashcards:', error);
+    }
+  };
 
   const loadUserPlan = async () => {
     try {
@@ -928,11 +950,11 @@ const DailyTrackerImproved = () => {
                                   {card.english}
                                 </span>
                                 <div className="flex gap-3 text-[10px] text-slate-400 mt-0.5">
-                                  {card?.created_at && (
-                                    <span>Added: {new Date(card.created_at).toLocaleDateString()}</span>
+                                  {supabaseFlashcards[card.id]?.created_at && (
+                                    <span>Added: {new Date(supabaseFlashcards[card.id].created_at).toLocaleDateString()}</span>
                                   )}
-                                  {card?.date_introduced && (
-                                    <span>Started: {new Date(card.date_introduced).toLocaleDateString()}</span>
+                                  {supabaseFlashcards[card.id]?.date_introduced && (
+                                    <span>Started: {new Date(supabaseFlashcards[card.id].date_introduced).toLocaleDateString()}</span>
                                   )}
                                 </div>
                               </div>
