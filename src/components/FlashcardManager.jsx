@@ -194,6 +194,25 @@ const FlashcardManager = () => {
     e.preventDefault();
     if (!newFlashcardWord.trim() || !newFlashcardCategory) return;
     
+    // Check for duplicate word
+    const existingCard = flashcards.find(
+      card => card.word.toLowerCase().trim() === newFlashcardWord.toLowerCase().trim()
+    );
+    
+    if (existingCard) {
+      const existingCategory = categories.find(c => c.id === existingCard.categoryId);
+      const targetCategory = categories.find(c => c.id === newFlashcardCategory);
+      
+      const isSameCategory = existingCard.categoryId === newFlashcardCategory;
+      const message = isSameCategory
+        ? `"${newFlashcardWord}" already exists in "${existingCategory?.name || 'Unknown'}". Do you want to add it again?`
+        : `"${newFlashcardWord}" already exists in "${existingCategory?.name || 'Unknown'}". Do you still want to add it to "${targetCategory?.name || 'Unknown'}"?`;
+      
+      if (!window.confirm(message)) {
+        return;
+      }
+    }
+    
     addFlashcard(
       newFlashcardWord, 
       newFlashcardCategory, 
