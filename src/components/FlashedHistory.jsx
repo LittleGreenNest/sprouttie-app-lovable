@@ -38,10 +38,12 @@ const FlashedHistory = () => {
 
       if (flashcardsError) throw flashcardsError;
 
-      // Create a map of flashcard IDs to flashcard data
-      const flashcardMap = {};
+      // Create maps for flashcard lookup - by ID and by front text (for legacy data)
+      const flashcardMapById = {};
+      const flashcardMapByFront = {};
       (flashcardsData || []).forEach(card => {
-        flashcardMap[card.id] = card;
+        flashcardMapById[card.id] = card;
+        flashcardMapByFront[card.front] = card;
       });
 
       // Get unique flashcard_ids that have been flashed
@@ -76,7 +78,19 @@ const FlashedHistory = () => {
 
       // Build the final records with flashcard details
       const records = Array.from(flashedCardIds).map(cardId => {
-        const card = flashcardMap[cardId];
+        // Try to find card by ID first, then fallback to front text match
+        let card = flashcardMapById[cardId];
+        
+        // If not found by ID, the cardId might be legacy format - try to find matching flashcard
+        if (!card) {
+          // Check if any tracking record has additional info we can use
+          const trackingRecord = (trackingData || []).find(r => r.flashcard_id === cardId);
+          // Try to match by searching flashcards (this handles legacy data)
+          if (trackingRecord?.notes) {
+            card = flashcardMapByFront[trackingRecord.notes];
+          }
+        }
+        
         const flashInfo = flashedByDate[cardId];
         
         return {
@@ -90,14 +104,16 @@ const FlashedHistory = () => {
           card_status: card?.card_status || 'unknown',
           firstFlashed: flashInfo?.firstFlashed,
           lastFlashed: flashInfo?.lastFlashed,
-          flashCount: flashInfo?.flashCount || 0
+          flashCount: flashInfo?.flashCount || 0,
+          hasValidCard: !!card
         };
       });
 
-      // Sort by last flashed date (most recent first)
-      records.sort((a, b) => new Date(b.lastFlashed) - new Date(a.lastFlashed));
+      // Filter out legacy records without valid flashcard matches, then sort
+      const validRecords = records.filter(r => r.hasValidCard);
+      validRecords.sort((a, b) => new Date(b.lastFlashed) - new Date(a.lastFlashed));
 
-      setFlashedRecords(records);
+      setFlashedRecords(validRecords);
     } catch (error) {
       console.error('Error loading flashed history:', error);
     } finally {
