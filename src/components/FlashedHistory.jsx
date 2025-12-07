@@ -2,11 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { useFlashcards } from '../context/FlashcardContext';
+
+// Helper to get category name from ID
+const getCategoryName = (categoryId, categories) => {
+  if (!categoryId) return 'Unknown';
+  const category = categories.find(c => c.id === categoryId);
+  return category?.name || categoryId;
+};
 import { Calendar, Clock, User, Search, Filter } from 'lucide-react';
 
 const FlashedHistory = () => {
   const { currentUser } = useAuth();
-  const { flashcards: localFlashcards } = useFlashcards();
+  const { flashcards: localFlashcards, categories } = useFlashcards();
   const [flashedRecords, setFlashedRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -105,9 +112,10 @@ const FlashedHistory = () => {
         // Extract word and english from different card structures
         const word = card?.word || card?.front || cardId;
         const english = card?.english || card?.back || '';
+        // Get category name: use categoryId for localStorage cards, folder for Supabase cards
         const folder = card?.categoryId 
-          ? (localFlashcards || []).find(c => c.categoryId === card.categoryId)?.categoryId 
-          : (card?.folder || 'Unknown');
+          ? getCategoryName(card.categoryId, categories || [])
+          : (supabaseCard?.folder || card?.folder || 'Unknown');
         
         return {
           id: cardId,
