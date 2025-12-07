@@ -934,6 +934,14 @@ const DailyTrackerImproved = () => {
                       const isRetiringNext = dayCount === 5 && status === 'active';
                       const isRetired = status === 'retired' && card?.date_retired === selectedDate.toISOString().split('T')[0];
                       const isOldest = cardIdx === 0; // First card is oldest
+                      
+                      // Get the date this word was added to the set
+                      const wordAddedDate = set.flashcardDates?.[card.id];
+                      
+                      // Calculate set start date (earliest date in flashcardDates)
+                      const setStartDate = set.flashcardDates 
+                        ? Object.values(set.flashcardDates).sort()[0] 
+                        : null;
 
                       const getDayBadgeColor = () => {
                         if (status !== 'active') return 'bg-slate-100 text-slate-500';
@@ -957,8 +965,15 @@ const DailyTrackerImproved = () => {
                           {/* Set Number - only show on first card of each set */}
                           <td className="px-4 py-3 text-sm">
                             {cardIdx === 0 && (
-                              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-700 font-bold text-sm">
-                                {set.index}
+                              <div className="flex flex-col items-center gap-1">
+                                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-700 font-bold text-sm">
+                                  {set.index}
+                                </div>
+                                {setStartDate && (
+                                  <span className="text-[10px] text-slate-400">
+                                    {new Date(setStartDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                  </span>
+                                )}
                               </div>
                             )}
                           </td>
@@ -974,11 +989,11 @@ const DailyTrackerImproved = () => {
                                   {card.english}
                                 </span>
                                 <div className="flex gap-3 text-[10px] text-slate-400 mt-0.5">
-                                  {supabaseFlashcards[card.word]?.created_at && (
-                                    <span>Added: {new Date(supabaseFlashcards[card.word].created_at).toLocaleDateString()}</span>
+                                  {wordAddedDate && (
+                                    <span>Added to set: {new Date(wordAddedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                                   )}
                                   {supabaseFlashcards[card.word]?.date_introduced && (
-                                    <span>Started: {new Date(supabaseFlashcards[card.word].date_introduced).toLocaleDateString()}</span>
+                                    <span>Started: {new Date(supabaseFlashcards[card.word].date_introduced).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                                   )}
                                 </div>
                               </div>
