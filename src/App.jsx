@@ -139,6 +139,12 @@ const AppContent = () => {
           All Words
         </button>
         <button 
+          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'manage-flashcards' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
+          onClick={() => handleTabChange('manage-flashcards')}
+        >
+          Manage Flashcards
+        </button>
+        <button 
           className={`px-4 py-2 whitespace-nowrap ${activeTab === 'spoken-words' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
           onClick={() => handleTabChange('spoken-words')}
         >
@@ -155,12 +161,6 @@ const AppContent = () => {
           onClick={() => handleTabChange('bingo-generator')}
         >
           Bingo Generator
-        </button>
-        <button 
-          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'manage-flashcards' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
-          onClick={() => handleTabChange('manage-flashcards')}
-        >
-          Manage Flashcards
         </button>
         <button 
           className={`px-4 py-2 whitespace-nowrap ${activeTab === 'history' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
