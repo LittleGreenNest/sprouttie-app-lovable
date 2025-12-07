@@ -247,6 +247,15 @@ const BingoCardGenerator = () => {
       }
       
       doc.save('bingo-cards.pdf');
+      
+      // Log activity
+      const { logActivity, ACTIVITY_TYPES } = await import('@/utils/activityLogger');
+      await logActivity(
+        ACTIVITY_TYPES.BINGO_GENERATED,
+        `Generated ${numberOfCards} bingo card${numberOfCards !== 1 ? 's' : ''} (${gridSize}×${gridSize})`,
+        { count: numberOfCards, gridSize, wordsCount: selectedWords.size }
+      );
+      
       toast.success('Bingo cards PDF generated successfully!');
     } catch (error) {
       console.error('Error generating PDF:', error);

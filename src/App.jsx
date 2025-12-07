@@ -26,7 +26,7 @@ import DailyTracker from './components/DailyTracker';
 import DailyTrackerGrid from './components/DailyTrackerGrid';
 import DailyTrackerImproved from './components/DailyTrackerImproved';
 import FlashcardManager from './components/FlashcardManager';
-import HistoryView from './components/HistoryView';
+import ActivityHistory from './components/ActivityHistory';
 import AllWords from './components/AllWords';
 import SpokenWords from './components/SpokenWords';
 import BingoCardGenerator from './components/BingoCardGenerator';
@@ -73,7 +73,7 @@ const AppContent = () => {
     else if (path.includes('/pronunciation')) setActiveTab('pronunciation');
     else if (path.includes('/bingo-generator')) setActiveTab('bingo-generator');
     else if (path.includes('/manage-flashcards')) setActiveTab('manage-flashcards');
-    else if (path.includes('/history')) setActiveTab('history');
+    else if (path.includes('/activity-history')) setActiveTab('activity-history');
   }, [location]);
 
   // Handle tab changes
@@ -163,10 +163,10 @@ const AppContent = () => {
           Bingo Generator
         </button>
         <button 
-          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'history' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
-          onClick={() => handleTabChange('history')}
+          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'activity-history' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
+          onClick={() => handleTabChange('activity-history')}
         >
-          History
+          Activity History
         </button>
       </div>
                   {/* Active Tab Content */}
@@ -185,7 +185,7 @@ const AppContent = () => {
           <Route path="/pronunciation" element={<PronunciationPortal />} />
           <Route path="/bingo-generator" element={<BingoCardGenerator />} />
           <Route path="/manage-flashcards" element={<FlashcardManager />} />
-          <Route path="/history" element={<HistoryView />} />
+          <Route path="/activity-history" element={<ActivityHistory />} />
 
           {/* profile page */}
           <Route path="/profile" element={<Profile />} />
