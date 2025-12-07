@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
+import { useFlashcards } from '../context/FlashcardContext';
 import { Calendar, Clock, User, Search, Filter } from 'lucide-react';
 
 const FlashedHistory = () => {
   const { currentUser } = useAuth();
+  const { flashcards: localFlashcards } = useFlashcards();
   const [flashedRecords, setFlashedRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -14,13 +16,13 @@ const FlashedHistory = () => {
     if (currentUser) {
       loadFlashedHistory();
     }
-  }, [currentUser]);
+  }, [currentUser, localFlashcards]);
 
   const loadFlashedHistory = async () => {
     try {
       setLoading(true);
       
-      // Get all flashed tracking records with flashcard details
+      // Get all flashed tracking records
       const { data: trackingData, error: trackingError } = await supabase
         .from('daily_tracking')
         .select('*')
@@ -30,28 +32,36 @@ const FlashedHistory = () => {
 
       if (trackingError) throw trackingError;
 
-      // Get all flashcards for this user
-      const { data: flashcardsData, error: flashcardsError } = await supabase
+      // Get all flashcards from Supabase for this user
+      const { data: supabaseFlashcards, error: flashcardsError } = await supabase
         .from('flashcards')
         .select('*')
         .eq('user_id', currentUser.id);
 
       if (flashcardsError) throw flashcardsError;
 
-      // Create maps for flashcard lookup - by ID and by front text (for legacy data)
-      const flashcardMapById = {};
-      const flashcardMapByFront = {};
-      (flashcardsData || []).forEach(card => {
-        flashcardMapById[card.id] = card;
-        flashcardMapByFront[card.front] = card;
+      // Create lookup maps for both localStorage and Supabase flashcards
+      const localFlashcardMap = {};
+      (localFlashcards || []).forEach(card => {
+        localFlashcardMap[card.id] = card;
       });
+
+      const supabaseFlashcardMapById = {};
+      const supabaseFlashcardMapByFront = {};
+      (supabaseFlashcards || []).forEach(card => {
+        supabaseFlashcardMapById[card.id] = card;
+        supabaseFlashcardMapByFront[card.front] = card;
+      });
+
+      console.log('Flashed flashcard IDs from tracking:', [...new Set((trackingData || []).map(r => r.flashcard_id).filter(id => id && !id.startsWith('set-')))]);
+      console.log('Using localStorage flashcards, IDs:', (localFlashcards || []).map(c => c.id));
 
       // Get unique flashcard_ids that have been flashed
       const flashedCardIds = new Set();
       const flashedByDate = {};
 
       (trackingData || []).forEach(record => {
-        if (record.flashcard_id && !record.flashcard_id.startsWith('set-')) {
+        if (record.flashcard_id && !record.flashcard_id.startsWith('set-') && record.flashcard_id !== 'shared-note') {
           flashedCardIds.add(record.flashcard_id);
           
           // Track first flash date for each card
@@ -78,30 +88,36 @@ const FlashedHistory = () => {
 
       // Build the final records with flashcard details
       const records = Array.from(flashedCardIds).map(cardId => {
-        // Try to find card by ID first, then fallback to front text match
-        let card = flashcardMapById[cardId];
+        // Try localStorage first (for f123456 style IDs), then Supabase (for UUID style IDs)
+        let card = localFlashcardMap[cardId] || supabaseFlashcardMapById[cardId];
         
-        // If not found by ID, the cardId might be legacy format - try to find matching flashcard
-        if (!card) {
-          // Check if any tracking record has additional info we can use
-          const trackingRecord = (trackingData || []).find(r => r.flashcard_id === cardId);
-          // Try to match by searching flashcards (this handles legacy data)
-          if (trackingRecord?.notes) {
-            card = flashcardMapByFront[trackingRecord.notes];
-          }
+        // Get additional metadata from Supabase if we found a localStorage card
+        let supabaseCard = null;
+        if (card && localFlashcardMap[cardId]) {
+          // Match by word text to get Supabase metadata
+          supabaseCard = supabaseFlashcardMapByFront[card.word || card.front];
+        } else if (card) {
+          supabaseCard = card;
         }
         
         const flashInfo = flashedByDate[cardId];
         
+        // Extract word and english from different card structures
+        const word = card?.word || card?.front || cardId;
+        const english = card?.english || card?.back || '';
+        const folder = card?.categoryId 
+          ? (localFlashcards || []).find(c => c.categoryId === card.categoryId)?.categoryId 
+          : (card?.folder || 'Unknown');
+        
         return {
           id: cardId,
-          word: card?.front || cardId,
-          english: card?.back || '',
-          folder: card?.folder || 'Unknown',
-          card_type: card?.card_type || 'word',
-          created_at: card?.created_at,
-          date_introduced: card?.date_introduced,
-          card_status: card?.card_status || 'unknown',
+          word: word,
+          english: english,
+          folder: folder || 'Unknown',
+          card_type: card?.card_type || supabaseCard?.card_type || 'word',
+          created_at: supabaseCard?.created_at || card?.created_at,
+          date_introduced: supabaseCard?.date_introduced || card?.date_introduced,
+          card_status: supabaseCard?.card_status || card?.card_status || 'unknown',
           firstFlashed: flashInfo?.firstFlashed,
           lastFlashed: flashInfo?.lastFlashed,
           flashCount: flashInfo?.flashCount || 0,
@@ -109,7 +125,7 @@ const FlashedHistory = () => {
         };
       });
 
-      // Filter out legacy records without valid flashcard matches, then sort
+      // Filter out records without valid flashcard matches, then sort
       const validRecords = records.filter(r => r.hasValidCard);
       validRecords.sort((a, b) => new Date(b.lastFlashed) - new Date(a.lastFlashed));
 
