@@ -52,6 +52,28 @@ export const FlashcardProvider = ({ children }) => {
     }
   }, []);
 
+  // Clean up sets when flashcards change - remove invalid flashcard IDs
+  useEffect(() => {
+    if (flashcards.length > 0 && sets.length > 0) {
+      const validFlashcardIds = new Set(flashcards.map(fc => fc.id));
+      let hasInvalidIds = false;
+      
+      const cleanedSets = sets.map(set => {
+        const validIds = (set.flashcardIds || []).filter(id => validFlashcardIds.has(id));
+        if (validIds.length !== (set.flashcardIds || []).length) {
+          hasInvalidIds = true;
+        }
+        return { ...set, flashcardIds: validIds };
+      });
+      
+      if (hasInvalidIds) {
+        console.log('Cleaning up invalid flashcard IDs from sets');
+        setSets(cleanedSets);
+        localStorage.setItem('sets', JSON.stringify(cleanedSets));
+      }
+    }
+  }, [flashcards]);
+
   // Save sets to localStorage whenever they change
   useEffect(() => {
     if (sets.length > 0) {
