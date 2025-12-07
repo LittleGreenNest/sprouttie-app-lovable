@@ -397,13 +397,14 @@ if (cardIndex === 0 && page.length > 1) {
 
       doc.save('sprouttie-flashcards.pdf');
       
-      // Log activity
-      const { logActivity, ACTIVITY_TYPES } = await import('@/utils/activityLogger');
-      await logActivity(
-        ACTIVITY_TYPES.PRINT_FLASHCARDS,
-        `Printed ${previewFlashcards.length} flashcard${previewFlashcards.length !== 1 ? 's' : ''}`,
-        { count: previewFlashcards.length, includeBack }
-      );
+      // Log activity (fire and forget)
+      import('@/utils/activityLogger').then(({ logActivity, ACTIVITY_TYPES }) => {
+        logActivity(
+          ACTIVITY_TYPES.PRINT_FLASHCARDS,
+          `Printed ${previewFlashcards.length} flashcard${previewFlashcards.length !== 1 ? 's' : ''}`,
+          { count: previewFlashcards.length, includeBack }
+        );
+      });
       
       setMessage('PDF generated successfully! Check your downloads folder.');
       setTimeout(() => setMessage(''), 3000);
