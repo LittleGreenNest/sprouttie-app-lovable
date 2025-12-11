@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { useFlashcards } from '../context/FlashcardContext';
+import { Calendar, Clock, Search, TrendingUp, BarChart3, BookOpen } from 'lucide-react';
 
 // Helper to get category name from ID
 const getCategoryName = (categoryId, categories) => {
@@ -9,12 +10,12 @@ const getCategoryName = (categoryId, categories) => {
   const category = categories.find(c => c.id === categoryId);
   return category?.name || categoryId;
 };
-import { Calendar, Clock, User, Search, Filter } from 'lucide-react';
 
 const FlashedHistory = () => {
   const { currentUser } = useAuth();
   const { flashcards: localFlashcards, categories } = useFlashcards();
   const [flashedRecords, setFlashedRecords] = useState([]);
+  const [allTrackingData, setAllTrackingData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState('all'); // 'all', 'today', 'week', 'month'
@@ -38,6 +39,8 @@ const FlashedHistory = () => {
         .order('date', { ascending: false });
 
       if (trackingError) throw trackingError;
+      
+      setAllTrackingData(trackingData || []);
 
       // Get all flashcards from Supabase for this user
       const { data: supabaseFlashcards, error: flashcardsError } = await supabase
@@ -174,6 +177,53 @@ const FlashedHistory = () => {
     return filtered;
   };
 
+  // Calculate monthly summary stats
+  const monthlySummary = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+    // Filter tracking data for current and last month
+    const currentMonthData = allTrackingData.filter(record => {
+      const date = new Date(record.date);
+      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    });
+
+    const lastMonthData = allTrackingData.filter(record => {
+      const date = new Date(record.date);
+      return date.getMonth() === lastMonth && date.getFullYear() === lastMonthYear;
+    });
+
+    // Total sessions (unique dates with flashed records)
+    const currentMonthSessions = new Set(currentMonthData.map(r => r.date)).size;
+    const lastMonthSessions = new Set(lastMonthData.map(r => r.date)).size;
+
+    // Average engagement
+    const currentEngagements = currentMonthData.filter(r => r.engagement !== null).map(r => r.engagement);
+    const lastEngagements = lastMonthData.filter(r => r.engagement !== null).map(r => r.engagement);
+    const currentAvgEngagement = currentEngagements.length > 0 
+      ? (currentEngagements.reduce((a, b) => a + b, 0) / currentEngagements.length).toFixed(1)
+      : 0;
+    const lastAvgEngagement = lastEngagements.length > 0 
+      ? (lastEngagements.reduce((a, b) => a + b, 0) / lastEngagements.length).toFixed(1)
+      : 0;
+
+    // Cards learned (unique cards flashed this month)
+    const currentMonthCards = new Set(currentMonthData.map(r => r.flashcard_id).filter(id => id && !id.startsWith('set-'))).size;
+    const lastMonthCards = new Set(lastMonthData.map(r => r.flashcard_id).filter(id => id && !id.startsWith('set-'))).size;
+
+    return {
+      totalSessions: currentMonthSessions,
+      sessionsDiff: currentMonthSessions - lastMonthSessions,
+      avgEngagement: currentAvgEngagement,
+      engagementDiff: (currentAvgEngagement - lastAvgEngagement).toFixed(1),
+      cardsLearned: currentMonthCards,
+      cardsDiff: currentMonthCards - lastMonthCards
+    };
+  }, [allTrackingData]);
+
   const filteredRecords = getDateFilteredRecords();
 
   const formatDate = (dateString) => {
@@ -246,6 +296,52 @@ const FlashedHistory = () => {
                 {option.label}
               </button>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Monthly Summary */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        <h3 className="text-lg font-semibold text-slate-800 text-center mb-6">Monthly Summary</h3>
+        <div className="space-y-4">
+          {/* Total Sessions */}
+          <div className="bg-slate-50 rounded-xl p-4 text-center border-l-4 border-green-500">
+            <div className="flex items-center justify-center gap-2 text-sm text-slate-600 mb-1">
+              <BarChart3 className="w-4 h-4" />
+              <span>Total Sessions</span>
+            </div>
+            <div className="text-3xl font-bold text-slate-800">{monthlySummary.totalSessions}</div>
+            <div className="text-xs text-slate-500">This month</div>
+          </div>
+
+          {/* Avg Engagement */}
+          <div className="bg-slate-50 rounded-xl p-4 text-center border-l-4 border-green-500">
+            <div className="flex items-center justify-center gap-2 text-sm text-slate-600 mb-1">
+              <TrendingUp className="w-4 h-4" />
+              <span>Avg. Engagement</span>
+            </div>
+            <div className="text-3xl font-bold text-slate-800">{monthlySummary.avgEngagement}/5</div>
+            <div className="text-xs">
+              <span className={`font-medium ${parseFloat(monthlySummary.engagementDiff) >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                {parseFloat(monthlySummary.engagementDiff) >= 0 ? '↑' : '↓'} {Math.abs(monthlySummary.engagementDiff)}
+              </span>
+              <span className="text-slate-500"> from last month</span>
+            </div>
+          </div>
+
+          {/* Cards Learned */}
+          <div className="bg-slate-50 rounded-xl p-4 text-center border-l-4 border-green-500">
+            <div className="flex items-center justify-center gap-2 text-sm text-slate-600 mb-1">
+              <BookOpen className="w-4 h-4" />
+              <span>Cards Learned</span>
+            </div>
+            <div className="text-3xl font-bold text-slate-800">{monthlySummary.cardsLearned}</div>
+            <div className="text-xs">
+              <span className={`font-medium ${monthlySummary.cardsDiff >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                {monthlySummary.cardsDiff >= 0 ? '↑' : '↓'} {Math.abs(monthlySummary.cardsDiff)}
+              </span>
+              <span className="text-slate-500"> from last month</span>
+            </div>
           </div>
         </div>
       </div>
