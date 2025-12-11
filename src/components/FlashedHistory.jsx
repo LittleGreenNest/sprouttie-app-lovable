@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { useFlashcards } from '../context/FlashcardContext';
-import { Calendar, Clock, Search, TrendingUp, BarChart3, BookOpen, FileText, Star, Download } from 'lucide-react';
+import { Calendar, Clock, Search, TrendingUp, BarChart3, BookOpen } from 'lucide-react';
 
 // Helper to get category name from ID
 const getCategoryName = (categoryId, categories) => {
@@ -224,55 +224,6 @@ const FlashedHistory = () => {
     };
   }, [allTrackingData]);
 
-  // Group tracking data by date for daily notes view
-  const dailyHistory = useMemo(() => {
-    const grouped = {};
-    
-    allTrackingData.forEach(record => {
-      const date = record.date;
-      if (!grouped[date]) {
-        grouped[date] = {
-          date,
-          flashcards: new Set(),
-          sets: new Set(),
-          engagements: [],
-          notes: [],
-          timeOfDay: record.time_of_day
-        };
-      }
-      
-      if (record.flashcard_id && !record.flashcard_id.startsWith('set-') && record.flashcard_id !== 'shared-note') {
-        grouped[date].flashcards.add(record.flashcard_id);
-      }
-      
-      if (record.flashcard_id && record.flashcard_id.startsWith('set-')) {
-        grouped[date].sets.add(record.flashcard_id);
-      }
-      
-      if (record.engagement !== null) {
-        grouped[date].engagements.push(record.engagement);
-      }
-      
-      if (record.notes) {
-        grouped[date].notes.push(record.notes);
-      }
-    });
-    
-    // Convert to array and calculate averages
-    return Object.values(grouped)
-      .map(day => ({
-        ...day,
-        flashcardCount: day.flashcards.size,
-        setCount: day.sets.size,
-        avgEngagement: day.engagements.length > 0 
-          ? (day.engagements.reduce((a, b) => a + b, 0) / day.engagements.length).toFixed(1)
-          : null,
-        allNotes: [...new Set(day.notes)].filter(n => n.trim())
-      }))
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 30); // Last 30 days with data
-  }, [allTrackingData]);
-
   const filteredRecords = getDateFilteredRecords();
 
   const formatDate = (dateString) => {
@@ -346,113 +297,6 @@ const FlashedHistory = () => {
               </button>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* Daily Notes Section */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-green-600" />
-            <h3 className="text-lg font-semibold text-slate-800">Daily Session History</h3>
-          </div>
-          <span className="text-sm text-slate-500">{dailyHistory.length} sessions</span>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-50 border-b border-slate-100">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Sets Used
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Flashcards
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Engagement
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Notes
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {dailyHistory.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-slate-500">
-                    No tracking data found for this user yet.
-                  </td>
-                </tr>
-              ) : (
-                dailyHistory.map(day => (
-                  <tr key={day.date} className="hover:bg-slate-50 transition-colors">
-                    {/* Date */}
-                    <td className="px-4 py-3">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-slate-900">
-                          {new Date(day.date).toLocaleDateString('en-US', { 
-                            weekday: 'short', 
-                            month: 'short', 
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                        </span>
-                        {day.timeOfDay && (
-                          <span className="text-xs text-slate-500 capitalize">{day.timeOfDay}</span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Sets Used */}
-                    <td className="px-4 py-3 text-center">
-                      <span className="inline-flex items-center justify-center px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-medium">
-                        {day.setCount}
-                      </span>
-                    </td>
-
-                    {/* Flashcards */}
-                    <td className="px-4 py-3 text-center">
-                      <span className="inline-flex items-center justify-center px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">
-                        {day.flashcardCount}
-                      </span>
-                    </td>
-
-                    {/* Engagement */}
-                    <td className="px-4 py-3 text-center">
-                      {day.avgEngagement ? (
-                        <div className="flex items-center justify-center gap-1">
-                          <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                          <span className="text-sm font-medium text-slate-700">{day.avgEngagement}/5</span>
-                        </div>
-                      ) : (
-                        <span className="text-slate-400 text-sm">-</span>
-                      )}
-                    </td>
-
-                    {/* Notes */}
-                    <td className="px-4 py-3">
-                      {day.allNotes.length > 0 ? (
-                        <div className="max-w-xs">
-                          {day.allNotes.slice(0, 2).map((note, idx) => (
-                            <p key={idx} className="text-sm text-slate-600 truncate">{note}</p>
-                          ))}
-                          {day.allNotes.length > 2 && (
-                            <span className="text-xs text-slate-400">+{day.allNotes.length - 2} more</span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-slate-400 text-sm">-</span>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
         </div>
       </div>
 
