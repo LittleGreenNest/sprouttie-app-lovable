@@ -3,8 +3,8 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 
-// Create context
-const FlashcardContext = createContext();
+// Create context with default undefined value
+const FlashcardContext = createContext(undefined);
 
 // Default categories (used for migration)
 const defaultCategories = [
@@ -44,7 +44,8 @@ const defaultSets = [
 
 // Provider component
 export const FlashcardProvider = ({ children }) => {
-  const { currentUser } = useAuth();
+  const authContext = useAuth();
+  const currentUser = authContext?.currentUser;
   const [categories, setCategories] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
   const [sets, setSets] = useState(defaultSets);
@@ -597,5 +598,9 @@ export const FlashcardProvider = ({ children }) => {
 
 // Custom hook for using the flashcard context
 export const useFlashcards = () => {
-  return useContext(FlashcardContext);
+  const context = useContext(FlashcardContext);
+  if (context === undefined) {
+    throw new Error('useFlashcards must be used within a FlashcardProvider');
+  }
+  return context;
 };
