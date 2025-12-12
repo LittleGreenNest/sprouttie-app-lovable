@@ -15,7 +15,25 @@ const defaultCategories = [
   { id: 'cat5', name: 'Body Parts' }
 ];
 
-// Default sets structure
+// Default sets structure - will be populated from Supabase set_number field
+const buildSetsFromFlashcards = (flashcards) => {
+  const sets = [
+    { id: 1, name: 'Set 1', flashcardIds: [] },
+    { id: 2, name: 'Set 2', flashcardIds: [] },
+    { id: 3, name: 'Set 3', flashcardIds: [] },
+    { id: 4, name: 'Set 4', flashcardIds: [] },
+    { id: 5, name: 'Set 5', flashcardIds: [] }
+  ];
+  
+  flashcards.forEach(card => {
+    if (card.set_number && card.set_number >= 1 && card.set_number <= 5) {
+      sets[card.set_number - 1].flashcardIds.push(card.id);
+    }
+  });
+  
+  return sets;
+};
+
 const defaultSets = [
   { id: 1, name: 'Set 1', flashcardIds: [] },
   { id: 2, name: 'Set 2', flashcardIds: [] },
@@ -44,42 +62,15 @@ export const FlashcardProvider = ({ children }) => {
     }
   }, [currentUser?.id]);
 
-  // Load sets from localStorage (sets are still local for now)
+  // Build sets from flashcards when flashcards are loaded
   useEffect(() => {
-    const savedSets = localStorage.getItem('sets');
-    if (savedSets) {
-      setSets(JSON.parse(savedSets));
-    }
-  }, []);
-
-  // Clean up sets when flashcards change - remove invalid flashcard IDs
-  useEffect(() => {
-    if (flashcards.length > 0 && sets.length > 0) {
-      const validFlashcardIds = new Set(flashcards.map(fc => fc.id));
-      let hasInvalidIds = false;
-      
-      const cleanedSets = sets.map(set => {
-        const validIds = (set.flashcardIds || []).filter(id => validFlashcardIds.has(id));
-        if (validIds.length !== (set.flashcardIds || []).length) {
-          hasInvalidIds = true;
-        }
-        return { ...set, flashcardIds: validIds };
-      });
-      
-      if (hasInvalidIds) {
-        console.log('Cleaning up invalid flashcard IDs from sets');
-        setSets(cleanedSets);
-        localStorage.setItem('sets', JSON.stringify(cleanedSets));
-      }
+    if (flashcards.length > 0) {
+      const builtSets = buildSetsFromFlashcards(flashcards);
+      setSets(builtSets);
     }
   }, [flashcards]);
 
-  // Save sets to localStorage whenever they change
-  useEffect(() => {
-    if (sets.length > 0) {
-      localStorage.setItem('sets', JSON.stringify(sets));
-    }
-  }, [sets]);
+  // No need for localStorage cleanup - sets are derived from Supabase
 
   const loadFromLocalStorage = () => {
     try {
@@ -120,7 +111,9 @@ export const FlashcardProvider = ({ children }) => {
       // Check for localStorage data to migrate
       const localFlashcards = localStorage.getItem('flashcards');
       const localCategories = localStorage.getItem('categories');
+      const localSets = localStorage.getItem('sets');
       const hasMigrated = localStorage.getItem(`migrated_${currentUser.id}`);
+      const hasSetsMigrated = localStorage.getItem(`sets_migrated_${currentUser.id}`);
       
       if (localFlashcards && !hasMigrated) {
         // Migrate localStorage data to Supabase
@@ -129,6 +122,15 @@ export const FlashcardProvider = ({ children }) => {
           localCategories ? JSON.parse(localCategories) : defaultCategories
         );
         localStorage.setItem(`migrated_${currentUser.id}`, 'true');
+        // Reload after migration
+        await loadFlashcardsFromSupabase();
+        return;
+      }
+
+      // Migrate localStorage sets to Supabase (one-time)
+      if (localSets && !hasSetsMigrated && supabaseFlashcards?.length > 0) {
+        await migrateLocalSetsToSupabase(JSON.parse(localSets), supabaseFlashcards);
+        localStorage.setItem(`sets_migrated_${currentUser.id}`, 'true');
         // Reload after migration
         await loadFlashcardsFromSupabase();
         return;
@@ -148,6 +150,7 @@ export const FlashcardProvider = ({ children }) => {
         date_introduced: card.date_introduced,
         date_retired: card.date_retired,
         mastery_level: card.mastery_level,
+        set_number: card.set_number,
       }));
 
       // Extract unique categories from flashcards
@@ -209,6 +212,49 @@ export const FlashcardProvider = ({ children }) => {
       setMigrationDone(true);
     } catch (error) {
       console.error("Error migrating to Supabase:", error);
+    }
+  };
+
+  // Migrate localStorage sets to Supabase set_number field
+  const migrateLocalSetsToSupabase = async (localSets, supabaseFlashcards) => {
+    try {
+      console.log('Migrating localStorage sets to Supabase...');
+      
+      // Create a map of flashcard word -> supabase ID
+      const wordToId = {};
+      supabaseFlashcards.forEach(card => {
+        wordToId[card.front] = card.id;
+      });
+
+      // Also map by localStorage flashcard IDs that might match Supabase IDs
+      const idMap = {};
+      supabaseFlashcards.forEach(card => {
+        idMap[card.id] = card.id;
+      });
+
+      for (const set of localSets) {
+        if (set.flashcardIds && set.flashcardIds.length > 0) {
+          // Try to match localStorage flashcard IDs to Supabase IDs
+          const supabaseIds = set.flashcardIds
+            .map(localId => idMap[localId]) // Direct ID match (if localStorage has UUID)
+            .filter(Boolean);
+
+          if (supabaseIds.length > 0) {
+            const { error } = await supabase
+              .from('flashcards')
+              .update({ set_number: set.id })
+              .eq('user_id', currentUser.id)
+              .in('id', supabaseIds);
+
+            if (error) throw error;
+            console.log(`Migrated ${supabaseIds.length} cards to Set ${set.id}`);
+          }
+        }
+      }
+
+      console.log('Sets migration complete');
+    } catch (error) {
+      console.error("Error migrating sets to Supabase:", error);
     }
   };
 
@@ -399,8 +445,9 @@ export const FlashcardProvider = ({ children }) => {
     }
   };
   
-  // Set operations (still localStorage-based)
-  const updateSetFlashcards = (setId, flashcardIds, flashcardDates = null) => {
+  // Set operations - now persisted to Supabase via set_number field
+  const updateSetFlashcards = async (setId, flashcardIds, flashcardDates = null) => {
+    // Update local state immediately
     setSets(prev => prev.map(set => {
       if (set.id === setId) {
         const updatedSet = { ...set, flashcardIds };
@@ -411,6 +458,44 @@ export const FlashcardProvider = ({ children }) => {
       }
       return set;
     }));
+
+    // Update flashcards local state with new set_number
+    setFlashcards(prev => prev.map(card => {
+      if (flashcardIds.includes(card.id)) {
+        return { ...card, set_number: setId };
+      } else if (card.set_number === setId) {
+        // Card was removed from this set
+        return { ...card, set_number: null };
+      }
+      return card;
+    }));
+
+    // Persist to Supabase if user is authenticated
+    if (currentUser?.id) {
+      try {
+        // First, clear set_number for any cards that were in this set but aren't anymore
+        const { error: clearError } = await supabase
+          .from('flashcards')
+          .update({ set_number: null })
+          .eq('user_id', currentUser.id)
+          .eq('set_number', setId);
+
+        if (clearError) throw clearError;
+
+        // Then, set set_number for all cards in this set
+        if (flashcardIds.length > 0) {
+          const { error: setError } = await supabase
+            .from('flashcards')
+            .update({ set_number: setId })
+            .eq('user_id', currentUser.id)
+            .in('id', flashcardIds);
+
+          if (setError) throw setError;
+        }
+      } catch (error) {
+        console.error("Error updating set in Supabase:", error);
+      }
+    }
   };
   
   // Get flashcards by category
