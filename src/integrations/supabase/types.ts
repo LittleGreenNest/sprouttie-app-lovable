@@ -284,6 +284,7 @@ export type Database = {
           notes: string | null
           started_saying_at: string
           user_id: string
+          video_url: string | null
           word: string
         }
         Insert: {
@@ -292,6 +293,7 @@ export type Database = {
           notes?: string | null
           started_saying_at?: string
           user_id: string
+          video_url?: string | null
           word: string
         }
         Update: {
@@ -300,6 +302,7 @@ export type Database = {
           notes?: string | null
           started_saying_at?: string
           user_id?: string
+          video_url?: string | null
           word?: string
         }
         Relationships: []

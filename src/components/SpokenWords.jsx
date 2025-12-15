@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Trash2, Calendar } from 'lucide-react';
+import { Plus, Trash2, Calendar, Video, Square, Play, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const SpokenWords = () => {
@@ -10,6 +10,12 @@ const SpokenWords = () => {
   const [newWord, setNewWord] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedVideo, setRecordedVideo] = useState(null);
+  const [playingVideoId, setPlayingVideoId] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const videoPreviewRef = useRef(null);
+  const chunksRef = useRef([]);
 
   useEffect(() => {
     if (currentUser) {
@@ -36,17 +42,87 @@ const SpokenWords = () => {
     }
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user' }, 
+        audio: true 
+      });
+      
+      if (videoPreviewRef.current) {
+        videoPreviewRef.current.srcObject = stream;
+        videoPreviewRef.current.play();
+      }
+      
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+        setRecordedVideo(blob);
+        stream.getTracks().forEach(track => track.stop());
+        if (videoPreviewRef.current) {
+          videoPreviewRef.current.srcObject = null;
+          videoPreviewRef.current.src = URL.createObjectURL(blob);
+        }
+      };
+      
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      toast.error('Could not access camera');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const clearRecording = () => {
+    setRecordedVideo(null);
+    if (videoPreviewRef.current) {
+      videoPreviewRef.current.src = '';
+    }
+  };
+
   const addSpokenWord = async (e) => {
     e.preventDefault();
     if (!newWord.trim()) return;
 
     try {
+      let videoUrl = null;
+      
+      if (recordedVideo) {
+        const fileName = `${currentUser.id}/${Date.now()}.webm`;
+        const { error: uploadError } = await supabase.storage
+          .from('spoken-word-videos')
+          .upload(fileName, recordedVideo);
+        
+        if (uploadError) throw uploadError;
+        
+        const { data: urlData } = supabase.storage
+          .from('spoken-word-videos')
+          .getPublicUrl(fileName);
+        
+        videoUrl = urlData.publicUrl;
+      }
+
       const { error } = await supabase
         .from('spoken_words')
         .insert({
           user_id: currentUser.id,
           word: newWord.trim(),
           notes: notes.trim() || null,
+          video_url: videoUrl,
         });
 
       if (error) throw error;
@@ -54,6 +130,8 @@ const SpokenWords = () => {
       toast.success('Word added!');
       setNewWord('');
       setNotes('');
+      setRecordedVideo(null);
+      if (videoPreviewRef.current) videoPreviewRef.current.src = '';
       fetchSpokenWords();
     } catch (error) {
       console.error('Error adding spoken word:', error);
@@ -138,6 +216,64 @@ const SpokenWords = () => {
                 className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-foreground"
               />
             </div>
+            
+            {/* Video Recording Section */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Video (optional)
+              </label>
+              <div className="space-y-3">
+                <video 
+                  ref={videoPreviewRef} 
+                  className={`w-full rounded-lg bg-muted ${recordedVideo || isRecording ? 'block' : 'hidden'}`}
+                  muted={isRecording}
+                  controls={!!recordedVideo && !isRecording}
+                  playsInline
+                />
+                <div className="flex gap-2">
+                  {!isRecording && !recordedVideo && (
+                    <button
+                      type="button"
+                      onClick={startRecording}
+                      className="flex-1 bg-secondary hover:bg-secondary/80 text-secondary-foreground font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Video size={18} />
+                      Record Video
+                    </button>
+                  )}
+                  {isRecording && (
+                    <button
+                      type="button"
+                      onClick={stopRecording}
+                      className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Square size={18} />
+                      Stop Recording
+                    </button>
+                  )}
+                  {recordedVideo && !isRecording && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={startRecording}
+                        className="flex-1 bg-secondary hover:bg-secondary/80 text-secondary-foreground font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Video size={18} />
+                        Re-record
+                      </button>
+                      <button
+                        type="button"
+                        onClick={clearRecording}
+                        className="bg-muted hover:bg-muted/80 text-muted-foreground font-medium py-2 px-4 rounded-lg transition-colors"
+                      >
+                        <X size={18} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <button
               type="submit"
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
@@ -180,6 +316,27 @@ const SpokenWords = () => {
                       </div>
                       {word.notes && (
                         <p className="text-sm text-muted-foreground">{word.notes}</p>
+                      )}
+                      {word.video_url && (
+                        <div className="mt-2">
+                          {playingVideoId === word.id ? (
+                            <video 
+                              src={word.video_url} 
+                              controls 
+                              autoPlay
+                              className="w-full max-w-sm rounded-lg"
+                              onEnded={() => setPlayingVideoId(null)}
+                            />
+                          ) : (
+                            <button
+                              onClick={() => setPlayingVideoId(word.id)}
+                              className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
+                            >
+                              <Play size={16} />
+                              Watch video
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                     <button
