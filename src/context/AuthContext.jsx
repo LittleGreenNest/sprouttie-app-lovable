@@ -52,10 +52,13 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError('');
       
+      const redirectUrl = `${window.location.origin}/dashboard`;
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: redirectUrl,
           data: {
             name: name,
           }
