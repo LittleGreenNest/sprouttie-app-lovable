@@ -482,8 +482,8 @@ const FlashcardManager = () => {
 
               {/* Main Text Field */}
               <div>
-                <label className="block text-sm font-medium mb-1">
-                  {newCardType === 'word' ? 'Word (Chinese)' : 'Phrase (Chinese)'}
+              <label className="block text-sm font-medium mb-1">
+                  {newCardType === 'word' ? 'Word' : 'Phrase'}
                 </label>
                 <input
                   type="text"
