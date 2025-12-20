@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { 
   Calendar, 
   RotateCcw, 
@@ -12,7 +12,10 @@ import {
   Loader2,
   Plus,
   Check,
-  Wand2
+  Wand2,
+  GripVertical,
+  X,
+  ChevronDown
 } from 'lucide-react';
 
 /**
@@ -23,6 +26,7 @@ import {
  * 2. Skip Day warning for consecutive skips
  * 3. Upcoming Retirements preview
  * 4. AI-Recommended words for queue with selection
+ * 5. Manual word entry, drag-to-reorder, set assignment, theme badges
  */
 
 const FlashingTrackerMockup = () => {
@@ -30,6 +34,9 @@ const FlashingTrackerMockup = () => {
   const [loadingAI, setLoadingAI] = useState(false);
   const [showAISuggestions, setShowAISuggestions] = useState(false);
   const [selectedSuggestions, setSelectedSuggestions] = useState(new Set());
+  const [showManualAdd, setShowManualAdd] = useState(false);
+  const [manualWord, setManualWord] = useState({ word: '', pinyin: '', english: '' });
+  const [selectedThemeFilter, setSelectedThemeFilter] = useState('all');
   
   // Per-set session tracking (like DailyTrackerImproved)
   const [sessions, setSessions] = useState({
@@ -44,6 +51,7 @@ const FlashingTrackerMockup = () => {
     {
       id: 'set1',
       name: 'Fruits Set',
+      theme: 'fruits',
       cards: [
         { id: 1, word: '苹果', pinyin: 'píngguǒ', english: 'Apple', dayCount: 5, isOldest: true },
         { id: 2, word: '香蕉', pinyin: 'xiāngjiāo', english: 'Banana', dayCount: 4 },
@@ -55,6 +63,7 @@ const FlashingTrackerMockup = () => {
     {
       id: 'set2',
       name: 'Animals Set',
+      theme: 'animals',
       cards: [
         { id: 6, word: '小狗', pinyin: 'xiǎo gǒu', english: 'Puppy', dayCount: 3 },
         { id: 7, word: '小猫', pinyin: 'xiǎo māo', english: 'Kitten', dayCount: 3 },
@@ -65,18 +74,24 @@ const FlashingTrackerMockup = () => {
     }
   ];
 
-  // AI-suggested words
+  // AI-suggested words with themes
   const aiSuggestions = [
-    { id: 's1', word: '草莓', pinyin: 'cǎoméi', english: 'Strawberry', reason: 'Follows fruit theme' },
-    { id: 's2', word: '芒果', pinyin: 'mángguǒ', english: 'Mango', reason: 'Popular with toddlers' },
-    { id: 's3', word: '樱桃', pinyin: 'yīngtáo', english: 'Cherry', reason: 'Simple pronunciation' },
-    { id: 's4', word: '蓝莓', pinyin: 'lánméi', english: 'Blueberry', reason: 'Color association' },
-    { id: 's5', word: '柠檬', pinyin: 'níngméng', english: 'Lemon', reason: 'Sensory word' },
+    { id: 's1', word: '草莓', pinyin: 'cǎoméi', english: 'Strawberry', reason: 'Follows fruit theme', theme: 'fruits' },
+    { id: 's2', word: '芒果', pinyin: 'mángguǒ', english: 'Mango', reason: 'Popular with toddlers', theme: 'fruits' },
+    { id: 's3', word: '樱桃', pinyin: 'yīngtáo', english: 'Cherry', reason: 'Simple pronunciation', theme: 'fruits' },
+    { id: 's4', word: '蓝莓', pinyin: 'lánméi', english: 'Blueberry', reason: 'Color association', theme: 'fruits' },
+    { id: 's5', word: '大象', pinyin: 'dàxiàng', english: 'Elephant', reason: 'Zoo favorite', theme: 'animals' },
   ];
 
-  // Cards already in queue (user added)
+  const themes = [
+    { id: 'all', label: 'All', color: 'bg-secondary' },
+    { id: 'fruits', label: '🍎 Fruits', color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' },
+    { id: 'animals', label: '🐾 Animals', color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
+  ];
+
+  // Cards already in queue (user added) with target set
   const [queueCards, setQueueCards] = useState([
-    { id: 'q1', word: '桃子', pinyin: 'táozi', english: 'Peach' },
+    { id: 'q1', word: '桃子', pinyin: 'táozi', english: 'Peach', targetSet: 'set1', theme: 'fruits' },
   ]);
 
   const rounds = [
@@ -131,15 +146,55 @@ const FlashingTrackerMockup = () => {
     });
   };
 
-  const addSelectedToQueue = () => {
+  const addSelectedToQueue = (targetSet = 'set1') => {
     const newCards = aiSuggestions
       .filter(s => selectedSuggestions.has(s.id))
-      .map(s => ({ id: s.id, word: s.word, pinyin: s.pinyin, english: s.english }));
+      .map(s => ({ 
+        id: s.id, 
+        word: s.word, 
+        pinyin: s.pinyin, 
+        english: s.english,
+        targetSet,
+        theme: s.theme
+      }));
     
     setQueueCards(prev => [...prev, ...newCards]);
     setSelectedSuggestions(new Set());
     setShowAISuggestions(false);
   };
+
+  const handleManualAdd = () => {
+    if (!manualWord.word.trim()) return;
+    
+    const newCard = {
+      id: `manual-${Date.now()}`,
+      word: manualWord.word,
+      pinyin: manualWord.pinyin,
+      english: manualWord.english,
+      targetSet: 'set1',
+      theme: 'custom'
+    };
+    
+    setQueueCards(prev => [...prev, newCard]);
+    setManualWord({ word: '', pinyin: '', english: '' });
+    setShowManualAdd(false);
+  };
+
+  const removeFromQueue = (id) => {
+    setQueueCards(prev => prev.filter(c => c.id !== id));
+  };
+
+  const updateCardTargetSet = (cardId, newSetId) => {
+    setQueueCards(prev => prev.map(c => 
+      c.id === cardId ? { ...c, targetSet: newSetId } : c
+    ));
+  };
+
+  const getSetById = (setId) => mockActiveSets.find(s => s.id === setId);
+
+  const filteredAISuggestions = selectedThemeFilter === 'all' 
+    ? aiSuggestions 
+    : aiSuggestions.filter(s => s.theme === selectedThemeFilter);
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
@@ -353,57 +408,199 @@ const FlashingTrackerMockup = () => {
             </span>
           </h2>
           
-          {!showAISuggestions && (
+          <div className="flex items-center gap-2">
+            {/* Manual Add Button */}
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={handleGetAISuggestions}
-              disabled={loadingAI}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium flex items-center gap-2 hover:shadow-lg hover:shadow-primary/25 transition-all"
+              onClick={() => setShowManualAdd(!showManualAdd)}
+              className="px-3 py-2 bg-secondary text-secondary-foreground rounded-xl text-sm font-medium flex items-center gap-1.5 hover:bg-secondary/80 transition-all"
             >
-              {loadingAI ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Getting suggestions...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="w-4 h-4" />
-                  Get AI Suggestions
-                </>
-              )}
+              <Plus className="w-4 h-4" />
+              Add Word
             </motion.button>
-          )}
+
+            {!showAISuggestions && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleGetAISuggestions}
+                disabled={loadingAI}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium flex items-center gap-2 hover:shadow-lg hover:shadow-primary/25 transition-all"
+              >
+                {loadingAI ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Getting suggestions...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="w-4 h-4" />
+                    AI Suggestions
+                  </>
+                )}
+              </motion.button>
+            )}
+          </div>
         </div>
         
         <p className="text-sm text-muted-foreground mb-4">
-          These cards will enter rotation when a card retires
+          Drag to reorder • Cards will enter rotation when a card retires
         </p>
 
-        {/* Current Queue */}
-        {queueCards.length > 0 && (
-          <div className="space-y-2 mb-4">
-            {queueCards.map((card, index) => (
-              <div 
-                key={card.id}
-                className="flex items-center gap-3 p-3 bg-white dark:bg-background/50 rounded-xl"
-              >
-                <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-sm font-bold text-green-600">
-                  {index + 1}
+        {/* Manual Add Form */}
+        <AnimatePresence>
+          {showManualAdd && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-4"
+            >
+              <div className="bg-white dark:bg-background/80 rounded-xl border border-border p-4">
+                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  Add New Word to Queue
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                  <input
+                    type="text"
+                    value={manualWord.word}
+                    onChange={(e) => setManualWord(prev => ({ ...prev, word: e.target.value }))}
+                    placeholder="Chinese (e.g. 苹果)"
+                    className="px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-foreground"
+                  />
+                  <input
+                    type="text"
+                    value={manualWord.pinyin}
+                    onChange={(e) => setManualWord(prev => ({ ...prev, pinyin: e.target.value }))}
+                    placeholder="Pinyin (e.g. píngguǒ)"
+                    className="px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-foreground"
+                  />
+                  <input
+                    type="text"
+                    value={manualWord.english}
+                    onChange={(e) => setManualWord(prev => ({ ...prev, english: e.target.value }))}
+                    placeholder="English (e.g. Apple)"
+                    className="px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-foreground"
+                  />
                 </div>
-                <div className="flex-1">
-                  <span className="font-medium text-foreground">{card.word}</span>
-                  <span className="text-sm text-muted-foreground ml-2">{card.pinyin} • {card.english}</span>
+                <div className="flex gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleManualAdd}
+                    disabled={!manualWord.word.trim()}
+                    className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${
+                      manualWord.word.trim() 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'bg-secondary text-muted-foreground cursor-not-allowed'
+                    }`}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add to Queue
+                  </motion.button>
+                  <button
+                    onClick={() => setShowManualAdd(false)}
+                    className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium"
+                  >
+                    Cancel
+                  </button>
                 </div>
-                <ArrowRight className="w-4 h-4 text-muted-foreground" />
               </div>
-            ))}
-          </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Current Queue with Drag to Reorder */}
+        {queueCards.length > 0 && (
+          <Reorder.Group 
+            axis="y" 
+            values={queueCards} 
+            onReorder={setQueueCards}
+            className="space-y-2 mb-4"
+          >
+            {queueCards.map((card, index) => {
+              const targetSet = getSetById(card.targetSet);
+              const themeBadge = themes.find(t => t.id === card.theme);
+              
+              return (
+                <Reorder.Item
+                  key={card.id}
+                  value={card}
+                  className="cursor-grab active:cursor-grabbing"
+                >
+                  <motion.div 
+                    whileHover={{ scale: 1.01 }}
+                    className="flex items-center gap-3 p-3 bg-white dark:bg-background/50 rounded-xl border border-border/50 shadow-sm"
+                  >
+                    {/* Drag Handle */}
+                    <div className="text-muted-foreground/50 hover:text-muted-foreground">
+                      <GripVertical className="w-4 h-4" />
+                    </div>
+                    
+                    {/* Position Number */}
+                    <div className="w-7 h-7 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-sm font-bold text-green-600 flex-shrink-0">
+                      {index + 1}
+                    </div>
+                    
+                    {/* Word Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-foreground">{card.word}</span>
+                        <span className="text-sm text-muted-foreground">{card.pinyin}</span>
+                        {/* Theme Badge */}
+                        {themeBadge && themeBadge.id !== 'all' && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${themeBadge.color}`}>
+                            {themeBadge.label}
+                          </span>
+                        )}
+                        {card.theme === 'custom' && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                            ✨ Custom
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-sm text-muted-foreground">{card.english}</span>
+                    </div>
+                    
+                    {/* Target Set Dropdown */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="relative">
+                        <select
+                          value={card.targetSet}
+                          onChange={(e) => updateCardTargetSet(card.id, e.target.value)}
+                          className="appearance-none bg-secondary text-secondary-foreground text-xs px-3 py-1.5 pr-7 rounded-lg border border-border cursor-pointer focus:ring-2 focus:ring-primary"
+                        >
+                          {mockActiveSets.map(set => (
+                            <option key={set.id} value={set.id}>
+                              → {set.name}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                      </div>
+                      
+                      {/* Remove Button */}
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => removeFromQueue(card.id)}
+                        className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                </Reorder.Item>
+              );
+            })}
+          </Reorder.Group>
         )}
 
-        {queueCards.length === 0 && !showAISuggestions && (
+        {queueCards.length === 0 && !showAISuggestions && !showManualAdd && (
           <div className="text-center py-6 text-muted-foreground">
-            <p>No cards in queue. Click "Get AI Suggestions" to add some!</p>
+            <p>No cards in queue. Add manually or get AI suggestions!</p>
           </div>
         )}
 
@@ -427,10 +624,28 @@ const FlashingTrackerMockup = () => {
                   </span>
                 </div>
 
+                {/* Theme Filter */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {themes.map(theme => (
+                    <button
+                      key={theme.id}
+                      onClick={() => setSelectedThemeFilter(theme.id)}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
+                        selectedThemeFilter === theme.id
+                          ? 'bg-primary text-primary-foreground'
+                          : theme.color
+                      }`}
+                    >
+                      {theme.label}
+                    </button>
+                  ))}
+                </div>
+
                 <div className="space-y-2 mb-4">
-                  {aiSuggestions.map((suggestion) => {
+                  {filteredAISuggestions.map((suggestion) => {
                     const isSelected = selectedSuggestions.has(suggestion.id);
                     const isAlreadyInQueue = queueCards.some(q => q.word === suggestion.word);
+                    const themeBadge = themes.find(t => t.id === suggestion.theme);
                     
                     return (
                       <motion.button
@@ -457,9 +672,15 @@ const FlashingTrackerMockup = () => {
                         </div>
                         
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-foreground text-lg">{suggestion.word}</span>
                             <span className="text-sm text-muted-foreground">{suggestion.pinyin}</span>
+                            {/* Theme Badge */}
+                            {themeBadge && (
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${themeBadge.color}`}>
+                                {themeBadge.label}
+                              </span>
+                            )}
                           </div>
                           <div className="text-sm text-muted-foreground">{suggestion.english}</div>
                         </div>
@@ -479,7 +700,7 @@ const FlashingTrackerMockup = () => {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={addSelectedToQueue}
+                    onClick={() => addSelectedToQueue('set1')}
                     disabled={selectedSuggestions.size === 0}
                     className={`
                       flex-1 px-4 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all
