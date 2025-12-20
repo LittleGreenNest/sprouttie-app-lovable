@@ -36,6 +36,7 @@ import PronunciationPortal from './components/pronunciation/PronunciationPortal'
 import FlashedHistory from './components/FlashedHistory';
 import BookRecommendations from './components/books/BookRecommendations';
 import WeeklyWordPlanner from './components/planner/WeeklyWordPlanner';
+import FlashingTrackerMockup from './components/tracking/FlashingTrackerMockup';
 
 
 // Supabase
@@ -203,6 +204,7 @@ const AppContent = () => {
           <Route path="/bingo-generator" element={<BingoCardGenerator />} />
           <Route path="/manage-flashcards" element={<FlashcardManager />} />
           <Route path="/word-planner" element={<WeeklyWordPlanner />} />
+          <Route path="/tracker-mockup" element={<FlashingTrackerMockup />} />
           <Route path="/activity-history" element={<ActivityHistory />} />
 
           {/* profile page */}
