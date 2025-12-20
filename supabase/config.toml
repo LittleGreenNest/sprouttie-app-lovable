@@ -354,3 +354,6 @@ verify_jwt = true
 
 [functions.recommend-books]
 verify_jwt = true
+
+[functions.suggest-words]
+verify_jwt = true
