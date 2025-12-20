@@ -184,7 +184,7 @@ const FlashingTrackerMockup = () => {
             <div className="text-xs text-muted-foreground">Retiring Today</div>
           </div>
           <div className="bg-background/60 rounded-xl p-3 text-center">
-            <div className="text-2xl font-bold text-green-500">{queuedWords.length}</div>
+            <div className="text-2xl font-bold text-green-500">{selectedSuggestions.size}</div>
             <div className="text-xs text-muted-foreground">In Queue</div>
           </div>
         </div>
