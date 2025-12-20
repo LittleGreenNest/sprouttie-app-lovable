@@ -453,20 +453,30 @@ const DailyTrackerImproved = () => {
   };
 
   const getWordAge = (setFlashcards) => {
-    if (setFlashcards.length === 0) return { oldest: null, newest: null };
+    if (setFlashcards.length === 0) return { oldest: null, newest: null, oldestDate: null, newestDate: null };
     
-    // Sort by some identifier - for now, we'll use the id or creation order
-    // Assuming earlier ids = older cards
+    // Use Supabase metadata (date_introduced or created_at) to determine age
     const sorted = [...setFlashcards].sort((a, b) => {
-      // Try to extract number from id (e.g., "f1" -> 1)
-      const aNum = parseInt(a.id.replace(/\D/g, '')) || 0;
-      const bNum = parseInt(b.id.replace(/\D/g, '')) || 0;
-      return aNum - bNum;
+      const aData = supabaseFlashcards[a.front] || supabaseFlashcards[a.word];
+      const bData = supabaseFlashcards[b.front] || supabaseFlashcards[b.word];
+      
+      // Use date_introduced first, fallback to created_at
+      const aDate = aData?.date_introduced || aData?.created_at || '9999-12-31';
+      const bDate = bData?.date_introduced || bData?.created_at || '9999-12-31';
+      
+      return new Date(aDate) - new Date(bDate);
     });
 
+    const oldestCard = sorted[0];
+    const newestCard = sorted[sorted.length - 1];
+    const oldestData = supabaseFlashcards[oldestCard?.front] || supabaseFlashcards[oldestCard?.word];
+    const newestData = supabaseFlashcards[newestCard?.front] || supabaseFlashcards[newestCard?.word];
+
     return {
-      oldest: sorted[0]?.id,
-      newest: sorted[sorted.length - 1]?.id
+      oldest: oldestCard?.id,
+      newest: newestCard?.id,
+      oldestDate: oldestData?.date_introduced || oldestData?.created_at,
+      newestDate: newestData?.date_introduced || newestData?.created_at
     };
   };
 
