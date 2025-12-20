@@ -35,6 +35,7 @@ import PrintFlashcards from './components/PrintFlashcards';
 import PronunciationPortal from './components/pronunciation/PronunciationPortal';
 import FlashedHistory from './components/FlashedHistory';
 import BookRecommendations from './components/books/BookRecommendations';
+import WeeklyWordPlanner from './components/planner/WeeklyWordPlanner';
 
 
 // Supabase
@@ -76,6 +77,7 @@ const AppContent = () => {
     else if (path.includes('/bingo-generator')) setActiveTab('bingo-generator');
     else if (path.includes('/manage-flashcards')) setActiveTab('manage-flashcards');
     else if (path.includes('/activity-history')) setActiveTab('activity-history');
+    else if (path.includes('/word-planner')) setActiveTab('word-planner');
   }, [location]);
 
   // Handle tab changes
@@ -165,6 +167,12 @@ const AppContent = () => {
           📚 Books
         </button>
         <button 
+          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'word-planner' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
+          onClick={() => handleTabChange('word-planner')}
+        >
+          📅 Word Planner
+        </button>
+        <button 
           className={`px-4 py-2 whitespace-nowrap ${activeTab === 'bingo-generator' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
           onClick={() => handleTabChange('bingo-generator')}
         >
@@ -194,6 +202,7 @@ const AppContent = () => {
           <Route path="/book-recommendations" element={<BookRecommendations />} />
           <Route path="/bingo-generator" element={<BingoCardGenerator />} />
           <Route path="/manage-flashcards" element={<FlashcardManager />} />
+          <Route path="/word-planner" element={<WeeklyWordPlanner />} />
           <Route path="/activity-history" element={<ActivityHistory />} />
 
           {/* profile page */}
