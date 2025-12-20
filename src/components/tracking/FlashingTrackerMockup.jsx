@@ -1,21 +1,18 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence, Reorder } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, 
   RotateCcw, 
   AlertTriangle, 
-  CheckCircle2,
   Sparkles,
-  TrendingUp,
   ArrowRight,
   Eye,
   Loader2,
   Plus,
   Check,
   Wand2,
-  GripVertical,
-  X,
-  ChevronDown
+  Lightbulb,
+  ArrowDownRight
 } from 'lucide-react';
 
 /**
@@ -24,9 +21,8 @@ import {
  * Features:
  * 1. Today's Set with day progress (1/5, 2/5, etc.) + Per-set round tracking
  * 2. Skip Day warning for consecutive skips
- * 3. Upcoming Retirements preview
- * 4. AI-Recommended words for queue with selection
- * 5. Manual word entry, drag-to-reorder, set assignment, theme badges
+ * 3. Upcoming Retirements with clear "Up Next" replacement flow
+ * 4. Separate "Discover Words" section for AI + manual entry
  */
 
 const FlashingTrackerMockup = () => {
@@ -35,10 +31,9 @@ const FlashingTrackerMockup = () => {
   const [showAISuggestions, setShowAISuggestions] = useState(false);
   const [selectedSuggestions, setSelectedSuggestions] = useState(new Set());
   const [showManualAdd, setShowManualAdd] = useState(false);
-  const [manualWord, setManualWord] = useState({ word: '', pinyin: '', english: '' });
-  const [selectedThemeFilter, setSelectedThemeFilter] = useState('all');
+  const [manualWord, setManualWord] = useState({ word: '', pinyin: '', english: '', set: 'set1' });
   
-  // Per-set session tracking (like DailyTrackerImproved)
+  // Per-set session tracking
   const [sessions, setSessions] = useState({
     set1: { round1: null, round2: null, round3: null },
     set2: { round1: null, round2: null, round3: null },
@@ -58,41 +53,31 @@ const FlashingTrackerMockup = () => {
         { id: 3, word: '橙子', pinyin: 'chéngzi', english: 'Orange', dayCount: 3 },
         { id: 4, word: '葡萄', pinyin: 'pútao', english: 'Grape', dayCount: 2 },
         { id: 5, word: '西瓜', pinyin: 'xīguā', english: 'Watermelon', dayCount: 1, isNewest: true },
-      ]
+      ],
+      upNext: { word: '桃子', pinyin: 'táozi', english: 'Peach' }
     },
     {
       id: 'set2',
       name: 'Animals Set',
       theme: 'animals',
       cards: [
-        { id: 6, word: '小狗', pinyin: 'xiǎo gǒu', english: 'Puppy', dayCount: 3 },
-        { id: 7, word: '小猫', pinyin: 'xiǎo māo', english: 'Kitten', dayCount: 3 },
-        { id: 8, word: '小鸟', pinyin: 'xiǎo niǎo', english: 'Bird', dayCount: 2 },
+        { id: 6, word: '小狗', pinyin: 'xiǎo gǒu', english: 'Puppy', dayCount: 5, isOldest: true },
+        { id: 7, word: '小猫', pinyin: 'xiǎo māo', english: 'Kitten', dayCount: 4 },
+        { id: 8, word: '小鸟', pinyin: 'xiǎo niǎo', english: 'Bird', dayCount: 3 },
         { id: 9, word: '小鱼', pinyin: 'xiǎo yú', english: 'Fish', dayCount: 2 },
         { id: 10, word: '小兔', pinyin: 'xiǎo tù', english: 'Bunny', dayCount: 1, isNewest: true },
-      ]
+      ],
+      upNext: null // No replacement queued
     }
   ];
 
-  // AI-suggested words with themes
+  // AI-suggested words grouped by set theme
   const aiSuggestions = [
-    { id: 's1', word: '草莓', pinyin: 'cǎoméi', english: 'Strawberry', reason: 'Follows fruit theme', theme: 'fruits' },
-    { id: 's2', word: '芒果', pinyin: 'mángguǒ', english: 'Mango', reason: 'Popular with toddlers', theme: 'fruits' },
-    { id: 's3', word: '樱桃', pinyin: 'yīngtáo', english: 'Cherry', reason: 'Simple pronunciation', theme: 'fruits' },
-    { id: 's4', word: '蓝莓', pinyin: 'lánméi', english: 'Blueberry', reason: 'Color association', theme: 'fruits' },
-    { id: 's5', word: '大象', pinyin: 'dàxiàng', english: 'Elephant', reason: 'Zoo favorite', theme: 'animals' },
+    { id: 's1', word: '草莓', pinyin: 'cǎoméi', english: 'Strawberry', reason: 'Continues fruit theme', forSet: 'set1' },
+    { id: 's2', word: '芒果', pinyin: 'mángguǒ', english: 'Mango', reason: 'Popular with toddlers', forSet: 'set1' },
+    { id: 's3', word: '大象', pinyin: 'dàxiàng', english: 'Elephant', reason: 'Zoo favorite', forSet: 'set2' },
+    { id: 's4', word: '长颈鹿', pinyin: 'chángjǐnglù', english: 'Giraffe', reason: 'Visual appeal', forSet: 'set2' },
   ];
-
-  const themes = [
-    { id: 'all', label: 'All', color: 'bg-secondary' },
-    { id: 'fruits', label: '🍎 Fruits', color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' },
-    { id: 'animals', label: '🐾 Animals', color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
-  ];
-
-  // Cards already in queue (user added) with target set
-  const [queueCards, setQueueCards] = useState([
-    { id: 'q1', word: '桃子', pinyin: 'táozi', english: 'Peach', targetSet: 'set1', theme: 'fruits' },
-  ]);
 
   const rounds = [
     { key: 'round1', label: 'Round 1', icon: '🌱' },
@@ -146,55 +131,25 @@ const FlashingTrackerMockup = () => {
     });
   };
 
-  const addSelectedToQueue = (targetSet = 'set1') => {
-    const newCards = aiSuggestions
-      .filter(s => selectedSuggestions.has(s.id))
-      .map(s => ({ 
-        id: s.id, 
-        word: s.word, 
-        pinyin: s.pinyin, 
-        english: s.english,
-        targetSet,
-        theme: s.theme
-      }));
-    
-    setQueueCards(prev => [...prev, ...newCards]);
-    setSelectedSuggestions(new Set());
-    setShowAISuggestions(false);
+  const addSuggestionToSet = (suggestion) => {
+    // In real implementation, this would add to the set's queue
+    console.log(`Adding ${suggestion.word} to ${suggestion.forSet}`);
+    setSelectedSuggestions(prev => {
+      const newSet = new Set(prev);
+      newSet.add(suggestion.id);
+      return newSet;
+    });
   };
 
   const handleManualAdd = () => {
     if (!manualWord.word.trim()) return;
-    
-    const newCard = {
-      id: `manual-${Date.now()}`,
-      word: manualWord.word,
-      pinyin: manualWord.pinyin,
-      english: manualWord.english,
-      targetSet: 'set1',
-      theme: 'custom'
-    };
-    
-    setQueueCards(prev => [...prev, newCard]);
-    setManualWord({ word: '', pinyin: '', english: '' });
+    // In real implementation, this would add to the selected set
+    console.log(`Adding ${manualWord.word} to ${manualWord.set}`);
+    setManualWord({ word: '', pinyin: '', english: '', set: 'set1' });
     setShowManualAdd(false);
   };
 
-  const removeFromQueue = (id) => {
-    setQueueCards(prev => prev.filter(c => c.id !== id));
-  };
-
-  const updateCardTargetSet = (cardId, newSetId) => {
-    setQueueCards(prev => prev.map(c => 
-      c.id === cardId ? { ...c, targetSet: newSetId } : c
-    ));
-  };
-
   const getSetById = (setId) => mockActiveSets.find(s => s.id === setId);
-
-  const filteredAISuggestions = selectedThemeFilter === 'all' 
-    ? aiSuggestions 
-    : aiSuggestions.filter(s => s.theme === selectedThemeFilter);
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
@@ -372,52 +327,99 @@ const FlashingTrackerMockup = () => {
         })}
       </div>
 
-      {/* Upcoming Retirements */}
-      <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/10 dark:to-amber-900/10 rounded-2xl border border-orange-200 dark:border-orange-800 p-6">
-        <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+      {/* Rotation Flow: Retiring → Up Next */}
+      <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-green-50 dark:from-orange-900/10 dark:via-amber-900/5 dark:to-green-900/10 rounded-2xl border border-orange-200 dark:border-orange-800 p-6">
+        <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
           <RotateCcw className="w-5 h-5 text-orange-500" />
-          Upcoming Retirements
+          Today's Card Rotation
         </h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          These cards have completed their 5-day cycle and will retire after today's session
-        </p>
         
-        <div className="flex items-center gap-4 p-4 bg-white dark:bg-background/50 rounded-xl">
-          <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-            <span className="text-2xl">🏁</span>
-          </div>
-          <div className="flex-1">
-            <div className="font-bold text-foreground text-xl">苹果</div>
-            <div className="text-sm text-muted-foreground">píngguǒ • Apple</div>
-          </div>
-          <div className="text-right">
-            <div className="text-sm font-medium text-orange-600 dark:text-orange-400">Day 5/5</div>
-            <div className="text-xs text-muted-foreground">Flashed 15 times</div>
-          </div>
+        {/* Per-Set Rotation Cards */}
+        <div className="space-y-4">
+          {mockActiveSets.map((set) => {
+            const retiringCard = set.cards.find(c => c.isOldest);
+            const hasUpNext = set.upNext;
+            
+            return (
+              <div key={set.id} className="bg-white dark:bg-background/50 rounded-xl p-4">
+                <div className="text-sm font-medium text-muted-foreground mb-3">{set.name}</div>
+                
+                <div className="flex items-center gap-3">
+                  {/* Retiring Card */}
+                  <div className="flex-1 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-700">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">🏁</span>
+                      <span className="text-xs font-medium text-orange-600 dark:text-orange-400">RETIRING</span>
+                    </div>
+                    <div className="font-bold text-foreground text-xl">{retiringCard?.word}</div>
+                    <div className="text-sm text-muted-foreground">{retiringCard?.pinyin} • {retiringCard?.english}</div>
+                    <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">Day 5/5 complete</div>
+                  </div>
+                  
+                  {/* Arrow */}
+                  <div className="flex flex-col items-center">
+                    <ArrowRight className="w-6 h-6 text-primary" />
+                    <span className="text-xs text-muted-foreground">replaced by</span>
+                  </div>
+                  
+                  {/* Up Next Card */}
+                  <div className={`flex-1 p-3 rounded-xl border ${
+                    hasUpNext 
+                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700' 
+                      : 'bg-gray-50 dark:bg-gray-800/50 border-dashed border-gray-300 dark:border-gray-600'
+                  }`}>
+                    {hasUpNext ? (
+                      <>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">🌱</span>
+                          <span className="text-xs font-medium text-green-600 dark:text-green-400">UP NEXT</span>
+                        </div>
+                        <div className="font-bold text-foreground text-xl">{set.upNext.word}</div>
+                        <div className="text-sm text-muted-foreground">{set.upNext.pinyin} • {set.upNext.english}</div>
+                        <div className="text-xs text-green-600 dark:text-green-400 mt-1">Starts tomorrow</div>
+                      </>
+                    ) : (
+                      <div className="text-center py-2">
+                        <div className="text-2xl mb-1">❓</div>
+                        <div className="text-sm text-muted-foreground">No word queued</div>
+                        <button 
+                          onClick={() => setShowAISuggestions(true)}
+                          className="text-xs text-primary font-medium mt-1 hover:underline"
+                        >
+                          Add from suggestions →
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Next in Queue with AI Recommendations */}
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10 rounded-2xl border border-green-200 dark:border-green-800 p-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-green-500" />
-            Next in Queue
-            <span className="ml-2 text-sm font-normal text-muted-foreground">
-              {queueCards.length} cards waiting
-            </span>
-          </h2>
+      {/* Discover New Words - Separate Section */}
+      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/10 dark:to-indigo-900/10 rounded-2xl border border-purple-200 dark:border-purple-800 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <Lightbulb className="w-5 h-5 text-purple-500" />
+              Discover New Words
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Add words to your sets for future rotation
+            </p>
+          </div>
           
           <div className="flex items-center gap-2">
-            {/* Manual Add Button */}
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setShowManualAdd(!showManualAdd)}
-              className="px-3 py-2 bg-secondary text-secondary-foreground rounded-xl text-sm font-medium flex items-center gap-1.5 hover:bg-secondary/80 transition-all"
+              className="px-3 py-2 bg-white dark:bg-background text-foreground rounded-xl text-sm font-medium flex items-center gap-1.5 border border-border hover:border-primary/50 transition-all"
             >
               <Plus className="w-4 h-4" />
-              Add Word
+              Add Custom
             </motion.button>
 
             {!showAISuggestions && (
@@ -431,22 +433,18 @@ const FlashingTrackerMockup = () => {
                 {loadingAI ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Getting suggestions...
+                    Thinking...
                   </>
                 ) : (
                   <>
                     <Wand2 className="w-4 h-4" />
-                    AI Suggestions
+                    Get AI Ideas
                   </>
                 )}
               </motion.button>
             )}
           </div>
         </div>
-        
-        <p className="text-sm text-muted-foreground mb-4">
-          Drag to reorder • Cards will enter rotation when a card retires
-        </p>
 
         {/* Manual Add Form */}
         <AnimatePresence>
@@ -458,32 +456,38 @@ const FlashingTrackerMockup = () => {
               className="mb-4"
             >
               <div className="bg-white dark:bg-background/80 rounded-xl border border-border p-4">
-                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add New Word to Queue
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                <h4 className="font-medium text-foreground mb-3">Add a Custom Word</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3">
                   <input
                     type="text"
                     value={manualWord.word}
                     onChange={(e) => setManualWord(prev => ({ ...prev, word: e.target.value }))}
-                    placeholder="Chinese (e.g. 苹果)"
+                    placeholder="Chinese (汉字)"
                     className="px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-foreground"
                   />
                   <input
                     type="text"
                     value={manualWord.pinyin}
                     onChange={(e) => setManualWord(prev => ({ ...prev, pinyin: e.target.value }))}
-                    placeholder="Pinyin (e.g. píngguǒ)"
+                    placeholder="Pinyin"
                     className="px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-foreground"
                   />
                   <input
                     type="text"
                     value={manualWord.english}
                     onChange={(e) => setManualWord(prev => ({ ...prev, english: e.target.value }))}
-                    placeholder="English (e.g. Apple)"
+                    placeholder="English"
                     className="px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-foreground"
                   />
+                  <select
+                    value={manualWord.set}
+                    onChange={(e) => setManualWord(prev => ({ ...prev, set: e.target.value }))}
+                    className="px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary text-foreground"
+                  >
+                    {mockActiveSets.map(set => (
+                      <option key={set.id} value={set.id}>{set.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex gap-2">
                   <motion.button
@@ -498,7 +502,7 @@ const FlashingTrackerMockup = () => {
                     }`}
                   >
                     <Plus className="w-4 h-4" />
-                    Add to Queue
+                    Add Word
                   </motion.button>
                   <button
                     onClick={() => setShowManualAdd(false)}
@@ -512,222 +516,102 @@ const FlashingTrackerMockup = () => {
           )}
         </AnimatePresence>
 
-        {/* Current Queue with Drag to Reorder */}
-        {queueCards.length > 0 && (
-          <Reorder.Group 
-            axis="y" 
-            values={queueCards} 
-            onReorder={setQueueCards}
-            className="space-y-2 mb-4"
-          >
-            {queueCards.map((card, index) => {
-              const targetSet = getSetById(card.targetSet);
-              const themeBadge = themes.find(t => t.id === card.theme);
-              
-              return (
-                <Reorder.Item
-                  key={card.id}
-                  value={card}
-                  className="cursor-grab active:cursor-grabbing"
-                >
-                  <motion.div 
-                    whileHover={{ scale: 1.01 }}
-                    className="flex items-center gap-3 p-3 bg-white dark:bg-background/50 rounded-xl border border-border/50 shadow-sm"
-                  >
-                    {/* Drag Handle */}
-                    <div className="text-muted-foreground/50 hover:text-muted-foreground">
-                      <GripVertical className="w-4 h-4" />
-                    </div>
-                    
-                    {/* Position Number */}
-                    <div className="w-7 h-7 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-sm font-bold text-green-600 flex-shrink-0">
-                      {index + 1}
-                    </div>
-                    
-                    {/* Word Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-foreground">{card.word}</span>
-                        <span className="text-sm text-muted-foreground">{card.pinyin}</span>
-                        {/* Theme Badge */}
-                        {themeBadge && themeBadge.id !== 'all' && (
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${themeBadge.color}`}>
-                            {themeBadge.label}
-                          </span>
-                        )}
-                        {card.theme === 'custom' && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
-                            ✨ Custom
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-sm text-muted-foreground">{card.english}</span>
-                    </div>
-                    
-                    {/* Target Set Dropdown */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <div className="relative">
-                        <select
-                          value={card.targetSet}
-                          onChange={(e) => updateCardTargetSet(card.id, e.target.value)}
-                          className="appearance-none bg-secondary text-secondary-foreground text-xs px-3 py-1.5 pr-7 rounded-lg border border-border cursor-pointer focus:ring-2 focus:ring-primary"
-                        >
-                          {mockActiveSets.map(set => (
-                            <option key={set.id} value={set.id}>
-                              → {set.name}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                      </div>
-                      
-                      {/* Remove Button */}
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => removeFromQueue(card.id)}
-                        className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </motion.button>
-                    </div>
-                  </motion.div>
-                </Reorder.Item>
-              );
-            })}
-          </Reorder.Group>
-        )}
-
-        {queueCards.length === 0 && !showAISuggestions && !showManualAdd && (
-          <div className="text-center py-6 text-muted-foreground">
-            <p>No cards in queue. Add manually or get AI suggestions!</p>
-          </div>
-        )}
-
-        {/* AI Suggestions Panel */}
+        {/* AI Suggestions - Grouped by Set */}
         <AnimatePresence>
           {showAISuggestions && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-4"
             >
-              <div className="bg-white dark:bg-background/80 rounded-xl border border-primary/20 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-foreground flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-primary" />
-                    AI Recommended Words
-                  </h3>
-                  <span className="text-xs text-muted-foreground">
-                    Based on your teaching method & progress
-                  </span>
-                </div>
-
-                {/* Theme Filter */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {themes.map(theme => (
-                    <button
-                      key={theme.id}
-                      onClick={() => setSelectedThemeFilter(theme.id)}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
-                        selectedThemeFilter === theme.id
-                          ? 'bg-primary text-primary-foreground'
-                          : theme.color
-                      }`}
-                    >
-                      {theme.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="space-y-2 mb-4">
-                  {filteredAISuggestions.map((suggestion) => {
-                    const isSelected = selectedSuggestions.has(suggestion.id);
-                    const isAlreadyInQueue = queueCards.some(q => q.word === suggestion.word);
-                    const themeBadge = themes.find(t => t.id === suggestion.theme);
-                    
-                    return (
-                      <motion.button
-                        key={suggestion.id}
-                        whileHover={{ scale: isAlreadyInQueue ? 1 : 1.01 }}
-                        whileTap={{ scale: isAlreadyInQueue ? 1 : 0.99 }}
-                        onClick={() => !isAlreadyInQueue && toggleSuggestionSelection(suggestion.id)}
-                        disabled={isAlreadyInQueue}
-                        className={`
-                          w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left
-                          ${isAlreadyInQueue 
-                            ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed' 
-                            : isSelected 
-                              ? 'bg-primary/10 border-primary' 
-                              : 'bg-background border-border hover:border-primary/50'
-                          }
-                        `}
-                      >
-                        <div className={`
-                          w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0
-                          ${isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/30'}
-                        `}>
-                          {isSelected && <Check className="w-4 h-4 text-primary-foreground" />}
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-foreground text-lg">{suggestion.word}</span>
-                            <span className="text-sm text-muted-foreground">{suggestion.pinyin}</span>
-                            {/* Theme Badge */}
-                            {themeBadge && (
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${themeBadge.color}`}>
-                                {themeBadge.label}
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-sm text-muted-foreground">{suggestion.english}</div>
-                        </div>
-                        
-                        <div className="text-right flex-shrink-0">
-                          <div className="text-xs text-primary font-medium">{suggestion.reason}</div>
-                          {isAlreadyInQueue && (
-                            <div className="text-xs text-muted-foreground">Already in queue</div>
-                          )}
-                        </div>
-                      </motion.button>
-                    );
-                  })}
-                </div>
-
-                <div className="flex gap-3">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => addSelectedToQueue('set1')}
-                    disabled={selectedSuggestions.size === 0}
-                    className={`
-                      flex-1 px-4 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all
-                      ${selectedSuggestions.size > 0 
-                        ? 'bg-primary text-primary-foreground hover:shadow-lg' 
-                        : 'bg-secondary text-muted-foreground cursor-not-allowed'
-                      }
-                    `}
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add {selectedSuggestions.size > 0 ? `${selectedSuggestions.size} ` : ''}to Queue
-                  </motion.button>
+              <div className="space-y-4">
+                {mockActiveSets.map(set => {
+                  const setSuggestions = aiSuggestions.filter(s => s.forSet === set.id);
+                  if (setSuggestions.length === 0) return null;
                   
-                  <button
-                    onClick={() => {
-                      setShowAISuggestions(false);
-                      setSelectedSuggestions(new Set());
-                    }}
-                    className="px-4 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium"
-                  >
-                    Cancel
-                  </button>
-                </div>
+                  return (
+                    <div key={set.id} className="bg-white dark:bg-background/80 rounded-xl border border-border p-4">
+                      <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-primary" />
+                        Suggestions for {set.name}
+                      </h4>
+                      
+                      <div className="space-y-2">
+                        {setSuggestions.map(suggestion => {
+                          const isAdded = selectedSuggestions.has(suggestion.id);
+                          
+                          return (
+                            <div 
+                              key={suggestion.id}
+                              className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                                isAdded 
+                                  ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700' 
+                                  : 'bg-background border-border hover:border-primary/50'
+                              }`}
+                            >
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-foreground text-lg">{suggestion.word}</span>
+                                  <span className="text-sm text-muted-foreground">{suggestion.pinyin}</span>
+                                </div>
+                                <div className="text-sm text-muted-foreground">{suggestion.english}</div>
+                                <div className="text-xs text-primary mt-1">{suggestion.reason}</div>
+                              </div>
+                              
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => addSuggestionToSet(suggestion)}
+                                disabled={isAdded}
+                                className={`px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-1.5 ${
+                                  isAdded 
+                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 cursor-default' 
+                                    : 'bg-primary text-primary-foreground hover:shadow-md'
+                                }`}
+                              >
+                                {isAdded ? (
+                                  <>
+                                    <Check className="w-4 h-4" />
+                                    Queued
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus className="w-4 h-4" />
+                                    Add
+                                  </>
+                                )}
+                              </motion.button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => {
+                    setShowAISuggestions(false);
+                    setSelectedSuggestions(new Set());
+                  }}
+                  className="px-4 py-2 bg-secondary text-secondary-foreground rounded-xl font-medium"
+                >
+                  Done
+                </button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Empty state when neither form is shown */}
+        {!showAISuggestions && !showManualAdd && (
+          <div className="text-center py-6 text-muted-foreground bg-white/50 dark:bg-background/30 rounded-xl border border-dashed border-border">
+            <Lightbulb className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">Click "Get AI Ideas" for personalized word suggestions</p>
+          </div>
+        )}
       </div>
 
       {/* Research Note */}
