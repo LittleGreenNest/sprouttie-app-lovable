@@ -616,23 +616,42 @@ const FlashingTrackerMockup = () => {
 
       {/* Research Note */}
       <div className="bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-200 dark:border-blue-800 p-6">
-        <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-          📚 The Science Behind 5-Day Cycles
+        <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+          📚 The Science Behind Spaced Repetition
         </h3>
-        <ul className="text-sm text-muted-foreground space-y-2">
+        <ul className="text-sm text-muted-foreground space-y-3">
           <li className="flex items-start gap-2">
             <span className="text-blue-500 mt-1">•</span>
-            <span><strong>Optimal exposure:</strong> 3x daily for 1-2 seconds per card maintains peak engagement</span>
+            <span>
+              <strong>The Forgetting Curve:</strong> Without review, we forget ~50% of new information within days. Each repetition "flattens" this curve, extending retention.
+              <span className="block text-xs mt-1 opacity-70">— Ebbinghaus (1885), replicated by Murre & Dros, PLOS ONE (2015)</span>
+            </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-blue-500 mt-1">•</span>
-            <span><strong>Skip tolerance:</strong> 1-2 missed days have minimal impact, but 3+ consecutive days cause 20-40% recall decrease</span>
+            <span>
+              <strong>Spaced Repetition Effect:</strong> Distributing practice over time produces 10-30% better long-term retention than massed practice (cramming).
+              <span className="block text-xs mt-1 opacity-70">— Cepeda et al., Psychological Bulletin (2006)</span>
+            </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-blue-500 mt-1">•</span>
-            <span><strong>Neural pathways:</strong> Consistent reinforcement during first 5-7 exposures strengthens long-term memory</span>
+            <span>
+              <strong>Testing Effect:</strong> Actively recalling information (vs. re-reading) improves memory by 50% or more in some studies.
+              <span className="block text-xs mt-1 opacity-70">— Roediger & Karpicke, Psychological Science (2006)</span>
+            </span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-blue-500 mt-1">•</span>
+            <span>
+              <strong>Optimal Review Timing:</strong> Review at 10-20% of the interval before you need the information for best single-session retention.
+              <span className="block text-xs mt-1 opacity-70">— Pashler et al., Psychonomic Bulletin & Review (2007)</span>
+            </span>
           </li>
         </ul>
+        <p className="text-xs text-muted-foreground mt-4 pt-3 border-t border-blue-200 dark:border-blue-700">
+          💡 <strong>For toddlers:</strong> Short, frequent exposures (like our 3 daily rounds) align with research showing that spaced, bite-sized sessions work better than long study blocks—especially for young learners.
+        </p>
       </div>
     </div>
   );
