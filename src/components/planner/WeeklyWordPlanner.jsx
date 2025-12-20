@@ -10,8 +10,28 @@ import {
   GripVertical,
   Calendar,
   List,
-  Tag
+  Tag,
+  Sparkles,
+  Settings,
+  Check,
+  Loader2,
+  Lightbulb
 } from 'lucide-react';
+
+const TEACHING_METHODS = {
+  whole_word_flash: {
+    name: 'Whole Word Flash Method',
+    description: 'Start with familiar nouns, brief sessions, structured progression'
+  },
+  right_brain_speed: {
+    name: 'Right-Brain Speed Flash',
+    description: 'Rapid flashing, category-based, visual imagery focus'
+  },
+  balanced: {
+    name: 'Balanced Approach',
+    description: 'Combines structured progression with thematic grouping'
+  }
+};
 
 const WeeklyWordPlanner = () => {
   const { currentUser } = useAuth();
@@ -23,6 +43,13 @@ const WeeklyWordPlanner = () => {
   const [newWord, setNewWord] = useState({ word: '', pinyin: '', theme: '', notes: '' });
   const [showAddForm, setShowAddForm] = useState(false);
   const [draggedWord, setDraggedWord] = useState(null);
+  
+  // AI Suggestions state
+  const [showMethodSettings, setShowMethodSettings] = useState(false);
+  const [teachingMethod, setTeachingMethod] = useState('balanced');
+  const [generatingSuggestions, setGeneratingSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Get Monday of the current week
   function getWeekStart(date) {
@@ -94,6 +121,22 @@ const WeeklyWordPlanner = () => {
     loadWordPlans();
   }, [loadWordPlans]);
 
+  // Load user's teaching method preference
+  useEffect(() => {
+    const loadTeachingMethod = async () => {
+      if (!currentUser) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('teaching_method')
+        .eq('id', currentUser.id)
+        .single();
+      if (data?.teaching_method) {
+        setTeachingMethod(data.teaching_method);
+      }
+    };
+    loadTeachingMethod();
+  }, [currentUser]);
+
   // Navigate weeks
   const goToPreviousWeek = () => {
     const newWeek = new Date(currentWeekStart);
@@ -109,6 +152,84 @@ const WeeklyWordPlanner = () => {
 
   const goToCurrentWeek = () => {
     setCurrentWeekStart(getWeekStart(new Date()));
+  };
+
+  // Save teaching method preference
+  const saveTeachingMethod = async (method) => {
+    setTeachingMethod(method);
+    try {
+      await supabase
+        .from('profiles')
+        .update({ teaching_method: method })
+        .eq('id', currentUser.id);
+      toast.success(`Teaching method updated to ${TEACHING_METHODS[method].name}`);
+    } catch (error) {
+      console.error('Error saving teaching method:', error);
+    }
+    setShowMethodSettings(false);
+  };
+
+  // Generate AI suggestions
+  const generateSuggestions = async () => {
+    setGeneratingSuggestions(true);
+    setSuggestions(null);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Please log in to use AI suggestions');
+        return;
+      }
+
+      const response = await supabase.functions.invoke('suggest-words', {
+        body: { weekStart: formatDate(currentWeekStart) }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to generate suggestions');
+      }
+
+      setSuggestions(response.data);
+      setShowSuggestions(true);
+      toast.success(`Generated ${response.data.suggestions.length} word suggestions!`);
+    } catch (error) {
+      console.error('Error generating suggestions:', error);
+      toast.error(error.message || 'Failed to generate suggestions');
+    } finally {
+      setGeneratingSuggestions(false);
+    }
+  };
+
+  // Add suggested word to plan
+  const addSuggestedWord = async (suggestion) => {
+    try {
+      const { error } = await supabase
+        .from('word_plans')
+        .insert({
+          user_id: currentUser.id,
+          word: suggestion.word,
+          pinyin: suggestion.pinyin || null,
+          theme: suggestion.theme || null,
+          planned_week_start: formatDate(currentWeekStart),
+          planned_date: null,
+          notes: suggestion.reasoning || null,
+          display_order: wordPlans.length
+        });
+
+      if (error) throw error;
+
+      toast.success(`Added "${suggestion.word}" to your plan!`);
+      loadWordPlans();
+      
+      // Remove from suggestions
+      setSuggestions(prev => ({
+        ...prev,
+        suggestions: prev.suggestions.filter(s => s.word !== suggestion.word)
+      }));
+    } catch (error) {
+      console.error('Error adding suggested word:', error);
+      toast.error('Failed to add word');
+    }
   };
 
   // Add new word
@@ -235,7 +356,57 @@ const WeeklyWordPlanner = () => {
           <p className="text-muted-foreground">Plan your flashcard words by theme and week</p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* AI Suggestions Button */}
+          <button
+            onClick={generateSuggestions}
+            disabled={generatingSuggestions}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-lg hover:from-violet-600 hover:to-purple-600 transition-all disabled:opacity-50"
+          >
+            {generatingSuggestions ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+            {generatingSuggestions ? 'Generating...' : 'AI Suggest'}
+          </button>
+
+          {/* Method Settings Button */}
+          <div className="relative">
+            <button
+              onClick={() => setShowMethodSettings(!showMethodSettings)}
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              title="Teaching Method Settings"
+            >
+              <Settings className="w-5 h-5 text-muted-foreground" />
+            </button>
+            
+            {showMethodSettings && (
+              <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-xl shadow-lg z-50 p-4">
+                <h4 className="font-semibold mb-3">Teaching Method</h4>
+                <div className="space-y-2">
+                  {Object.entries(TEACHING_METHODS).map(([key, method]) => (
+                    <button
+                      key={key}
+                      onClick={() => saveTeachingMethod(key)}
+                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                        teachingMethod === key
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:bg-muted'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">{method.name}</span>
+                        {teachingMethod === key && <Check className="w-4 h-4 text-primary" />}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">{method.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* View Toggle */}
           <div className="flex bg-muted rounded-lg p-1">
             <button
@@ -353,6 +524,82 @@ const WeeklyWordPlanner = () => {
               Cancel
             </button>
           </div>
+        </div>
+      )}
+
+      {/* AI Suggestions Panel */}
+      {showSuggestions && suggestions && (
+        <div className="bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-300/30 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-violet-500" />
+              <h3 className="font-semibold text-foreground">AI Suggestions</h3>
+              <span className="text-sm text-muted-foreground">
+                ({suggestions.suggestions.length} words • {suggestions.method})
+              </span>
+            </div>
+            <button
+              onClick={() => setShowSuggestions(false)}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Hide
+            </button>
+          </div>
+          
+          {suggestions.principles && (
+            <div className="mb-4 p-3 bg-background/50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Lightbulb className="w-4 h-4 text-amber-500" />
+                <span className="text-sm font-medium">Method Principles:</span>
+              </div>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                {suggestions.principles.slice(0, 3).map((p, i) => (
+                  <li key={i}>• {p}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {suggestions.suggestions.map((suggestion, index) => (
+              <div
+                key={index}
+                className="bg-background border border-border rounded-lg p-3 hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-foreground">{suggestion.word}</span>
+                      {suggestion.pinyin && (
+                        <span className="text-sm text-muted-foreground">({suggestion.pinyin})</span>
+                      )}
+                    </div>
+                    {suggestion.theme && (
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-accent/20 text-accent-foreground rounded text-xs">
+                        {suggestion.theme}
+                      </span>
+                    )}
+                    {suggestion.reasoning && (
+                      <p className="mt-2 text-xs text-muted-foreground">{suggestion.reasoning}</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => addSuggestedWord(suggestion)}
+                    className="p-1.5 bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
+                    title="Add to plan"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {suggestions.suggestions.length === 0 && (
+            <p className="text-center text-muted-foreground py-4">
+              All suggestions have been added to your plan!
+            </p>
+          )}
         </div>
       )}
 
