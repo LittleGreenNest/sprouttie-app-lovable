@@ -346,6 +346,48 @@ export type Database = {
         }
         Relationships: []
       }
+      word_plans: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          id: string
+          notes: string | null
+          pinyin: string | null
+          planned_date: string | null
+          planned_week_start: string
+          theme: string | null
+          updated_at: string
+          user_id: string
+          word: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          notes?: string | null
+          pinyin?: string | null
+          planned_date?: string | null
+          planned_week_start: string
+          theme?: string | null
+          updated_at?: string
+          user_id: string
+          word: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          notes?: string | null
+          pinyin?: string | null
+          planned_date?: string | null
+          planned_week_start?: string
+          theme?: string | null
+          updated_at?: string
+          user_id?: string
+          word?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
