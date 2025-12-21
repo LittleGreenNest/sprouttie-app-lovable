@@ -1,5 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { HelpCircle } from 'lucide-react';
 import gardenStage0 from '../../assets/garden-stage-0.png';
 import gardenStage1 from '../../assets/garden-stage-1.png';
 import gardenStage2 from '../../assets/garden-stage-2.png';
@@ -8,6 +10,8 @@ import gardenStage4 from '../../assets/garden-stage-4.png';
 import gardenStage5 from '../../assets/garden-stage-5.png';
 
 const ProgressGarden = ({ stats }) => {
+  const navigate = useNavigate();
+  
   const gardenStages = [
     gardenStage0, gardenStage1, gardenStage2, 
     gardenStage3, gardenStage4, gardenStage5
@@ -50,8 +54,18 @@ const ProgressGarden = ({ stats }) => {
           <span>🌿</span>
           Your Progress Garden
         </h3>
-        <div className="text-sm text-gray-600 bg-white/50 px-4 py-2 rounded-full">
-          Week {Math.ceil(stats.currentStreak / 7)}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/garden-guide')}
+            className="flex items-center gap-1 text-sm text-sprouttie-green hover:text-sprouttie-green-dark transition-colors"
+            title="View Garden Guide"
+          >
+            <HelpCircle size={16} />
+            <span className="hidden sm:inline">How it works</span>
+          </button>
+          <div className="text-sm text-gray-600 bg-white/50 px-4 py-2 rounded-full">
+            Week {Math.ceil(stats.currentStreak / 7)}
+          </div>
         </div>
       </div>
 
