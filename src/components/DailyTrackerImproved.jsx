@@ -1307,20 +1307,17 @@ const DailyTrackerImproved = () => {
               }
               try {
                 const dateString = selectedDate.toISOString().split('T')[0];
-                // Save engagement data to daily_tracking
+                // Update existing flashed records for today with engagement data
                 const { error } = await supabase
                   .from('daily_tracking')
-                  .upsert({
-                    user_id: currentUser.id,
-                    flashcard_id: 'engagement-record',
-                    date: dateString,
-                    status: 'engagement',
+                  .update({
                     engagement: engagement,
                     time_of_day: peakEngagementTime,
                     notes: dailyNotes.trim() || null
-                  }, {
-                    onConflict: 'user_id,flashcard_id,date'
-                  });
+                  })
+                  .eq('user_id', currentUser.id)
+                  .eq('date', dateString)
+                  .eq('status', 'flashed');
                 
                 if (error) throw error;
                 toast.success("Today's records saved!");
