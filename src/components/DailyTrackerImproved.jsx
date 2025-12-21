@@ -30,6 +30,11 @@ const DailyTrackerImproved = () => {
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
   const [supabaseFlashcards, setSupabaseFlashcards] = useState({}); // Map of flashcard IDs to Supabase data
   
+  // Track Child's Engagement State
+  const [engagement, setEngagement] = useState(null);
+  const [peakEngagementTime, setPeakEngagementTime] = useState(null);
+  const [dailyNotes, setDailyNotes] = useState('');
+  
   // 🔄 Rotation Engine State
   const [sessionOccurred, setSessionOccurred] = useState(false);
   const [rotationSummary, setRotationSummary] = useState({
@@ -1219,6 +1224,116 @@ const DailyTrackerImproved = () => {
         <p className="text-xs text-slate-500 mt-3">
           Mark all sets as complete for a specific round
         </p>
+      </div>
+
+      {/* Track Child's Engagement */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+        <h4 className="font-bold text-xl text-slate-800 mb-6 text-center">
+          Track Child's Engagement
+        </h4>
+        
+        {/* Engagement Rating */}
+        <div className="mb-6">
+          <p className="text-slate-700 text-center mb-4">How engaged was your child today?</p>
+          <div className="flex justify-center gap-3 mb-2">
+            {[
+              { value: 1, emoji: '😐' },
+              { value: 2, emoji: '😐' },
+              { value: 3, emoji: '🙂' },
+              { value: 4, emoji: '😊' },
+              { value: 5, emoji: '😃' }
+            ].map(({ value, emoji }) => (
+              <button
+                key={value}
+                onClick={() => setEngagement(value)}
+                className={`w-12 h-12 text-2xl rounded-full transition-all ${
+                  engagement === value
+                    ? 'bg-green-100 ring-2 ring-green-500 scale-110'
+                    : 'bg-slate-100 hover:bg-slate-200'
+                }`}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-slate-500 text-center">
+            1 = Minimal Interest • 5 = Highly Engaged
+          </p>
+        </div>
+
+        {/* Peak Engagement Time */}
+        <div className="mb-6">
+          <p className="text-slate-700 text-center mb-4">When was your child most engaged?</p>
+          <div className="flex justify-center gap-2 flex-wrap">
+            {[
+              { value: 'morning', label: 'Morning', emoji: '🌅' },
+              { value: 'afternoon', label: 'Afternoon', emoji: '☀️' },
+              { value: 'evening', label: 'Evening', emoji: '🌆' },
+              { value: 'night', label: 'Night', emoji: '🌙' }
+            ].map(({ value, label, emoji }) => (
+              <button
+                key={value}
+                onClick={() => setPeakEngagementTime(value)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  peakEngagementTime === value
+                    ? 'bg-green-100 text-green-800 ring-2 ring-green-500'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {label} {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Daily Notes */}
+        <div className="mb-6">
+          <p className="text-slate-700 text-center mb-3 font-medium">Notes for Today</p>
+          <textarea
+            value={dailyNotes}
+            onChange={(e) => setDailyNotes(e.target.value)}
+            placeholder="Record observations, words recognised, special moments..."
+            className="w-full px-4 py-3 border border-slate-200 rounded-xl text-slate-700 placeholder-slate-400 focus:ring-2 focus:ring-green-500 focus:border-transparent resize-y min-h-[100px]"
+          />
+        </div>
+
+        {/* Save Button */}
+        <div className="flex justify-end">
+          <button
+            onClick={async () => {
+              if (!engagement && !peakEngagementTime && !dailyNotes.trim()) {
+                toast.warning('Please add some engagement data before saving');
+                return;
+              }
+              try {
+                const dateString = selectedDate.toISOString().split('T')[0];
+                // Save engagement data to daily_tracking
+                const { error } = await supabase
+                  .from('daily_tracking')
+                  .upsert({
+                    user_id: currentUser.id,
+                    flashcard_id: 'engagement-record',
+                    date: dateString,
+                    status: 'engagement',
+                    engagement: engagement,
+                    time_of_day: peakEngagementTime,
+                    notes: dailyNotes.trim() || null
+                  }, {
+                    onConflict: 'user_id,flashcard_id,date'
+                  });
+                
+                if (error) throw error;
+                toast.success("Today's records saved!");
+              } catch (error) {
+                console.error('Error saving engagement:', error);
+                toast.error('Failed to save records');
+              }
+            }}
+            className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors shadow-sm"
+          >
+            Save Today's Records
+          </button>
+        </div>
       </div>
 
       {/* Notes List */}
