@@ -893,12 +893,6 @@ const DailyTrackerImproved = () => {
                 <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider w-16">
                   R3
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider w-16">
-                  R4
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider w-16">
-                  R5
-                </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                   Status
                 </th>
@@ -1025,7 +1019,7 @@ const DailyTrackerImproved = () => {
                           </td>
 
                           {/* Round Checkboxes */}
-                          {[1, 2, 3, 4, 5].map((round) => {
+                          {[1, 2, 3].map((round) => {
                             const roundKey = `round${round}`;
                             const isCompleted = setSessionData[roundKey]?.completed || false;
                             
@@ -1211,8 +1205,8 @@ const DailyTrackerImproved = () => {
         <h4 className="font-bold text-lg text-slate-800 mb-4">
           Quick Actions
         </h4>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-          {[1, 2, 3, 4, 5].map((round) => (
+        <div className="grid grid-cols-3 gap-2">
+          {[1, 2, 3].map((round) => (
             <button
               key={round}
               onClick={() => markAllRound(round)}
