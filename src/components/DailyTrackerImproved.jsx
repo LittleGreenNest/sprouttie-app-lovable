@@ -576,9 +576,17 @@ const DailyTrackerImproved = () => {
     const set = sets.find(s => s.id === editingSetId);
     if (!set) return;
 
-    // Only allow removing the oldest word (first in the array)
-    if (set.flashcardIds[0] !== wordId) {
-      toast.warning('You can only remove the oldest word (first word) from the set.');
+    // Find the oldest word by date_introduced/created_at
+    const setCards = set.flashcardIds.map(id => {
+      const cardData = supabaseFlashcards[id] || Object.values(supabaseFlashcards).find(c => c.id === id);
+      return { id, date: cardData?.date_introduced || cardData?.created_at || '9999-12-31' };
+    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    const oldestWordId = setCards[0]?.id;
+    
+    // Only allow removing the oldest word by date
+    if (oldestWordId !== wordId) {
+      toast.warning('You can only remove the oldest word from the set.');
       return;
     }
 
