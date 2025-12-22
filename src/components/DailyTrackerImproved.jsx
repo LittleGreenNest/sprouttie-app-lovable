@@ -908,7 +908,15 @@ const DailyTrackerImproved = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {sets.map((set, setIdx) => {
-                const setFlashcards = getFlashcardsForSet(set.id);
+                const rawSetFlashcards = getFlashcardsForSet(set.id);
+                // Sort flashcards by date_introduced/created_at so oldest is first
+                const setFlashcards = [...rawSetFlashcards].sort((a, b) => {
+                  const aData = supabaseFlashcards[a.front] || supabaseFlashcards[a.word];
+                  const bData = supabaseFlashcards[b.front] || supabaseFlashcards[b.word];
+                  const aDate = aData?.date_introduced || aData?.created_at || '9999-12-31';
+                  const bDate = bData?.date_introduced || bData?.created_at || '9999-12-31';
+                  return new Date(aDate) - new Date(bDate);
+                });
                 const setSessionData = sessions[set.id] || {};
                 const isEditing = editingSetId === set.id;
                 const isEmpty = setFlashcards.length === 0;
