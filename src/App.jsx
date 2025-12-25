@@ -17,6 +17,9 @@ import ForgotPassword from './components/auth/ForgotPassword';
 import ResetPassword from './components/auth/ResetPassword';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
+// PWA Components
+import InstallPrompt from './components/pwa/InstallPrompt';
+
 // Supabase
 import { supabase } from '@/integrations/supabase/client';
 
@@ -38,6 +41,7 @@ const BookRecommendations = lazy(() => import('./components/books/BookRecommenda
 const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlanner'));
 const FlashingTrackerMockup = lazy(() => import('./components/tracking/FlashingTrackerMockup'));
 const GardenGuide = lazy(() => import('./components/dashboard/GardenGuide'));
+const Install = lazy(() => import('./pages/Install'));
 
 // Loading spinner component
 const LoadingSpinner = () => (
@@ -241,6 +245,7 @@ function App() {
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/plans" element={<Plans />} />
                 <Route path="/pdf-success" element={<PDFSuccess />} />
+                <Route path="/install" element={<Install />} />
                 
                 {/* Protected Print Flashcards route */}
                 <Route element={<ProtectedRoute />}>
@@ -251,6 +256,9 @@ function App() {
                 <Route path="/*" element={<AppContent />} />
               </Routes>
             </Suspense>
+            
+            {/* PWA Install Prompt */}
+            <InstallPrompt />
           </div>
         </FlashcardProvider>
       </AuthProvider>
