@@ -10,8 +10,8 @@ import UpgradeBanner from './tracking/UpgradeBanner';
 import PronunciationButton from './pronunciation/PronunciationButton';
 
 const DailyTrackerImproved = () => {
-  const { currentUser } = useAuth();
-  const { sets, flashcards, getFlashcardsForSet, categories, updateSetFlashcards, addFlashcard, addCategory } = useFlashcards();
+  const { currentUser, plan: userPlan } = useAuth(); // Use plan from AuthContext - no extra fetch needed
+  const { sets, flashcards, getFlashcardsForSet, categories, updateSetFlashcards, addFlashcard, addCategory, loading: flashcardsLoading } = useFlashcards();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [sessions, setSessions] = useState({}); // { setId: { round1: {completed, by, time}, round2: {}, round3: {} } }
   const [notes, setNotes] = useState([]);
@@ -24,11 +24,25 @@ const DailyTrackerImproved = () => {
   const [flashedWords, setFlashedWords] = useState(new Set());
   const [showCreateWord, setShowCreateWord] = useState(false);
   const [newWordData, setNewWordData] = useState({ word: '', english: '', pinyin: '', categoryId: '' });
-  const [userPlan, setUserPlan] = useState(null);
   const [showCreateCategory, setShowCreateCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
-  const [supabaseFlashcards, setSupabaseFlashcards] = useState({}); // Map of flashcard IDs to Supabase data
+  
+  // Build supabaseFlashcards map from context flashcards (no extra fetch needed)
+  const supabaseFlashcards = React.useMemo(() => {
+    const flashcardMap = {};
+    flashcards.forEach(card => {
+      flashcardMap[card.word] = {
+        id: card.id,
+        front: card.word,
+        date_introduced: card.date_introduced,
+        date_retired: card.date_retired,
+        card_status: card.card_status,
+        active_day_count: card.active_day_count
+      };
+    });
+    return flashcardMap;
+  }, [flashcards]);
   
   // Track Child's Engagement State
   const [engagement, setEngagement] = useState(null);
@@ -45,53 +59,14 @@ const DailyTrackerImproved = () => {
 
   const dailyGoal = sets.length * 3; // Each set should be done 3 times
 
+  // Only load day-specific data when date or user changes
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && !flashcardsLoading) {
       loadDayData();
-      loadUserPlan();
-      loadSupabaseFlashcards();
-    } else {
+    } else if (!currentUser) {
       setLoading(false);
     }
-  }, [currentUser, selectedDate]);
-
-  // Load flashcard metadata from Supabase (for created_at, date_introduced)
-  // Maps by word text (front field) since localStorage uses different IDs than Supabase UUIDs
-  const loadSupabaseFlashcards = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('flashcards')
-        .select('id, front, created_at, date_introduced, date_retired, card_status, active_day_count')
-        .eq('user_id', currentUser.id);
-
-      if (error) throw error;
-
-      const flashcardMap = {};
-      (data || []).forEach(card => {
-        // Map by word text (front field) to match localStorage cards
-        flashcardMap[card.front] = card;
-      });
-      setSupabaseFlashcards(flashcardMap);
-    } catch (error) {
-      console.error('Error loading Supabase flashcards:', error);
-    }
-  };
-
-  const loadUserPlan = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('plan')
-        .eq('id', currentUser.id)
-        .single();
-
-      if (error) throw error;
-      setUserPlan(data?.plan || 'free');
-    } catch (error) {
-      console.error('Error loading user plan:', error);
-      setUserPlan('free');
-    }
-  };
+  }, [currentUser, selectedDate, flashcardsLoading]);
 
   // Update available words when flashcards or sets change while editing
   useEffect(() => {

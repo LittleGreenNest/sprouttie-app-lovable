@@ -12,8 +12,8 @@ import StatsSummary from './all-words/StatsSummary';
 import { useAllWordsUIState } from '../hooks/useAllWordsUIState';
 
 const AllWords = () => {
-  const { currentUser } = useAuth();
-  const { categories, flashcards: localFlashcards, updateFlashcard } = useFlashcards();
+  const { currentUser, plan: userPlan } = useAuth(); // Use plan from AuthContext - no extra fetch
+  const { categories, flashcards: localFlashcards, updateFlashcard, loading: flashcardsLoading } = useFlashcards();
   const [flashcardsByCategory, setFlashcardsByCategory] = useState({});
   const [flashedEver, setFlashedEver] = useState(new Set());
   const [loading, setLoading] = useState(true);
@@ -22,38 +22,15 @@ const AllWords = () => {
   const [newCategory, setNewCategory] = useState('');
   const [allCategories, setAllCategories] = useState([]);
   const [categoryStats, setCategoryStats] = useState({});
-  const [userPlan, setUserPlan] = useState('free');
 
   // Initialize UI state management (must be before any conditional returns)
   const uiState = useAllWordsUIState(flashcardsByCategory, allCategories);
 
   useEffect(() => {
-    fetchFlashcardsAndTracking();
-    if (currentUser) {
-      fetchUserPlan();
+    if (!flashcardsLoading) {
+      fetchFlashcardsAndTracking();
     }
-  }, [currentUser, localFlashcards, categories]);
-
-  const fetchUserPlan = async () => {
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('plan')
-        .eq('id', currentUser.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching user plan:', error);
-        return;
-      }
-
-      if (profile?.plan) {
-        setUserPlan(profile.plan);
-      }
-    } catch (error) {
-      console.error('Error in fetchUserPlan:', error);
-    }
-  };
+  }, [currentUser, localFlashcards, categories, flashcardsLoading]);
 
   const fetchFlashcardsAndTracking = async () => {
     setLoading(true);
