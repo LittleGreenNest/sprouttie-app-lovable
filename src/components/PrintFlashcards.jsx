@@ -415,43 +415,42 @@ if (cardIndex === 0 && page.length > 1) {
     }
   };
 
-  // TEMPORARILY DISABLED: Payment check removed for testing
   // Check if user has access to print feature
-  // if (planLoading) {
-  //   return (
-  //     <div className="flex items-center justify-center min-h-screen">
-  //       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
-  //     </div>
-  //   );
-  // }
+  if (planLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+      </div>
+    );
+  }
 
-  // if (userPlan === 'free') {
-  //   return (
-  //     <div className="max-w-2xl mx-auto p-4">
-  //       <div className="bg-white rounded-lg shadow-md p-8 text-center">
-  //         <div className="text-6xl mb-4">🔒</div>
-  //         <h2 className="text-2xl font-bold text-gray-900 mb-4">Print Flashcards - Premium Feature</h2>
-  //         <p className="text-gray-600 mb-6">
-  //           Upgrade to the Print Plan or Pro Sprout to access printable PDF flashcards.
-  //         </p>
-  //         <div className="space-y-3">
-  //           <button
-  //             onClick={() => window.location.href = '/plans'}
-  //             className="w-full px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
-  //           >
-  //             View Plans & Upgrade
-  //           </button>
-  //           <button
-  //             onClick={() => window.location.href = '/dashboard'}
-  //             className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-  //           >
-  //             Back to Dashboard
-  //           </button>
-  //         </div>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+  if (userPlan === 'free') {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <div className="bg-white rounded-lg shadow-md p-8 text-center">
+          <div className="text-6xl mb-4">🔒</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Print Flashcards - Premium Feature</h2>
+          <p className="text-gray-600 mb-6">
+            Upgrade to the Print Plan or Pro Sprout to access printable PDF flashcards.
+          </p>
+          <div className="space-y-3">
+            <button
+              onClick={() => window.location.href = '/plans'}
+              className="w-full px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
+            >
+              View Plans & Upgrade
+            </button>
+            <button
+              onClick={() => window.location.href = '/dashboard'}
+              className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

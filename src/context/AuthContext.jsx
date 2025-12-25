@@ -11,6 +11,44 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
+  // Helper function to ensure user profile exists
+  const ensureProfileExists = async (user) => {
+    if (!user) return;
+    
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Error checking profile:', profileError);
+        return;
+      }
+
+      if (!profile) {
+        console.log('Creating profile for user:', user.email);
+        const { error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email,
+            plan: 'free',
+            subscription_status: 'free',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (createError) {
+          console.error('Error creating profile:', createError);
+        }
+      }
+    } catch (err) {
+      console.error('Error in ensureProfileExists:', err);
+    }
+  };
+
   // Set up auth state listener
   useEffect(() => {
     // Get initial session
@@ -35,11 +73,18 @@ export const AuthProvider = ({ children }) => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
         setCurrentUser(session?.user ?? null);
         setLoading(false);
         setError('');
+        
+        // Ensure profile exists for OAuth sign-ins (deferred to avoid deadlock)
+        if (event === 'SIGNED_IN' && session?.user) {
+          setTimeout(() => {
+            ensureProfileExists(session.user);
+          }, 0);
+        }
       }
     );
 
