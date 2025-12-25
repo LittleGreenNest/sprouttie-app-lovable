@@ -399,6 +399,7 @@ one,yī,一,Numbers`;
                 strokeWidth={3}
                 dot={{ fill: 'hsl(168, 85%, 65%)', strokeWidth: 2, r: 5 }}
                 activeDot={{ r: 7 }}
+                isAnimationActive={false}
               />
             </LineChart>
           </ResponsiveContainer>

@@ -1,14 +1,10 @@
-// App.js - Main Application File
-import React, { useState } from 'react';
+// App.js - Main Application File with Lazy Loading for Performance
+import React, { useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
-import PDFSuccess from './pdf-success';
-import ProtectedRoute from './components/auth/ProtectedRoute';
-
 
 // Context Providers
 import { AuthProvider, useAuth } from './context/AuthContext';
-
 import { FlashcardProvider } from './context/FlashcardContext';
 
 // Layout Components
@@ -19,30 +15,36 @@ import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
 import ForgotPassword from './components/auth/ForgotPassword';
 import ResetPassword from './components/auth/ResetPassword';
-import Profile from './components/user/Profile';
-
-// App Components
-import Dashboard from './components/Dashboard';
-import DailyTracker from './components/DailyTracker';
-import DailyTrackerGrid from './components/DailyTrackerGrid';
-import DailyTrackerImproved from './components/DailyTrackerImproved';
-import FlashcardManager from './components/FlashcardManager';
-import ActivityHistory from './components/ActivityHistory';
-import AllWords from './components/AllWords';
-import SpokenWords from './components/SpokenWords';
-import BingoCardGenerator from './components/BingoCardGenerator';
-import Plans from './components/subscription/Plans';
-import PrintFlashcards from './components/PrintFlashcards';
-import PronunciationPortal from './components/pronunciation/PronunciationPortal';
-import FlashedHistory from './components/FlashedHistory';
-import BookRecommendations from './components/books/BookRecommendations';
-import WeeklyWordPlanner from './components/planner/WeeklyWordPlanner';
-import FlashingTrackerMockup from './components/tracking/FlashingTrackerMockup';
-import GardenGuide from './components/dashboard/GardenGuide';
-
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Supabase
 import { supabase } from '@/integrations/supabase/client';
+
+// Lazy-loaded components for better initial load
+const PDFSuccess = lazy(() => import('./pdf-success'));
+const Profile = lazy(() => import('./components/user/Profile'));
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const DailyTrackerImproved = lazy(() => import('./components/DailyTrackerImproved'));
+const FlashcardManager = lazy(() => import('./components/FlashcardManager'));
+const ActivityHistory = lazy(() => import('./components/ActivityHistory'));
+const AllWords = lazy(() => import('./components/AllWords'));
+const SpokenWords = lazy(() => import('./components/SpokenWords'));
+const BingoCardGenerator = lazy(() => import('./components/BingoCardGenerator'));
+const Plans = lazy(() => import('./components/subscription/Plans'));
+const PrintFlashcards = lazy(() => import('./components/PrintFlashcards'));
+const PronunciationPortal = lazy(() => import('./components/pronunciation/PronunciationPortal'));
+const FlashedHistory = lazy(() => import('./components/FlashedHistory'));
+const BookRecommendations = lazy(() => import('./components/books/BookRecommendations'));
+const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlanner'));
+const FlashingTrackerMockup = lazy(() => import('./components/tracking/FlashingTrackerMockup'));
+const GardenGuide = lazy(() => import('./components/dashboard/GardenGuide'));
+
+// Loading spinner component
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-[200px]">
+    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-green-500"></div>
+  </div>
+);
 
 export const fetchUserPlan = async (userEmail) => {
   const { data, error } = await supabase
@@ -98,8 +100,6 @@ const AppContent = () => {
     );
   }
 
-  // Redirect to login if not authenticated
-
   return (
     <div className="App max-w-4xl mx-auto p-4 bg-gray-50 min-h-screen">
       {/* Header with Sprouttie Mascot - improved spacing */}
@@ -108,8 +108,8 @@ const AppContent = () => {
           src="/images/sprouttie-mascot.png" 
           alt="Sprouttie Mascot" 
           className="h-24 mr-6"
+          loading="lazy"
           onError={(e) => {
-            // Fallback in case the image doesn't load
             e.target.style.display = 'none';
           }}
         />
@@ -188,36 +188,38 @@ const AppContent = () => {
           Activity History
         </button>
       </div>
-                  {/* Active Tab Content */}
-      <Routes>
-        {/* Protected routes (must be logged in) */}
-        <Route element={<ProtectedRoute />}>
-          {/* default when landing on AppContent */}
-          <Route index element={<Navigate to="/dashboard" replace />} />
 
-          {/* tab pages */}
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/daily-tracking" element={<DailyTrackerImproved />} />
-          <Route path="/flashed-history" element={<FlashedHistory />} />
-          <Route path="/all-words" element={<AllWords />} />
-          <Route path="/spoken-words" element={<SpokenWords />} />
-          <Route path="/pronunciation" element={<PronunciationPortal />} />
-          <Route path="/book-recommendations" element={<BookRecommendations />} />
-          <Route path="/bingo-generator" element={<BingoCardGenerator />} />
-          <Route path="/manage-flashcards" element={<FlashcardManager />} />
-          <Route path="/word-planner" element={<WeeklyWordPlanner />} />
-          <Route path="/tracker-mockup" element={<FlashingTrackerMockup />} />
-          <Route path="/garden-guide" element={<GardenGuide />} />
-          <Route path="/activity-history" element={<ActivityHistory />} />
+      {/* Active Tab Content with Suspense for lazy loading */}
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          {/* Protected routes (must be logged in) */}
+          <Route element={<ProtectedRoute />}>
+            {/* default when landing on AppContent */}
+            <Route index element={<Navigate to="/dashboard" replace />} />
 
-          {/* profile page */}
-          <Route path="/profile" element={<Profile />} />
-        </Route>
+            {/* tab pages */}
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/daily-tracking" element={<DailyTrackerImproved />} />
+            <Route path="/flashed-history" element={<FlashedHistory />} />
+            <Route path="/all-words" element={<AllWords />} />
+            <Route path="/spoken-words" element={<SpokenWords />} />
+            <Route path="/pronunciation" element={<PronunciationPortal />} />
+            <Route path="/book-recommendations" element={<BookRecommendations />} />
+            <Route path="/bingo-generator" element={<BingoCardGenerator />} />
+            <Route path="/manage-flashcards" element={<FlashcardManager />} />
+            <Route path="/word-planner" element={<WeeklyWordPlanner />} />
+            <Route path="/tracker-mockup" element={<FlashingTrackerMockup />} />
+            <Route path="/garden-guide" element={<GardenGuide />} />
+            <Route path="/activity-history" element={<ActivityHistory />} />
 
-        {/* fallback for anything else under AppContent */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
+            {/* profile page */}
+            <Route path="/profile" element={<Profile />} />
+          </Route>
 
+          {/* fallback for anything else under AppContent */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </Suspense>
     </div>
   );
 };
@@ -230,24 +232,25 @@ function App() {
         <FlashcardProvider>
           <div className="min-h-screen bg-gray-50">
             <Navbar />
-            <Routes>
-              {/* Public routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/plans" element={<Plans />} />
-              <Route path="/pdf-success" element={<PDFSuccess />} />
-              
-              {/* Protected Print Flashcards route */}
-              <Route element={<ProtectedRoute />}>
-                <Route path="/print" element={<PrintFlashcards />} />
-              </Route>
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/plans" element={<Plans />} />
+                <Route path="/pdf-success" element={<PDFSuccess />} />
+                
+                {/* Protected Print Flashcards route */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/print" element={<PrintFlashcards />} />
+                </Route>
 
-              
-              {/* Protected routes */}
-              <Route path="/*" element={<AppContent />} />
-            </Routes>
+                {/* Protected routes */}
+                <Route path="/*" element={<AppContent />} />
+              </Routes>
+            </Suspense>
           </div>
         </FlashcardProvider>
       </AuthProvider>
