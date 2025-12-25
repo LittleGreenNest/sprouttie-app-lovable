@@ -16,8 +16,8 @@ const plans = [
   },
   {
     name: 'Print Plan',
-    priceMonthly: '$1',
-    priceYearly: '$10',
+    priceMonthly: '$3',
+    priceYearly: '$29',
     description: 'Perfect for offline studying',
     features: ['Everything in Free', 'Printable PDF Flashcards', 'PDF export formats'],
     planKey: 'print',
@@ -25,11 +25,20 @@ const plans = [
   },
   {
     name: 'Pro Sprout',
-    priceMonthly: '$3',
-    priceYearly: '$30',
+    priceMonthly: '$7',
+    priceYearly: '$59',
     description: 'Full access and unlimited AI stories',
     features: ['Everything in Print Plan', 'Unlimited story generation', 'Save flash history', 'Collaborate with parents'],
     planKey: 'pro',
+    buttonText: 'Join Waitlist',
+  },
+  {
+    name: 'Family Plan',
+    priceMonthly: '$12',
+    priceYearly: '$99',
+    description: 'For families with multiple children',
+    features: ['Everything in Pro Sprout', 'Up to 5 child profiles', 'Family progress dashboard', 'Priority support'],
+    planKey: 'family',
     buttonText: 'Join Waitlist',
   }
 ];
@@ -182,10 +191,10 @@ export default function Plans() {
       return handleSubscribe('print');
     }
     
-    if (planKey === 'pro') {
+    if (planKey === 'pro' || planKey === 'family') {
       setShowWaitlist(true);
-      if (window.gtag) window.gtag('event', 'open_waitlist_modal', { source: 'plans_modal' });
-      if (window.fbq) window.fbq('trackCustom', 'OpenWaitlistModal', { source: 'plans_modal' });
+      if (window.gtag) window.gtag('event', 'open_waitlist_modal', { source: 'plans_modal', plan: planKey });
+      if (window.fbq) window.fbq('trackCustom', 'OpenWaitlistModal', { source: 'plans_modal', plan: planKey });
     }
   };
 
@@ -200,7 +209,7 @@ export default function Plans() {
           }
         </p>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {plans.map((plan) => {
             const isCurrent = currentUser && isCurrentPlan(userPlan, plan.planKey);
             const isDowngrade = currentUser && userPlan && (
