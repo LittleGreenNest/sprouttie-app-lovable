@@ -124,15 +124,31 @@ export const AuthProvider = ({ children }) => {
 
   /**
    * Init auth state + subscribe to auth changes
+   * IMPORTANT: Empty dependency array to run only once on mount
    */
   useEffect(() => {
     let mounted = true;
 
+    // Helper to fetch profile without causing re-renders
+    const loadProfile = async (user) => {
+      if (!user?.id) {
+        setProfile(null);
+        return;
+      }
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+      
+      if (!error && data && mounted) {
+        setProfile(data);
+      }
+    };
+
     const init = async () => {
       try {
-        setLoading(true);
-        setError("");
-
         const {
           data: { session },
           error: sessionErr,
@@ -145,11 +161,8 @@ export const AuthProvider = ({ children }) => {
 
         setCurrentUser(user);
 
-        // Load profile immediately if signed in
         if (user) {
-          await refreshProfile(user);
-        } else {
-          setProfile(null);
+          await loadProfile(user);
         }
       } catch (err) {
         console.error("Auth init error:", err);
@@ -160,31 +173,32 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    init();
-
+    // Set up listener FIRST (per Supabase best practices)
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Keep this minimal, but ensure profile is loaded when signed in
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // Synchronous state updates only - no async in callback
       const user = session?.user ?? null;
       setCurrentUser(user);
       setError("");
-
-      // We keep loading=false because auth state changed event implies "ready"
       setLoading(false);
 
+      // Defer profile fetch with setTimeout to avoid deadlock
       if (user) {
-        await refreshProfile(user);
+        setTimeout(() => loadProfile(user), 0);
       } else {
         setProfile(null);
       }
     });
 
+    // THEN check for existing session
+    init();
+
     return () => {
       mounted = false;
       subscription?.unsubscribe?.();
     };
-  }, [refreshProfile]);
+  }, []); // Empty deps - runs once on mount
 
   /**
    * Optional: Realtime subscription to profile updates (e.g., Stripe webhook updates plan)
