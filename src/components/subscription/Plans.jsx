@@ -22,23 +22,15 @@ const plans = [
     features: ['Everything in Free', 'Printable PDF Flashcards', 'PDF export formats'],
     planKey: 'print',
     buttonText: 'Subscribe',
+    badge: 'Most Popular',
   },
   {
     name: 'Pro Sprout',
     priceMonthly: '$7',
     priceYearly: '$59',
-    description: 'Full access and unlimited AI stories',
-    features: ['Everything in Print Plan', 'Unlimited story generation', 'Save flash history', 'Collaborate with parents'],
+    description: 'Premium for growing families',
+    features: ['Everything in Print Plan', 'Multi-child profiles', 'Voice training for parents', 'Unlimited story generation', 'Priority support'],
     planKey: 'pro',
-    buttonText: 'Join Waitlist',
-  },
-  {
-    name: 'Family Plan',
-    priceMonthly: '$12',
-    priceYearly: '$99',
-    description: 'For families with multiple children',
-    features: ['Everything in Pro Sprout', 'Up to 5 child profiles', 'Family progress dashboard', 'Priority support'],
-    planKey: 'family',
     buttonText: 'Join Waitlist',
   }
 ];
@@ -191,10 +183,10 @@ export default function Plans() {
       return handleSubscribe('print');
     }
     
-    if (planKey === 'pro' || planKey === 'family') {
+    if (planKey === 'pro') {
       setShowWaitlist(true);
-      if (window.gtag) window.gtag('event', 'open_waitlist_modal', { source: 'plans_modal', plan: planKey });
-      if (window.fbq) window.fbq('trackCustom', 'OpenWaitlistModal', { source: 'plans_modal', plan: planKey });
+      if (window.gtag) window.gtag('event', 'open_waitlist_modal', { source: 'plans_modal' });
+      if (window.fbq) window.fbq('trackCustom', 'OpenWaitlistModal', { source: 'plans_modal' });
     }
   };
 
@@ -209,7 +201,7 @@ export default function Plans() {
           }
         </p>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-3 gap-8">
           {plans.map((plan) => {
             const isCurrent = currentUser && isCurrentPlan(userPlan, plan.planKey);
             const isDowngrade = currentUser && userPlan && (
@@ -220,10 +212,15 @@ export default function Plans() {
             return (
               <div
                 key={plan.planKey}
-                className={`bg-white rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg p-8 flex flex-col justify-between ${
+                className={`relative bg-white rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg p-8 flex flex-col justify-between ${
                   isCurrent ? 'ring-2 ring-green-500' : ''
-                }`}
+                } ${plan.badge ? 'ring-2 ring-green-400' : ''}`}
               >
+                {plan.badge && (
+                  <div className="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
+                    {plan.badge}
+                  </div>
+                )}
                 <div>
                   <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                   <p className="text-gray-600 mb-4">{plan.description}</p>
