@@ -86,6 +86,7 @@ const TrendChart = ({ data = [] }) => {
             strokeWidth={3}
             dot={{ fill: 'hsl(var(--sprouttie-green))', r: 4 }}
             name="Cards Flashed"
+            isAnimationActive={false}
           />
           <Line 
             type="monotone" 
@@ -95,6 +96,7 @@ const TrendChart = ({ data = [] }) => {
             strokeDasharray="5 5"
             dot={{ fill: 'hsl(var(--sprouttie-coral))', r: 3 }}
             name="Avg Engagement"
+            isAnimationActive={false}
           />
         </LineChart>
       </ResponsiveContainer>
