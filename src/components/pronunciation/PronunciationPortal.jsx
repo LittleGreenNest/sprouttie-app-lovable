@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Volume2, Lock, Loader2, Filter, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '../../context/AuthContext';
+import { useFlashcards } from '../../context/FlashcardContext';
 import PronunciationButton from './PronunciationButton';
 import PronunciationCSVImport from './PronunciationCSVImport';
 
 const PronunciationPortal = () => {
+  const { currentUser, plan: userPlan } = useAuth(); // Use plan from AuthContext
+  const { flashcards: contextFlashcards, loading: flashcardsLoading } = useFlashcards();
   const [searchQuery, setSearchQuery] = useState('');
   const [words, setWords] = useState([]);
   const [pronunciations, setPronunciations] = useState({});
   const [loading, setLoading] = useState(true);
-  const [userPlan, setUserPlan] = useState('free');
   const [showFullLanguagesOnly, setShowFullLanguagesOnly] = useState(false);
   const [loopCount, setLoopCount] = useState(1);
 
@@ -22,50 +25,37 @@ const PronunciationPortal = () => {
   ];
 
   useEffect(() => {
-    fetchUserProfile();
-    fetchWords();
-  }, []);
-
-  const fetchUserProfile = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('plan')
-        .eq('id', user.id)
-        .single();
-
-      if (profile) {
-        setUserPlan(profile.plan);
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
+    if (!flashcardsLoading && currentUser) {
+      fetchWords();
     }
-  };
+  }, [currentUser, flashcardsLoading]);
 
   const fetchWords = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
+      if (!currentUser) {
         setLoading(false);
         return;
       }
 
-      // Fetch flashcards
-      const { data: flashcards, error: flashcardsError } = await supabase
-        .from('flashcards')
-        .select('id, front, folder')
-        .eq('user_id', user.id)
-        .order('folder', { ascending: true })
-        .order('front', { ascending: true });
+      // Use context flashcards if available, otherwise fetch
+      let flashcardsData = contextFlashcards.length > 0 
+        ? contextFlashcards.map(f => ({ id: f.id, front: f.word, folder: f.categoryId }))
+        : null;
+      
+      if (!flashcardsData) {
+        const { data, error: flashcardsError } = await supabase
+          .from('flashcards')
+          .select('id, front, folder')
+          .eq('user_id', currentUser.id)
+          .order('folder', { ascending: true })
+          .order('front', { ascending: true });
 
-      if (flashcardsError) throw flashcardsError;
+        if (flashcardsError) throw flashcardsError;
+        flashcardsData = data || [];
+      }
 
-      // Fetch all pronunciations
+      // Fetch pronunciations (this is not cached elsewhere)
       const { data: pronunciationsData, error: pronunciationsError } = await supabase
         .from('pronunciations')
         .select('word_text, language, audio_url, phonetic, is_ai_generated');
@@ -81,7 +71,7 @@ const PronunciationPortal = () => {
         pronunciationsMap[p.word_text][p.language] = p;
       });
 
-      setWords(flashcards || []);
+      setWords(flashcardsData);
       setPronunciations(pronunciationsMap);
     } catch (error) {
       console.error('Error fetching words:', error);

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useFlashcards } from '../context/FlashcardContext';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import ProgressHero from './dashboard/ProgressHero';
 import MetricsRow from './dashboard/MetricsRow';
