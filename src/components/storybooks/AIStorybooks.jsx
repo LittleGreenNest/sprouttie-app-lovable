@@ -2,10 +2,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useFlashcards } from '../../context/FlashcardContext';
+import { usePlanAccess, UpgradePrompt } from '../../hooks/usePlanAccess';
 
 const AIStorybooks = () => {
   const { currentUser } = useAuth();
   const { categories, flashcards, sets, getFlashcardsForSet } = useFlashcards();
+  const { hasFeature, loading: planLoading } = usePlanAccess();
   
   const [selectedWords, setSelectedWords] = useState([]);
   const [selectedSet, setSelectedSet] = useState('');
@@ -105,11 +107,33 @@ const AIStorybooks = () => {
     alert('In a production app, this would download a PDF of the story.');
   };
 
-  // Check if user has access based on subscription
-  if (currentUser && (currentUser.plan === 'basic' || currentUser.plan === 'premium')) {
+  // Show loading state
+  if (planLoading) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-green-800 mb-6">AI Storybooks</h1>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+      </div>
+    );
+  }
+
+  // Check if user has access to AI stories (Pro plan only)
+  if (!hasFeature('aiStories')) {
+    return (
+      <div className="max-w-4xl mx-auto py-8">
+        <UpgradePrompt
+          feature="AI Storybooks"
+          requiredPlan="pro"
+          title="AI Storybooks - Pro Feature"
+          description="Generate custom AI storybooks featuring your child's learning words. Upgrade to Pro Sprout to access this magical feature!"
+        />
+      </div>
+    );
+  }
+
+  // Main render - user has access
+  return (
+    <div className="max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold text-green-800 mb-6">AI Storybooks</h1>
         
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4 text-red-700">
@@ -363,30 +387,8 @@ const AIStorybooks = () => {
           </div>
         </div>
       </div>
-    );
-  } else {
-    // User doesn't have access to this feature
-    return (
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-green-800 mb-6">AI Storybooks</h1>
-        
-        <div className="bg-white rounded-lg shadow-md p-8 text-center">
-          <div className="text-5xl mb-4">✨</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Upgrade to Access AI Storybooks</h2>
-          <p className="text-gray-600 mb-6">
-            Generate custom storybooks featuring your child's learning words with our AI technology.
-            Available on Basic and Premium plans.
-          </p>
-          <a
-            href="/plans"
-            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700"
-          >
-            View Subscription Plans
-          </a>
-        </div>
-      </div>
-    );
-  }
+    </div>
+  );
 };
 
 export default AIStorybooks;
