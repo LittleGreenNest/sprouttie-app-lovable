@@ -1,6 +1,7 @@
 // src/components/auth/ForgotPassword.js
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -20,15 +21,19 @@ const ForgotPassword = () => {
     try {
       setLoading(true);
       
-      // Simulate API request
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
       
-      // Since this is a mock, we'll just show a success message
-      // In a real app, this would connect to your backend API
+      if (error) {
+        throw error;
+      }
+      
       setMessage('Password reset instructions have been sent to your email address');
       setIsSuccess(true);
     } catch (error) {
-      setMessage('Error sending password reset email. Please try again.');
+      console.error('Password reset error:', error);
+      setMessage(error.message || 'Error sending password reset email. Please try again.');
       setIsSuccess(false);
     } finally {
       setLoading(false);

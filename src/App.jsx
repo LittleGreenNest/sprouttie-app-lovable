@@ -18,6 +18,7 @@ import Navbar from './components/layout/Navbar';
 import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
 import ForgotPassword from './components/auth/ForgotPassword';
+import ResetPassword from './components/auth/ResetPassword';
 import Profile from './components/user/Profile';
 
 // App Components
@@ -234,6 +235,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/plans" element={<Plans />} />
               <Route path="/pdf-success" element={<PDFSuccess />} />
               
