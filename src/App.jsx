@@ -44,6 +44,7 @@ const GardenGuide = lazy(() => import('./components/dashboard/GardenGuide'));
 const Install = lazy(() => import('./pages/Install'));
 const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
+const Landing = lazy(() => import('./pages/Landing'));
 
 // Loading spinner component
 const LoadingSpinner = () => (
@@ -241,6 +242,7 @@ function App() {
             <Suspense fallback={<LoadingSpinner />}>
               <Routes>
                 {/* Public routes */}
+                <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
