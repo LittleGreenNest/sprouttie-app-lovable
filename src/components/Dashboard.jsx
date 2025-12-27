@@ -515,31 +515,6 @@ one,yī,一,Numbers`;
         </div>
       </motion.div>
       
-      {/* Encouragement Bar */}
-      {encouragement && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass rounded-2xl p-4 shadow-lg"
-          role="status"
-          aria-live="polite"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl" aria-hidden="true">{encouragement.icon}</span>
-              <p className="text-gray-700 font-medium">{encouragement.message}</p>
-            </div>
-            <button 
-              onClick={() => setShowMilestonesList(true)}
-              className="text-sprouttie-green-dark hover:text-sprouttie-green font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-sprouttie-green rounded-lg px-2 py-1"
-              aria-label="View milestones and achievements"
-            >
-              View Milestones →
-            </button>
-          </div>
-        </motion.div>
-      )}
-      
       {/* Mobile Sticky Button */}
       <div className="md:hidden fixed bottom-4 left-4 right-4 z-50">
         <motion.button
