@@ -1,6 +1,8 @@
 // components/DailyTracker.js
 import React, { useState, useEffect } from 'react';
 import { useFlashcards } from '../context/FlashcardContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Check, AlertCircle } from 'lucide-react';
 
 const DailyTracker = () => {
   const { sets, categories, flashcards, getFlashcardsForSet, saveTrackingData, getTrackingData, addFlashcard, deleteFlashcard, updateSetFlashcards } = useFlashcards();
@@ -334,20 +336,47 @@ const DailyTracker = () => {
       
       {/* Save Button */}
       <div className="mt-4 flex justify-end">
-        {saveStatus && (
-          <div className={`mr-4 py-2 px-4 rounded ${
-            saveStatus.includes('Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-          }`}>
-            {saveStatus}
-          </div>
-        )}
         <button
           onClick={saveData}
-          className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+          className="bg-sprouttie-green-dark hover:bg-sprouttie-green text-white font-medium py-2 px-6 rounded-lg transition-colors"
         >
           Save Today's Records
         </button>
       </div>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {saveStatus && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
+          >
+            <div className={`flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg ${
+              saveStatus.includes('Error') 
+                ? 'bg-red-50 border-2 border-red-200 text-red-800' 
+                : 'bg-sprouttie-mint border-2 border-sprouttie-green-light text-sprouttie-green-dark'
+            }`}>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.1 }}
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  saveStatus.includes('Error') ? 'bg-red-200' : 'bg-sprouttie-green-light'
+                }`}
+              >
+                {saveStatus.includes('Error') ? (
+                  <AlertCircle className="w-5 h-5" />
+                ) : (
+                  <Check className="w-5 h-5" />
+                )}
+              </motion.div>
+              <span className="font-medium">{saveStatus}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Flashcard Manager Modal */}
       {showFlashcardManager && (
