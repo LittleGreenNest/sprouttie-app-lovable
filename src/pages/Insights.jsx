@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, Brain, RefreshCw, Monitor, Globe2, Lightbulb } from 'lucide-react';
+import { ArrowLeft, BookOpen, Brain, RefreshCw, Monitor, Globe2, Lightbulb, Palette, Eye, Type, Layers } from 'lucide-react';
 
 const Insights = () => {
   const fadeInUp = {
@@ -319,6 +319,269 @@ const Insights = () => {
             <p className="text-gray-700 text-center italic mt-8">
               "Sprouttie is designed around these principles, not as rules — but as support."
             </p>
+          </motion.section>
+
+          <SectionDivider />
+
+          {/* Appendix: Colour & Visual Design */}
+          <motion.section {...fadeInUp} className="mb-8">
+            <div className="bg-gray-50 rounded-xl p-6 mb-6">
+              <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Appendix</p>
+              <h2 className="text-2xl font-semibold text-gray-900">
+                Colour & Visual Design Rationale in Early Learning Materials
+              </h2>
+              <p className="text-gray-600 mt-2 text-sm">
+                This appendix explains the visual and colour-related considerations that inform Sprouttie's design options. It is intended as a reference for parents, educators, and practitioners who want to understand how colour, contrast, and visual simplicity interact with early learning and attention.
+              </p>
+            </div>
+
+            {/* A. Why Visual Design Matters */}
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-pink-50 rounded-lg flex items-center justify-center">
+                  <Eye className="w-4 h-4 text-pink-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">A. Why Visual Design Matters in Early Learning</h3>
+              </div>
+              
+              <div className="text-gray-700 space-y-4">
+                <p>
+                  Before children understand symbols as language, they process them as visual information. Early learning relies heavily on:
+                </p>
+                <ul className="space-y-2 ml-4">
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
+                    Attention capture
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
+                    Visual discrimination
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
+                    Pattern recognition
+                  </li>
+                </ul>
+                <p>
+                  At this stage, how information looks can influence whether it is noticed at all. Visual design does not create learning on its own, but it can support attention, reduce visual noise, and make exposure more repeatable.
+                </p>
+              </div>
+            </div>
+
+            {/* B. Colour, Contrast, and Visual Salience */}
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center">
+                  <Layers className="w-4 h-4 text-indigo-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">B. Colour, Contrast, and Visual Salience</h3>
+              </div>
+              
+              <div className="text-gray-700 space-y-4">
+                <p>
+                  <strong>What is visual salience?</strong> Visual salience refers to how strongly an object stands out from its background. In early development, the visual system responds more readily to:
+                </p>
+                <ul className="space-y-2 ml-4">
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
+                    High contrast
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
+                    Clear edges
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
+                    Strong colour differentiation
+                  </li>
+                </ul>
+                <p>
+                  This is especially relevant for infants and toddlers whose visual acuity is still developing.
+                </p>
+              </div>
+            </div>
+
+            {/* C. Why Red Text Is Often Used */}
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center">
+                  <Type className="w-4 h-4 text-red-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">C. Why Red Text Is Often Used in Early Exposure</h3>
+              </div>
+              
+              <div className="text-gray-700 space-y-4">
+                <p>
+                  Research in early visual perception and developmental psychology suggests that bright, high-contrast colours are detected earlier than darker tones. Red, in particular, is visually salient against light backgrounds. Strong colour contrast can draw attention before symbolic meaning is understood.
+                </p>
+                <p>
+                  In early stages, colour acts as a perceptual cue, helping children notice shapes and patterns that later become associated with meaning.
+                </p>
+              </div>
+
+              <div className="bg-amber-50 border-l-4 border-amber-400 rounded-r-lg p-4 my-4">
+                <p className="text-sm font-medium text-amber-800 mb-1">Important clarification</p>
+                <ul className="text-amber-700 text-sm space-y-1">
+                  <li>• Red text does not "teach" reading</li>
+                  <li>• It supports attention and recognition, which precede reading</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* D. The Role of Black Text */}
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <Type className="w-4 h-4 text-gray-700" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">D. The Role of Black Text in Later Recall</h3>
+              </div>
+              
+              <div className="text-gray-700 space-y-4">
+                <p>
+                  As children develop, visual acuity improves, symbol recognition becomes more abstract, and cognitive processing shifts from perceptual cues to meaning-based interpretation.
+                </p>
+                <p>
+                  At this stage, black text becomes more effective for recall. Reduced colour variation lowers distraction, and text presentation more closely resembles real-world reading materials.
+                </p>
+                <p>
+                  Black text supports transfer of recognition to books and signs, generalisation beyond learning materials, and recall based on meaning rather than visual novelty.
+                </p>
+                <p className="italic text-gray-600">
+                  This transition is not tied to a fixed age. It depends on the child's developmental readiness and familiarity with symbols.
+                </p>
+              </div>
+            </div>
+
+            {/* E. Exposure First, Fluency Later */}
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center">
+                  <Layers className="w-4 h-4 text-teal-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">E. Exposure First, Fluency Later</h3>
+              </div>
+              
+              <div className="text-gray-700 space-y-4">
+                <p>
+                  From a learning design perspective, colour and visual simplicity support different phases:
+                </p>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4 my-4">
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <p className="font-medium text-gray-900 mb-2">Early phase</p>
+                  <p className="text-sm text-gray-600 mb-2"><strong>Goal:</strong> Familiarity and recognition</p>
+                  <p className="text-sm text-gray-600"><strong>Helpful features:</strong> High contrast, visual clarity</p>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <p className="font-medium text-gray-900 mb-2">Later phase</p>
+                  <p className="text-sm text-gray-600 mb-2"><strong>Goal:</strong> Recall and generalisation</p>
+                  <p className="text-sm text-gray-600"><strong>Helpful features:</strong> Neutral presentation, reduced cues</p>
+                </div>
+              </div>
+
+              <p className="text-gray-700">
+                The purpose of early materials is not fluency, but comfort and familiarity with symbols.
+              </p>
+            </div>
+
+            {/* F. Avoiding Overstimulation */}
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
+                  <Eye className="w-4 h-4 text-purple-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">F. Avoiding Overstimulation</h3>
+              </div>
+              
+              <div className="text-gray-700 space-y-4">
+                <p>
+                  While colour can support attention, excessive visual elements can increase cognitive load, reduce focus, and make materials harder to reuse.
+                </p>
+                <p>
+                  Effective early learning materials tend to share these traits:
+                </p>
+                <ul className="space-y-2 ml-4">
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
+                    Limited colour palette
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
+                    Clear typography
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
+                    Minimal decoration
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
+                    Consistent layout
+                  </li>
+                </ul>
+                <p>
+                  Visual calm supports repeat use and shared attention between adult and child.
+                </p>
+              </div>
+            </div>
+
+            {/* G. Sprouttie's Design Position */}
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-sprouttie-green-light rounded-lg flex items-center justify-center">
+                  <Palette className="w-4 h-4 text-sprouttie-green-dark" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">G. Sprouttie's Design Position</h3>
+              </div>
+              
+              <div className="text-gray-700 space-y-4">
+                <p>
+                  Sprouttie does not enforce a single visual standard. Instead, it is designed to:
+                </p>
+                <ul className="space-y-2 ml-4">
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-sprouttie-green rounded-full mt-2 flex-shrink-0" />
+                    Allow flexibility in presentation
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-sprouttie-green rounded-full mt-2 flex-shrink-0" />
+                    Support different stages of development
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-sprouttie-green rounded-full mt-2 flex-shrink-0" />
+                    Let parents adjust materials as familiarity grows
+                  </li>
+                </ul>
+                <p>
+                  The system focuses on clarity over decoration, simplicity over novelty, and adaptability over prescription. This reflects the broader principle that learning tools should adapt to families, not the other way around.
+                </p>
+              </div>
+            </div>
+
+            {/* H. Key Takeaways */}
+            <div className="bg-gray-50 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">H. Key Takeaways</h3>
+              <ul className="space-y-3">
+                {[
+                  'Colour supports attention, not learning by itself',
+                  'Red and high-contrast visuals can aid early recognition',
+                  'Black text supports later recall and transfer',
+                  'Visual simplicity reduces cognitive load',
+                  'Flexibility allows materials to grow with the child'
+                ].map((item, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <span className="w-6 h-6 bg-sprouttie-green/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="w-2 h-2 bg-sprouttie-green rounded-full" />
+                    </span>
+                    <span className="text-gray-700">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-gray-600 text-sm mt-6 italic">
+                This appendix exists to clarify design intent, not to prescribe usage. Parents and educators are encouraged to observe, adjust, and respond to each child's needs over time.
+              </p>
+            </div>
           </motion.section>
 
         </article>
