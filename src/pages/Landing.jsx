@@ -43,7 +43,7 @@ const Landing = () => {
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm text-gray-600">
             <a href="#features" className="hover:text-sprouttie-green-dark transition-colors">Get the free app</a>
-            <a href="#about" className="hover:text-sprouttie-green-dark transition-colors">About Sprouttie</a>
+            <Link to="/about" className="hover:text-sprouttie-green-dark transition-colors">About Sprouttie</Link>
             <Link to="/print" className="hover:text-sprouttie-green-dark transition-colors">Print</Link>
             <a href="#insights" className="hover:text-sprouttie-green-dark transition-colors">Insights</a>
             <a href="#books" className="hover:text-sprouttie-green-dark transition-colors">Booklist</a>

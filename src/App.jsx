@@ -43,6 +43,7 @@ const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Landing = lazy(() => import('./pages/Landing'));
 const ComingSoonPage = lazy(() => import('./components/ui/ComingSoonPage'));
+const About = lazy(() => import('./pages/About'));
 
 // Loading spinner component
 const LoadingSpinner = () => (
@@ -246,6 +247,7 @@ function App() {
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
+                <Route path="/about" element={<About />} />
                 <Route path="/plans" element={<Plans />} />
                 <Route path="/pdf-success" element={<PDFSuccess />} />
                 <Route path="/install" element={<Install />} />
