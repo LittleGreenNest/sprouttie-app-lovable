@@ -97,20 +97,38 @@ const FlashedHistory = () => {
           sessionsByDate[date].engagements.push(record.engagement);
         }
         if (record.notes) {
-          sessionsByDate[date].notes.push(record.notes);
+          // Parse notes - they may be JSON strings or plain text
+          try {
+            const parsed = JSON.parse(record.notes);
+            // If it's an object with a text field, extract the text
+            if (parsed && typeof parsed === 'object' && parsed.text) {
+              sessionsByDate[date].notes.push(parsed.text);
+            } else if (typeof parsed === 'string') {
+              sessionsByDate[date].notes.push(parsed);
+            } else {
+              sessionsByDate[date].notes.push(record.notes);
+            }
+          } catch {
+            // If not valid JSON, use as plain text
+            sessionsByDate[date].notes.push(record.notes);
+          }
         }
       });
 
       // Convert to array
-      const sessions = Object.values(sessionsByDate).map(session => ({
-        date: session.date,
-        setsUsed: Array.from(session.setsUsed).sort((a, b) => a - b),
-        flashcardCount: session.flashcardIds.size,
-        avgEngagement: session.engagements.length > 0 
-          ? (session.engagements.reduce((a, b) => a + b, 0) / session.engagements.length).toFixed(1)
-          : null,
-        notes: session.notes.filter((n, i, arr) => arr.indexOf(n) === i).join('; ')
-      }));
+      const sessions = Object.values(sessionsByDate).map(session => {
+        // Get unique notes and format nicely
+        const uniqueNotes = session.notes.filter((n, i, arr) => arr.indexOf(n) === i);
+        return {
+          date: session.date,
+          setsUsed: Array.from(session.setsUsed).sort((a, b) => a - b),
+          flashcardCount: session.flashcardIds.size,
+          avgEngagement: session.engagements.length > 0 
+            ? (session.engagements.reduce((a, b) => a + b, 0) / session.engagements.length).toFixed(1)
+            : null,
+          notes: uniqueNotes.join('; ')
+        };
+      });
 
       sessions.sort((a, b) => new Date(b.date) - new Date(a.date));
       setSessionHistory(sessions);
