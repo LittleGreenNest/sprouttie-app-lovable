@@ -38,8 +38,11 @@ const DailyTrackerImproved = () => {
         date_introduced: card.date_introduced,
         date_retired: card.date_retired,
         card_status: card.card_status,
-        active_day_count: card.active_day_count
+        active_day_count: card.active_day_count,
+        created_at: card.created_at
       };
+      // Also key by id for consistent lookups
+      flashcardMap[card.id] = flashcardMap[card.word];
     });
     return flashcardMap;
   }, [flashcards]);
