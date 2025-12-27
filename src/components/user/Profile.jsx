@@ -336,7 +336,7 @@ const Profile = () => {
         <div className="space-y-4">
           <button 
             className="block text-sm text-blue-600 hover:text-blue-500"
-            onClick={() => navigate('/change-password')}
+            onClick={() => navigate('/forgot-password')}
           >
             Change Password
           </button>
