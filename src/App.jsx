@@ -1,6 +1,8 @@
 // App.js - Main Application File with Lazy Loading for Performance
 import React, { useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 
 // Context Providers
@@ -265,6 +267,20 @@ function App() {
             
             {/* PWA Install Prompt */}
             <InstallPrompt />
+            
+            {/* Toast Container for notifications */}
+            <ToastContainer 
+              position="top-center" 
+              autoClose={3000} 
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="light"
+            />
           </div>
         </FlashcardProvider>
       </AuthProvider>

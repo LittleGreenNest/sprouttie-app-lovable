@@ -52,6 +52,7 @@ const DailyTrackerImproved = () => {
   const [engagement, setEngagement] = useState(null);
   const [peakEngagementTime, setPeakEngagementTime] = useState(null);
   const [dailyNotes, setDailyNotes] = useState('');
+  const [hasExistingEngagementData, setHasExistingEngagementData] = useState(false);
   
   // 🔄 Rotation Engine State
   const [sessionOccurred, setSessionOccurred] = useState(false);
@@ -114,14 +115,26 @@ const DailyTrackerImproved = () => {
       // Calculate rotation summary
       await calculateRotationSummary(dateString);
 
-      // Organize sessions by set and round
+      // Organize sessions by set and round, and load engagement data
       const sessionsMap = {};
       const flashedWordsSet = new Set();
+      let loadedEngagement = null;
+      let loadedTimeOfDay = null;
+      let loadedDailyNotes = '';
       
       (trackingData || []).forEach(record => {
         // Track flashed words
         if (record.status === 'flashed' && record.flashcard_id && record.flashcard_id !== 'shared-note') {
           flashedWordsSet.add(record.flashcard_id);
+          
+          // Load engagement data from first flashed record that has it
+          if (!loadedEngagement && record.engagement) {
+            loadedEngagement = record.engagement;
+          }
+          if (!loadedTimeOfDay && record.time_of_day) {
+            loadedTimeOfDay = record.time_of_day;
+          }
+          // Notes in flashed records is the metadata JSON, so skip for dailyNotes
         }
         
         // Organize session data
@@ -129,20 +142,31 @@ const DailyTrackerImproved = () => {
           try {
             const metadata = JSON.parse(record.notes);
             if (metadata.setId && metadata.round) {
-              if (!sessionsMap[metadata.setId]) {
-                sessionsMap[metadata.setId] = {};
+              const setIdKey = metadata.setId;
+              if (!sessionsMap[setIdKey]) {
+                sessionsMap[setIdKey] = {};
               }
-              sessionsMap[metadata.setId][`round${metadata.round}`] = {
+              sessionsMap[setIdKey][`round${metadata.round}`] = {
                 completed: true,
                 by: record.flashed_by,
                 time: record.flashed_at
               };
             }
           } catch (e) {
-            // Skip invalid JSON
+            // Not JSON metadata - might be a daily note stored in the text format
+            if (!loadedDailyNotes && record.notes && record.engagement) {
+              loadedDailyNotes = record.notes;
+            }
           }
         }
       });
+
+      // Set the loaded engagement data and track if we have existing data
+      const hasExistingData = !!(loadedEngagement || loadedTimeOfDay || loadedDailyNotes);
+      setHasExistingEngagementData(hasExistingData);
+      if (loadedEngagement) setEngagement(loadedEngagement);
+      if (loadedTimeOfDay) setPeakEngagementTime(loadedTimeOfDay);
+      if (loadedDailyNotes) setDailyNotes(loadedDailyNotes);
 
       setSessions(sessionsMap);
       setFlashedWords(flashedWordsSet);
@@ -1201,32 +1225,21 @@ const DailyTrackerImproved = () => {
         )}
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-        <h4 className="font-bold text-lg text-slate-800 mb-4">
-          Quick Actions
-        </h4>
-        <div className="grid grid-cols-3 gap-2">
-          {[1, 2, 3].map((round) => (
-            <button
-              key={round}
-              onClick={() => markAllRound(round)}
-              className="px-4 py-3 bg-green-100 hover:bg-green-200 text-green-800 rounded-lg font-medium transition-colors text-sm"
-            >
-              R{round}
-            </button>
-          ))}
-        </div>
-        <p className="text-xs text-slate-500 mt-3">
-          Mark all sets as complete for a specific round
-        </p>
-      </div>
 
       {/* Track Child's Engagement */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-        <h4 className="font-bold text-xl text-slate-800 mb-6 text-center">
+        <h4 className="font-bold text-xl text-slate-800 mb-4 text-center">
           Track Child's Engagement
         </h4>
+        
+        {/* Existing Data Info Banner */}
+        {hasExistingEngagementData && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800 text-center">
+              ℹ️ Previously saved engagement data has been loaded. Make any changes and save to update.
+            </p>
+          </div>
+        )}
         
         {/* Engagement Rating */}
         <div className="mb-6">
