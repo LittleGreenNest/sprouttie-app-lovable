@@ -10,9 +10,9 @@ module.exports = {
       colors: {
         sprouttie: {
           green: {
-            DEFAULT: 'hsl(168, 85%, 65%)',
-            light: 'hsl(168, 85%, 85%)',
-            dark: 'hsl(168, 85%, 45%)',
+            DEFAULT: 'hsl(95, 70%, 45%)',
+            light: 'hsl(95, 65%, 75%)',
+            dark: 'hsl(95, 70%, 35%)',
           },
           beige: {
             DEFAULT: 'hsl(40, 40%, 92%)',
@@ -24,7 +24,7 @@ module.exports = {
             dark: 'hsl(15, 85%, 65%)',
           },
           cream: 'hsl(45, 60%, 97%)',
-          mint: 'hsl(168, 60%, 95%)',
+          mint: 'hsl(95, 50%, 92%)',
         },
         green: {
           50: '#ecfdf5',
