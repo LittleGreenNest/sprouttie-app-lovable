@@ -42,6 +42,8 @@ const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlan
 const FlashingTrackerMockup = lazy(() => import('./components/tracking/FlashingTrackerMockup'));
 const GardenGuide = lazy(() => import('./components/dashboard/GardenGuide'));
 const Install = lazy(() => import('./pages/Install'));
+const Terms = lazy(() => import('./pages/Terms'));
+const Privacy = lazy(() => import('./pages/Privacy'));
 
 // Loading spinner component
 const LoadingSpinner = () => (
@@ -243,6 +245,8 @@ function App() {
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
                 <Route path="/plans" element={<Plans />} />
                 <Route path="/pdf-success" element={<PDFSuccess />} />
                 <Route path="/install" element={<Install />} />
