@@ -2,435 +2,429 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  Sparkles, 
-  Brain, 
-  Calendar, 
-  TrendingUp, 
-  BookOpen, 
-  Volume2,
-  CheckCircle,
-  Star,
-  ArrowRight,
-  Play,
-  Leaf,
+  Layers, 
+  Globe2, 
+  Users,
+  Sparkles,
+  MessageCircle,
   Heart,
-  Clock,
-  Users
+  Languages,
+  BookOpen,
+  Smile,
+  Printer,
+  Zap,
+  ArrowRight,
+  CheckCircle
 } from 'lucide-react';
 import WaitlistForm from '@/components/WaitlistForm';
 
 const Landing = () => {
   const [showWaitlist, setShowWaitlist] = useState(false);
 
-  const features = [
-    {
-      icon: Brain,
-      title: 'Smart Flashcard System',
-      description: 'Research-backed spaced repetition adapted for young learners. Track progress effortlessly.',
-    },
-    {
-      icon: Calendar,
-      title: 'Daily Tracking',
-      description: 'Simple daily check-ins to build consistent learning habits that stick.',
-    },
-    {
-      icon: TrendingUp,
-      title: 'Visual Progress Garden',
-      description: 'Watch your child\'s vocabulary bloom with our beautiful garden visualization.',
-    },
-    {
-      icon: Volume2,
-      title: 'Native Pronunciation',
-      description: 'Accurate pinyin and audio guides for perfect Mandarin pronunciation.',
-    },
-    {
-      icon: BookOpen,
-      title: 'Book Recommendations',
-      description: 'AI-powered book suggestions matched to your child\'s vocabulary level.',
-    },
-    {
-      icon: Sparkles,
-      title: 'Gamified Learning',
-      description: 'Bingo cards, milestones, and celebrations keep kids motivated.',
-    },
-  ];
-
-  const testimonials = [
-    {
-      name: 'Sarah M.',
-      role: 'Mom of 2',
-      quote: 'My 3-year-old now recognizes over 200 Chinese words! The visual tracking keeps us both motivated.',
-      avatar: '👩‍👧',
-    },
-    {
-      name: 'David L.',
-      role: 'Stay-at-home Dad',
-      quote: 'Finally, a flashcard app that understands toddlers. The garden feature is genius!',
-      avatar: '👨‍👦',
-    },
-    {
-      name: 'Michelle T.',
-      role: 'Bilingual Parent',
-      quote: 'The pronunciation guides helped me teach words I wasn\'t confident pronouncing myself.',
-      avatar: '👩‍👧‍👦',
-    },
-  ];
-
-  const stats = [
-    { value: '1000+', label: 'Happy Families' },
-    { value: '50K+', label: 'Words Learned' },
-    { value: '97%', label: 'Parent Satisfaction' },
-    { value: '15 min', label: 'Daily Commitment' },
-  ];
+  const fadeInUp = {
+    initial: { opacity: 0, y: 20 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true },
+    transition: { duration: 0.5 }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sprouttie-mint via-sprouttie-cream to-sprouttie-beige overflow-hidden">
+    <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-sprouttie-green/10">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
               src="/images/sprouttie-mascot.png" 
               alt="Sprouttie" 
-              className="h-10 w-10"
+              className="h-8 w-8"
             />
-            <span className="text-xl font-bold text-sprouttie-green-dark">Sprouttie</span>
+            <span className="text-lg font-semibold text-gray-800">Sprouttie</span>
           </div>
-          <div className="flex items-center gap-4">
-            <Link 
-              to="/login" 
-              className="text-sprouttie-green-dark hover:text-sprouttie-green font-medium transition-colors"
-            >
-              Log in
-            </Link>
-            <Link
-              to="/signup"
-              className="bg-sprouttie-green hover:bg-sprouttie-green-dark text-white px-5 py-2.5 rounded-full font-medium transition-all shadow-md hover:shadow-lg"
-            >
-              Get Started
-            </Link>
+          <div className="hidden md:flex items-center gap-8 text-sm text-gray-600">
+            <a href="#features" className="hover:text-sprouttie-green-dark transition-colors">Get the free app</a>
+            <a href="#about" className="hover:text-sprouttie-green-dark transition-colors">About Sprouttie</a>
+            <Link to="/print" className="hover:text-sprouttie-green-dark transition-colors">Print</Link>
+            <a href="#insights" className="hover:text-sprouttie-green-dark transition-colors">Insights</a>
+            <a href="#books" className="hover:text-sprouttie-green-dark transition-colors">Booklist</a>
           </div>
+          <Link
+            to="/signup"
+            className="bg-sprouttie-green hover:bg-sprouttie-green-dark text-white px-5 py-2 rounded-lg font-medium text-sm transition-all"
+          >
+            Get Started
+          </Link>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6">
+      <section className="pt-28 pb-20 px-4 sm:px-6 bg-gradient-to-b from-sprouttie-mint/30 to-white">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="inline-flex items-center gap-2 bg-sprouttie-coral-light px-4 py-2 rounded-full mb-6">
-                <Leaf className="w-4 h-4 text-sprouttie-coral-dark" />
-                <span className="text-sm font-medium text-sprouttie-coral-dark">Trusted by 1000+ families</span>
-              </div>
-              
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-sprouttie-green-dark leading-tight mb-6">
-                Grow Your Child's
-                <span className="block text-sprouttie-coral"> Chinese Vocabulary</span>
+            <motion.div {...fadeInUp}>
+              <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 leading-tight mb-6">
+                Printable<br />
+                Flashcards for<br />
+                <span className="text-sprouttie-green">Modern Families</span>
               </h1>
               
-              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                The joyful flashcard system designed for busy parents teaching Mandarin to little ones. 
-                Track progress, celebrate milestones, and watch their vocabulary bloom.
+              <p className="text-gray-600 mb-4 leading-relaxed">
+                Sprouttie makes it easy to create and print flashcards in any Latin-based language, plus Chinese with Hanyu Pinyin or Jyutping pronunciation guides.
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
+              <p className="text-gray-600 mb-8 leading-relaxed">
+                Practice pronunciation, teach confidently, and watch curiosity bloom — one card at a time.
+              </p>
+              
+              <div className="flex flex-wrap gap-3 mb-8">
                 <Link
                   to="/signup"
-                  className="inline-flex items-center justify-center gap-2 bg-sprouttie-green hover:bg-sprouttie-green-dark text-white px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-2 bg-sprouttie-green hover:bg-sprouttie-green-dark text-white px-6 py-3 rounded-lg font-medium transition-all"
                 >
-                  Start Free Trial
-                  <ArrowRight className="w-5 h-5" />
+                  Start Free
                 </Link>
                 <button 
                   onClick={() => setShowWaitlist(true)}
-                  className="inline-flex items-center justify-center gap-2 bg-white hover:bg-sprouttie-beige text-sprouttie-green-dark px-8 py-4 rounded-full font-semibold text-lg border-2 border-sprouttie-green/20 transition-all"
+                  className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-lg font-medium border border-gray-200 transition-all"
                 >
-                  <Play className="w-5 h-5" />
-                  Watch Demo
+                  See How It Works
                 </button>
               </div>
 
-              <div className="flex items-center gap-6 text-sm text-gray-500">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-sprouttie-green" />
-                  <span>Free to start</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-sprouttie-green" />
-                  <span>No credit card</span>
-                </div>
+              <div className="inline-flex items-center gap-3 bg-sprouttie-mint/50 px-4 py-2 rounded-full text-sm text-gray-600">
+                <span>Custom words, multiple languages</span>
+                <span className="text-gray-400">•</span>
+                <span>your cards, your way!</span>
               </div>
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative"
+              className="flex justify-center"
             >
-              <div className="relative bg-white rounded-3xl shadow-2xl p-6 border border-sprouttie-green/10">
-                <img 
-                  src="/images/sprouttie-mascot.png" 
-                  alt="Sprouttie App Preview"
-                  className="w-full max-w-md mx-auto"
-                />
-                <div className="absolute -bottom-4 -right-4 bg-sprouttie-coral text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg animate-bounce-leaf">
-                  🌱 100+ words this month!
-                </div>
-              </div>
-              
-              {/* Floating elements */}
-              <div className="absolute -top-6 -left-6 bg-white rounded-2xl p-4 shadow-lg border border-sprouttie-green/10 animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-sprouttie-green-light rounded-full flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-sprouttie-green-dark" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">7-day streak</p>
-                    <p className="font-bold text-sprouttie-green-dark">🔥 Amazing!</p>
-                  </div>
-                </div>
-              </div>
+              <img 
+                src="/images/sprouttie-mascot.png" 
+                alt="Sprouttie Mascot"
+                className="w-64 sm:w-80 drop-shadow-xl"
+              />
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 px-4 sm:px-6 bg-white/50 backdrop-blur-sm">
+      {/* Create, Print, and Teach Section */}
+      <section className="py-20 px-4 sm:px-6" id="features">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="text-center"
-              >
-                <p className="text-3xl sm:text-4xl font-bold text-sprouttie-green-dark mb-2">{stat.value}</p>
-                <p className="text-gray-600">{stat.label}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-20 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl sm:text-4xl font-bold text-sprouttie-green-dark mb-4">
-              Everything You Need to Teach Mandarin
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Built by parents, for parents. Simple tools that make language learning a joy, not a chore.
+          <motion.div {...fadeInUp} className="text-center mb-14">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <span className="text-2xl">🌱</span>
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
+                Create, Print, and Teach — All in One Place
+              </h2>
+            </div>
+            <p className="text-gray-600 max-w-3xl mx-auto">
+              Sprouttie helps parents make language learning simple and screen-free. Whether you're printing English sight words or Cantonese family phrases, everything you need is just a few clicks away.
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: Layers,
+                title: 'Custom Flashcard Creator',
+                description: 'Type in any word or phrase. Sprouttie instantly generates your print-able PDF cards in any.',
+                color: 'bg-sprouttie-mint',
+                iconColor: 'text-sprouttie-green-dark'
+              },
+              {
+                icon: Globe2,
+                title: 'Multilingual Support',
+                description: 'Works with Latin-alphabet languages (English, Spanish, French, etc.) and Chinese characters with Pinyin or Jyutping.',
+                color: 'bg-sprouttie-mint',
+                iconColor: 'text-sprouttie-green-dark'
+              },
+              {
+                icon: Users,
+                title: 'Parent Practice Mode',
+                description: 'Preview your cards and meanings before flashing — so you can teach confidently, even if you\'re still learning.',
+                color: 'bg-sprouttie-mint',
+                iconColor: 'text-sprouttie-green-dark'
+              }
+            ].map((feature, index) => (
               <motion.div
                 key={feature.title}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white rounded-2xl p-6 shadow-lg border border-sprouttie-green/10 hover:shadow-xl transition-all hover:-translate-y-1"
+                className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all"
               >
-                <div className="w-14 h-14 bg-gradient-to-br from-sprouttie-green-light to-sprouttie-mint rounded-xl flex items-center justify-center mb-4">
-                  <feature.icon className="w-7 h-7 text-sprouttie-green-dark" />
+                <div className={`w-12 h-12 ${feature.color} rounded-xl flex items-center justify-center mb-4`}>
+                  <feature.icon className={`w-6 h-6 ${feature.iconColor}`} />
                 </div>
-                <h3 className="text-xl font-semibold text-sprouttie-green-dark mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                <p className="text-gray-600 text-sm">{feature.description}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-20 px-4 sm:px-6 bg-gradient-to-br from-sprouttie-green-light/30 to-sprouttie-coral-light/30">
+      {/* Give Your Child Words Section */}
+      <section className="py-20 px-4 sm:px-6 bg-sprouttie-mint/20">
         <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl sm:text-4xl font-bold text-sprouttie-green-dark mb-4">
-              Simple as 1-2-3
-            </h2>
-            <p className="text-lg text-gray-600">Get started in minutes, not hours.</p>
+          <motion.div {...fadeInUp} className="text-center mb-14">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <span className="text-2xl">🌍</span>
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
+                Give Your Child Words That Open Worlds
+              </h2>
+            </div>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Language learning builds more than vocabulary — it builds curiosity, empathy, and confidence.
+            </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-6">
             {[
-              { step: '1', title: 'Add Your Words', description: 'Import or type the words you want to teach. We support pinyin and traditional/simplified characters.', icon: BookOpen },
-              { step: '2', title: 'Flash Daily', description: 'Spend just 15 minutes a day showing cards. Our tracker makes it easy to stay consistent.', icon: Clock },
-              { step: '3', title: 'Watch Them Grow', description: 'Track progress with our visual garden. Celebrate milestones together!', icon: Heart },
+              {
+                icon: Sparkles,
+                title: 'Global Readiness',
+                description: 'Expose your child to multiple languages early — their brain will thank you.',
+                color: 'bg-emerald-100',
+                iconColor: 'text-emerald-600'
+              },
+              {
+                icon: MessageCircle,
+                title: 'Communication Skills',
+                description: 'Flashcards turn words into play, building strong speaking foundations.',
+                color: 'bg-amber-100',
+                iconColor: 'text-amber-600'
+              },
+              {
+                icon: Heart,
+                title: 'Cultural Curiosity',
+                description: 'Even simple words spark questions that connect home and the world.',
+                color: 'bg-rose-100',
+                iconColor: 'text-rose-500'
+              }
             ].map((item, index) => (
               <motion.div
-                key={item.step}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.15 }}
-                viewport={{ once: true }}
-                className="relative bg-white rounded-2xl p-8 shadow-lg text-center"
-              >
-                <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-10 h-10 bg-sprouttie-coral text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">
-                  {item.step}
-                </div>
-                <item.icon className="w-12 h-12 text-sprouttie-green mx-auto mb-4 mt-4" />
-                <h3 className="text-xl font-semibold text-sprouttie-green-dark mb-2">{item.title}</h3>
-                <p className="text-gray-600">{item.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-20 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl sm:text-4xl font-bold text-sprouttie-green-dark mb-4">
-              Loved by Parents Everywhere
-            </h2>
-            <p className="text-lg text-gray-600">Join thousands of families already growing with Sprouttie.</p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={testimonial.name}
+                key={item.title}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white rounded-2xl p-6 shadow-lg border border-sprouttie-green/10"
+                className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm"
               >
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                  ))}
+                <div className={`w-12 h-12 ${item.color} rounded-xl flex items-center justify-center mb-4`}>
+                  <item.icon className={`w-6 h-6 ${item.iconColor}`} />
                 </div>
-                <p className="text-gray-700 mb-6 italic">"{testimonial.quote}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-sprouttie-beige rounded-full flex items-center justify-center text-2xl">
-                    {testimonial.avatar}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sprouttie-green-dark">{testimonial.name}</p>
-                    <p className="text-sm text-gray-500">{testimonial.role}</p>
-                  </div>
-                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
+                <p className="text-gray-600 text-sm">{item.description}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* Heritage Languages Section */}
+      <section className="py-20 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          <motion.div {...fadeInUp} className="text-center mb-14">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <span className="text-2xl">🏮</span>
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
+                Keep Your Heritage Languages Alive
+              </h2>
+            </div>
+            <p className="text-gray-600 max-w-3xl mx-auto">
+              Sprouttie started with a dream — to help parents preserve dialects like Cantonese and Hokkien while raising global kids. Whether you're fluent or learning alongside your child, every card helps keep your story alive.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: Languages,
+                title: 'Cantonese & Hokkien Support',
+                description: 'Built-in tone pronunciation guides make complex scripts easier to teach.',
+                color: 'bg-orange-100',
+                iconColor: 'text-orange-500'
+              },
+              {
+                icon: BookOpen,
+                title: 'Cultural Contexts',
+                description: 'Learn word facts — like family food and festivals — attached to the words you learn.',
+                color: 'bg-sky-100',
+                iconColor: 'text-sky-500'
+              },
+              {
+                icon: Smile,
+                title: 'Confidence for Parents',
+                description: 'Practice pronunciation privately before you flash, so teaching feels natural.',
+                color: 'bg-violet-100',
+                iconColor: 'text-violet-500'
+              }
+            ].map((item, index) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm"
+              >
+                <div className={`w-12 h-12 ${item.color} rounded-xl flex items-center justify-center mb-4`}>
+                  <item.icon className={`w-6 h-6 ${item.iconColor}`} />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
+                <p className="text-gray-600 text-sm">{item.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 5-Minute Daily System */}
+      <section className="py-20 px-4 sm:px-6 bg-sprouttie-mint/20">
+        <div className="max-w-6xl mx-auto">
+          <motion.div {...fadeInUp} className="text-center mb-14">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <span className="text-2xl">⏰</span>
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
+                Your 5-Minute Daily Learning System
+              </h2>
+            </div>
+            <p className="text-gray-600">
+              No apps. No overwhelm. Just quick, meaningful sessions that grow with your child.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                step: '1',
+                icon: BookOpen,
+                title: 'Add Words',
+                description: 'Type words in English, Spanish, French, or Chinese — all with optional Pinyin/Jyutping print cards.',
+                color: 'bg-sprouttie-green-light'
+              },
+              {
+                step: '2',
+                icon: Printer,
+                title: 'Print Your Deck',
+                description: 'Generate a clean, double-sided PDF in print-friendly sizes (A4 or Letter) and pronunciation text!',
+                color: 'bg-sprouttie-coral-light'
+              },
+              {
+                step: '3',
+                icon: Zap,
+                title: 'Practice & Flash',
+                description: 'Use your cards every day — morning, mealtime, or bedtime.',
+                color: 'bg-amber-100'
+              }
+            ].map((step, index) => (
+              <motion.div
+                key={step.title}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.15 }}
+                viewport={{ once: true }}
+                className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 text-center"
+              >
+                <div className={`w-16 h-16 ${step.color} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
+                  <step.icon className="w-8 h-8 text-gray-700" />
+                </div>
+                <div className="text-3xl font-bold text-sprouttie-green mb-2">{step.step}</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">{step.title}</h3>
+                <p className="text-gray-600 text-sm">{step.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Teach with Ease CTA */}
       <section className="py-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="bg-gradient-to-br from-sprouttie-green to-sprouttie-green-dark rounded-3xl p-10 sm:p-16 text-center text-white shadow-2xl relative overflow-hidden"
+            {...fadeInUp}
+            className="bg-gradient-to-br from-sprouttie-green-light/40 to-sprouttie-mint rounded-3xl p-10 sm:p-14 text-center relative overflow-hidden"
           >
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-10 left-10 w-20 h-20 border-2 border-white rounded-full" />
-              <div className="absolute bottom-10 right-10 w-32 h-32 border-2 border-white rounded-full" />
-              <div className="absolute top-1/2 left-1/4 w-16 h-16 border-2 border-white rounded-full" />
-            </div>
-            
-            <div className="relative">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-                Ready to Start Your Child's Language Journey?
-              </h2>
-              <p className="text-lg text-white/90 mb-8 max-w-xl mx-auto">
-                Join thousands of parents who are making Mandarin learning fun and effective for their little ones.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  to="/signup"
-                  className="inline-flex items-center justify-center gap-2 bg-white text-sprouttie-green-dark px-8 py-4 rounded-full font-semibold text-lg hover:bg-sprouttie-cream transition-all shadow-lg"
-                >
-                  Start Free Today
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-                <button
-                  onClick={() => setShowWaitlist(true)}
-                  className="inline-flex items-center justify-center gap-2 bg-transparent border-2 border-white text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-white/10 transition-all"
-                >
-                  <Users className="w-5 h-5" />
-                  Join Waitlist
-                </button>
+            <div className="absolute top-6 left-1/2 -translate-x-1/2">
+              <div className="w-12 h-12 bg-sprouttie-coral-light rounded-full flex items-center justify-center">
+                <Heart className="w-6 h-6 text-sprouttie-coral-dark" />
               </div>
             </div>
+            
+            <div className="pt-10">
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+                Teach with Ease — Even If You're Not Fluent
+              </h2>
+              <p className="text-gray-600 mb-8 max-w-xl mx-auto">
+                Sprouttie is built for real parents — whether you speak the language or are rediscovering it. It's your pocket-friendly, screen-free way to raise curious, confident kids.
+              </p>
+              
+              <Link
+                to="/signup"
+                className="inline-flex items-center gap-2 bg-sprouttie-green hover:bg-sprouttie-green-dark text-white px-8 py-4 rounded-lg font-medium transition-all"
+              >
+                Start Free
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            </div>
+
+            {/* Testimonial */}
+            <div className="mt-12 bg-white/80 backdrop-blur-sm rounded-xl p-6 max-w-md mx-auto shadow-sm">
+              <p className="text-gray-700 italic mb-4">
+                "I use Sprouttie to teach my son English and Mandarin. He loves the pictures — and I'm learning pronunciation too!"
+              </p>
+              <p className="text-sm text-gray-500">— Rina, Singapore</p>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* The Sprouttie Promise */}
+      <section className="py-20 px-4 sm:px-6 bg-sprouttie-green-dark text-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div {...fadeInUp}>
+            <img 
+              src="/images/sprouttie-mascot.png" 
+              alt="Sprouttie Mascot"
+              className="w-24 h-24 mx-auto mb-6 drop-shadow-lg"
+            />
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <span className="text-2xl">🌱</span>
+              <h2 className="text-3xl sm:text-4xl font-bold">
+                The Sprouttie Promise
+              </h2>
+            </div>
+            <p className="text-white/80 mb-8 max-w-xl mx-auto">
+              Sprouttie helps families grow both wings and roots — nurturing curiosity for the world while keeping hearts connected to home.
+            </p>
+            
+            <Link
+              to="/signup"
+              className="inline-flex items-center gap-2 bg-white text-sprouttie-green-dark px-8 py-4 rounded-lg font-medium hover:bg-sprouttie-cream transition-all"
+            >
+              Get Started Free
+            </Link>
           </motion.div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 sm:px-6 bg-sprouttie-green-dark text-white">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <img 
-                  src="/images/sprouttie-mascot.png" 
-                  alt="Sprouttie" 
-                  className="h-10 w-10 bg-white rounded-full p-1"
-                />
-                <span className="text-xl font-bold">Sprouttie</span>
-              </div>
-              <p className="text-white/70 text-sm">
-                Helping parents teach Mandarin to their little ones, one word at a time.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-white/70 text-sm">
-                <li><Link to="/signup" className="hover:text-white transition-colors">Get Started</Link></li>
-                <li><Link to="/plans" className="hover:text-white transition-colors">Pricing</Link></li>
-                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-white/70 text-sm">
-                <li><a href="#about" className="hover:text-white transition-colors">About</a></li>
-                <li><a href="mailto:hello@sprouttie.com" className="hover:text-white transition-colors">Contact</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Legal</h4>
-              <ul className="space-y-2 text-white/70 text-sm">
-                <li><Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
-                <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-white/20 pt-8 text-center text-white/50 text-sm">
-            <p>© {new Date().getFullYear()} Sprouttie. Made with 💚 for little learners everywhere.</p>
+      <footer className="py-8 px-4 sm:px-6 bg-sprouttie-green-dark border-t border-white/10">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-white/60">
+          <p>© {new Date().getFullYear()} Sprouttie. Made with 💚 for little learners.</p>
+          <div className="flex gap-6">
+            <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
+            <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+            <a href="mailto:hello@sprouttie.com" className="hover:text-white transition-colors">Contact</a>
           </div>
         </div>
       </footer>
