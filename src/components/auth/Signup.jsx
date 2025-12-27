@@ -1,7 +1,62 @@
 // src/components/auth/Signup.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
+import { Check, X } from 'lucide-react';
+
+const PasswordStrengthIndicator = ({ password }) => {
+  const requirements = useMemo(() => [
+    { label: 'At least 8 characters', met: password.length >= 8 },
+    { label: 'Contains a number', met: /\d/.test(password) },
+    { label: 'Contains a special character (!@#$%^&*)', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
+    { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
+    { label: 'Contains lowercase letter', met: /[a-z]/.test(password) },
+  ], [password]);
+
+  const strength = requirements.filter(r => r.met).length;
+  const strengthLabel = strength <= 2 ? 'Weak' : strength <= 4 ? 'Medium' : 'Strong';
+  const strengthColor = strength <= 2 ? 'bg-red-500' : strength <= 4 ? 'bg-yellow-500' : 'bg-green-500';
+
+  if (!password) return null;
+
+  return (
+    <div className="mt-2 space-y-2">
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div
+            key={i}
+            className={`h-1 flex-1 rounded ${i <= strength ? strengthColor : 'bg-gray-200'}`}
+          />
+        ))}
+      </div>
+      <p className={`text-xs font-medium ${strength <= 2 ? 'text-red-600' : strength <= 4 ? 'text-yellow-600' : 'text-green-600'}`}>
+        Password strength: {strengthLabel}
+      </p>
+      <ul className="space-y-1">
+        {requirements.map((req, i) => (
+          <li key={i} className="flex items-center gap-2 text-xs">
+            {req.met ? (
+              <Check className="h-3 w-3 text-green-600" />
+            ) : (
+              <X className="h-3 w-3 text-gray-400" />
+            )}
+            <span className={req.met ? 'text-green-700' : 'text-gray-500'}>{req.label}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+const validatePassword = (password) => {
+  const errors = [];
+  if (password.length < 8) errors.push('Password must be at least 8 characters');
+  if (!/\d/.test(password)) errors.push('Password must contain a number');
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) errors.push('Password must contain a special character');
+  if (!/[A-Z]/.test(password)) errors.push('Password must contain an uppercase letter');
+  if (!/[a-z]/.test(password)) errors.push('Password must contain a lowercase letter');
+  return errors;
+};
 
 const Signup = () => {
   const [name, setName] = useState('');
@@ -33,8 +88,10 @@ const Signup = () => {
       return;
     }
     
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    // Password strength validation
+    const passwordErrors = validatePassword(password);
+    if (passwordErrors.length > 0) {
+      setError(passwordErrors[0]);
       return;
     }
     
@@ -127,8 +184,9 @@ const Signup = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <PasswordStrengthIndicator password={password} />
             </div>
-            <div>
+            <div className="mt-3">
               <label htmlFor="confirm-password" className="sr-only">
                 Confirm Password
               </label>
