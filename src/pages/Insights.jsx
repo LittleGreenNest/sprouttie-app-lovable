@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, Brain, RefreshCw, Monitor, Globe2, Lightbulb, Eye } from 'lucide-react';
+import { ArrowLeft, BookOpen, Brain, RefreshCw, Monitor, Globe2, Lightbulb } from 'lucide-react';
 
 const Insights = () => {
   const fadeInUp = {
@@ -55,7 +55,7 @@ const Insights = () => {
           <motion.div {...fadeInUp}>
             <p className="text-sm text-gray-500 uppercase tracking-wide mb-4">Research & Insights</p>
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight mb-4">
-              Key Insights Behind Sprouttie
+              Learning Consistency, Cognitive Load, and Early Retention: Key Insights Behind Sprouttie
             </h1>
             <p className="text-lg text-gray-600">
               A practical summary of research that informs how Sprouttie is designed.
@@ -68,24 +68,24 @@ const Insights = () => {
       <main className="px-4 sm:px-6 pb-16">
         <article className="max-w-3xl mx-auto">
           
-          {/* Section 1: Why This Page Exists */}
+          {/* Section 1: Introduction */}
           <motion.section {...fadeInUp} className="mb-8">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
                 <BookOpen className="w-5 h-5 text-gray-600" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">1. Why This Page Exists</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Why This Page Exists</h2>
             </div>
             
             <div className="text-gray-700 space-y-4">
               <p>
-                Sprouttie was built after observing a recurring pattern in real households: parents care deeply about learning, but struggle to sustain routines amid work, caregiving, and competing demands.
+                Sprouttie is built around observed friction in real households — the everyday challenges parents face when trying to maintain learning routines alongside work, caregiving, and daily life.
               </p>
               <p>
-                This page summarises widely accepted findings from early learning research, habit formation, and cognitive psychology that support a consistency-first, low-friction approach to learning tools.
+                This page summarizes research and widely accepted findings that support a consistency-first, low-friction approach to early learning. The goal here is understanding, not persuasion.
               </p>
               <p>
-                The purpose of this page is understanding, not persuasion. It explains the principles that inform Sprouttie's design so parents, educators, and future consultation clients can evaluate them thoughtfully.
+                We hope this serves as a useful reference for parents, educators, and anyone interested in the thinking behind Sprouttie's design choices.
               </p>
             </div>
           </motion.section>
@@ -98,40 +98,29 @@ const Insights = () => {
               <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
                 <RefreshCw className="w-5 h-5 text-amber-600" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">2. Consistency vs Intensity in Early Learning</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Consistency vs Intensity in Early Learning</h2>
             </div>
             
             <div className="text-gray-700 space-y-4">
               <p>
-                Across learning science, one finding appears repeatedly:
+                Research in learning science consistently shows that repeated exposure over time leads to better retention than long, infrequent sessions. This principle applies to learners of all ages.
               </p>
-              <p className="font-medium text-gray-900">
-                Short, repeated exposure over time leads to stronger retention than long, infrequent sessions.
-              </p>
-              <p>Key insights include:</p>
-              <ul className="space-y-2 ml-4">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Repetition spaced across days improves long-term recall
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Learning benefits from frequency more than duration
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Even brief exposure (1–5 minutes) can be effective when repeated
-                </li>
-              </ul>
               <p>
-                This pattern is observed in both children and adults, across language learning, reading recognition, and memory formation.
+                Spaced repetition — the practice of reviewing material at increasing intervals — has been shown to improve recall and support long-term memory formation. This effect has been documented in studies involving both children and adults across various types of learning material.
               </p>
+              <p>
+                Short sessions, often as brief as one to five minutes, can be effective when repeated regularly. The key factor is not the length of any single session, but the cumulative effect of consistent, distributed practice.
+              </p>
+              
+              <blockquote className="border-l-4 border-gray-200 pl-4 italic text-gray-600 my-6">
+                "Across multiple studies in learning science, frequency and spacing consistently outperform duration."
+              </blockquote>
             </div>
 
             <PracticeBox>
               <p>• Missing days does not erase progress</p>
-              <p>• Restarting matters more than maintaining perfect streaks</p>
-              <p>• Sustainable learning depends on how easily a routine can resume</p>
+              <p>• Restarting matters more than maintaining streaks</p>
+              <p>• Brief, regular sessions compound over time</p>
             </PracticeBox>
           </motion.section>
 
@@ -143,50 +132,43 @@ const Insights = () => {
               <div className="w-10 h-10 bg-violet-50 rounded-lg flex items-center justify-center">
                 <Brain className="w-5 h-5 text-violet-600" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">3. Cognitive Load and Decision Fatigue in Parents</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Cognitive Load and Decision Fatigue in Parents</h2>
             </div>
             
             <div className="text-gray-700 space-y-4">
               <p>
-                Cognitive psychology shows that decision fatigue reduces follow-through — especially in routine-based activities.
+                Decision fatigue is a well-documented phenomenon where the quality of decisions deteriorates after making many choices. For parents managing households, this effect is particularly relevant.
               </p>
-              <p>Parents:</p>
-              <ul className="space-y-2 ml-4">
+              <p>
+                Parents make hundreds of decisions daily — about meals, schedules, safety, emotional needs, logistics, and more. This accumulates significant cognitive load, leaving less mental energy for activities that require planning or setup.
+              </p>
+              <p>
+                Tools that require extensive configuration, ongoing choices, or regular decision-making are more likely to be abandoned. The effort required to use them becomes a barrier, even when the tool itself is valuable.
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-5 my-6">
+              <p className="text-sm font-medium text-gray-900 mb-3">Key observations from research:</p>
+              <ul className="text-gray-700 text-sm space-y-2">
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Make hundreds of decisions daily
+                  Parents report significantly higher daily decision burden compared to non-parents
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Carry higher ongoing cognitive load than non-parents
+                  Higher cognitive load correlates with lower habit consistency
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Are more likely to abandon routines that require planning, configuration, or constant choice
-                </li>
-              </ul>
-              <p>Tools that demand:</p>
-              <ul className="space-y-2 ml-4">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Scheduling decisions
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Daily optimisation
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Complex setup
+                  Simplicity in tools is a predictor of sustained use
                 </li>
               </ul>
-              <p>are more likely to be discontinued over time.</p>
             </div>
 
             <PracticeBox>
-              <p>• Systems should reduce decisions, not add them</p>
+              <p>• Systems should reduce choices, not add them</p>
               <p>• Simpler tools are more likely to be reused</p>
-              <p>• Familiar, repeatable formats lower mental resistance</p>
+              <p>• Low-friction design respects limited mental bandwidth</p>
             </PracticeBox>
           </motion.section>
 
@@ -198,74 +180,38 @@ const Insights = () => {
               <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
                 <RefreshCw className="w-5 h-5 text-emerald-600" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">4. Habit Formation and Restartability</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Habit Formation and Restartability</h2>
             </div>
             
             <div className="text-gray-700 space-y-4">
               <p>
-                Research on habit formation consistently shows that:
+                Habit formation is a non-linear process. Contrary to popular claims about fixed timelines (such as "21 days to form a habit"), research suggests that habit development varies widely between individuals and behaviors.
               </p>
-              <ul className="space-y-2 ml-4">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Habits are non-linear
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Breaks are normal
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Long-term consistency depends on how easily a habit can restart
-                </li>
-              </ul>
-              <p>When systems rely on:</p>
-              <ul className="space-y-2 ml-4">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Streaks
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Penalties
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Binary success/failure framing
-                </li>
-              </ul>
-              <p>users experience guilt after lapses, which reduces re-engagement.</p>
-              <p>Restart-friendly systems perform better over time because they:</p>
-              <ul className="space-y-2 ml-4">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Remove emotional friction
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Lower the cost of returning
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Emphasise continuation over perfection
-                </li>
-              </ul>
+              <p>
+                Gaps and breaks are normal parts of any long-term practice. Systems that accommodate these interruptions — rather than penalizing them — tend to support more sustainable behavior over time.
+              </p>
+              <p>
+                Guilt and perceived "failure" have been shown to reduce re-engagement. When someone feels they have "broken" a streak or fallen behind, they are less likely to return to the practice. This creates a paradox where streak-based motivation can ultimately undermine consistency.
+              </p>
+              <p>
+                Restart-friendly systems, which make it easy to pick up where you left off without judgment, have been associated with higher long-term engagement in behavioral studies.
+              </p>
             </div>
 
             <div className="bg-sprouttie-mint/20 rounded-lg p-5 my-6">
-              <p className="text-sm font-medium text-gray-900 mb-2">Sprouttie reflects this by:</p>
+              <p className="text-sm font-medium text-gray-900 mb-2">How this informs Sprouttie's design:</p>
               <ul className="text-gray-700 text-sm space-y-2">
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-sprouttie-green rounded-full mt-2 flex-shrink-0" />
-                  Avoiding streak pressure
+                  No streak pressure
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-sprouttie-green rounded-full mt-2 flex-shrink-0" />
-                  Treating pauses as neutral
+                  No penalty for stopping
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-sprouttie-green rounded-full mt-2 flex-shrink-0" />
-                  Supporting flexible, parent-led pacing
+                  Neutral, calm interaction model
                 </li>
               </ul>
             </div>
@@ -273,255 +219,105 @@ const Insights = () => {
 
           <SectionDivider />
 
-          {/* Section 5: Visual Salience and Early Word Recognition */}
-          <motion.section {...fadeInUp} className="mb-8">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
-                <Eye className="w-5 h-5 text-red-600" />
-              </div>
-              <h2 className="text-xl font-semibold text-gray-900">5. Visual Salience and Early Word Recognition</h2>
-            </div>
-            
-            <p className="text-sm text-gray-500 mb-4">(Why Colour Matters)</p>
-
-            <div className="text-gray-700 space-y-4">
-              <p>
-                Early visual processing research shows that colour contrast and salience affect attention and recognition in young children.
-              </p>
-              
-              <h3 className="text-lg font-medium text-gray-900 mt-6 mb-3">Red words and early recognition</h3>
-              <p>
-                Findings from visual cognition and early literacy studies suggest:
-              </p>
-              <ul className="space-y-2 ml-4">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  High-contrast colours, especially red on white, are more visually salient to infants and toddlers
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Red is detected earlier by the developing visual system than darker colours
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Bright colours draw attention and support early recognition before full symbolic understanding develops
-                </li>
-              </ul>
-              <p>
-                For very young children, colour acts as a perceptual cue, helping them notice and differentiate symbols before meaning is fully formed.
-              </p>
-              <p className="italic text-gray-600">
-                This does not mean colour causes learning — it supports attention and exposure, which are prerequisites for learning.
-              </p>
-
-              <h3 className="text-lg font-medium text-gray-900 mt-6 mb-3">Transition to black text and recall</h3>
-              <p>As children grow:</p>
-              <ul className="space-y-2 ml-4">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Visual acuity improves
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Symbol recognition becomes more abstract
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Cognitive processing shifts from perceptual cues to symbolic meaning
-                </li>
-              </ul>
-              <p>Research and classroom observations indicate that:</p>
-              <ul className="space-y-2 ml-4">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Black text becomes more effective for recall once children begin associating symbols with meaning, not just visual contrast
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  This transition often aligns with emerging reading readiness, rather than a fixed age
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Black text reduces distraction and supports generalisation to real-world reading materials
-                </li>
-              </ul>
-            </div>
-
-            <PracticeBox>
-              <p>• Colour can support early exposure</p>
-              <p>• Black text supports later recall and transfer</p>
-              <p>• The goal is familiarity first, fluency later</p>
-            </PracticeBox>
-
-            <p className="text-gray-700 mt-4">
-              Sprouttie accommodates this progression by allowing flexible presentation choices rather than enforcing a single format.
-            </p>
-          </motion.section>
-
-          <SectionDivider />
-
-          {/* Section 6: Screen Time and Learning Context */}
+          {/* Section 5: Screen Time and Learning Context */}
           <motion.section {...fadeInUp} className="mb-8">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-sky-50 rounded-lg flex items-center justify-center">
                 <Monitor className="w-5 h-5 text-sky-600" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">6. Screen Time and Learning Context</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Screen Time and Learning Context</h2>
             </div>
             
             <div className="text-gray-700 space-y-4">
               <p>
-                Widely accepted guidance distinguishes between:
+                Research and pediatric guidance generally distinguish between passive screen exposure and guided, interactive, or physical learning experiences. These contexts appear to support different types of engagement and development.
               </p>
-              <ul className="space-y-2 ml-4">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Passive screen exposure
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Guided, physical, or interpersonal learning
-                </li>
-              </ul>
-              <p>Printed and physical materials:</p>
-              <ul className="space-y-2 ml-4">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Support shared attention
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Encourage interaction
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Reduce sensory overload
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Fit more naturally into daily routines
-                </li>
-              </ul>
               <p>
-                Sprouttie is not anti-technology. Technology is used to reduce preparation effort, not replace human interaction.
+                Printed or physical materials have been associated with shared attention and interpersonal interaction — particularly valuable in early learning settings where caregiver involvement enhances outcomes.
               </p>
-              <p>The learning moment remains:</p>
-              <ul className="space-y-2 ml-4">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Parent-led
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Contextual
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Relational
-                </li>
-              </ul>
+              <p>
+                Many parents express a preference for low-screen tools when it comes to early learning, seeking alternatives that do not require extended device use by their children.
+              </p>
             </div>
+
+            <PracticeBox>
+              <p>• Sprouttie is not anti-technology</p>
+              <p>• Technology is used to reduce preparation effort, not replace human interaction</p>
+              <p>• The output is physical cards for offline, shared learning moments</p>
+            </PracticeBox>
           </motion.section>
 
           <SectionDivider />
 
-          {/* Section 7: Multilingual Exposure */}
+          {/* Section 6: Multilingual Exposure */}
           <motion.section {...fadeInUp} className="mb-8">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center">
                 <Globe2 className="w-5 h-5 text-orange-600" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">7. Multilingual Exposure and Early Language Familiarity</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Multilingual Exposure and Early Language Familiarity</h2>
             </div>
             
             <div className="text-gray-700 space-y-4">
               <p>
-                Research on multilingual development shows:
+                Research in early language development suggests that exposure to multiple languages during early childhood supports phonetic awareness — the ability to distinguish and recognize the sounds of different languages.
               </p>
-              <ul className="space-y-2 ml-4">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Early exposure supports phonetic awareness
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Familiarity does not require formal instruction or mastery
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Brief, consistent exposure supports long-term language confidence
-                </li>
-              </ul>
-              <p>Important distinctions:</p>
-              <ul className="space-y-2 ml-4">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Recognition ≠ fluency
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Exposure ≠ instruction
-                </li>
-              </ul>
               <p>
-                Flashcards support recognition and familiarity, which form the groundwork for later language use.
+                This familiarity does not require mastery or formal instruction. Even brief, consistent exposure can contribute to long-term language confidence and reduced inhibition around unfamiliar languages later in life.
               </p>
-              <p>Language learning is:</p>
-              <ul className="space-y-2 ml-4">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Cumulative
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Contextual
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                  Reinforced through repetition over time
-                </li>
-              </ul>
+              <p>
+                Flashcards and similar tools support recognition and familiarity, not fluency. They are one part of a broader, cumulative, and contextual process of language learning.
+              </p>
             </div>
+
+            <PracticeBox>
+              <p>• Early exposure builds comfort, not necessarily fluency</p>
+              <p>• Language learning is cumulative over years, not weeks</p>
+              <p>• Flashcards support recognition as part of a larger ecosystem</p>
+            </PracticeBox>
           </motion.section>
 
           <SectionDivider />
 
-          {/* Section 8: Summary */}
+          {/* Section 7: Summary */}
           <motion.section {...fadeInUp} className="mb-8">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-sprouttie-green-light rounded-lg flex items-center justify-center">
                 <Lightbulb className="w-5 h-5 text-sprouttie-green-dark" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">8. Summary: Design Principles Informed by Research</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Summary: Design Principles Informed by Research</h2>
             </div>
             
             <div className="text-gray-700 space-y-4">
               <p>
-                The insights above consistently point to the same conclusions:
+                The research summarized on this page points toward a set of principles that inform how Sprouttie is designed:
               </p>
             </div>
 
             <div className="bg-gray-50 rounded-xl p-6 my-6">
               <ul className="space-y-4">
                 {[
-                  'Consistency matters more than intensity',
-                  'Reduced cognitive load supports follow-through',
-                  'Restartability enables long-term use',
-                  'Calm systems outlast rigid ones',
-                  'Learning environments matter as much as content'
+                  { title: 'Consistency over intensity', desc: 'Regular, brief sessions are more effective than occasional long ones' },
+                  { title: 'Reduced cognitive load', desc: 'Fewer decisions means more sustainable use' },
+                  { title: 'Restartability over perfection', desc: 'Easy re-entry matters more than unbroken streaks' },
+                  { title: 'Calm tools support long-term use', desc: 'Neutral, non-judgmental interfaces encourage return' },
+                  { title: 'Learning environments matter', desc: 'Context and interaction are as important as content' }
                 ].map((item, index) => (
                   <li key={index} className="flex items-start gap-3">
                     <span className="w-6 h-6 bg-sprouttie-green/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                       <span className="w-2 h-2 bg-sprouttie-green rounded-full" />
                     </span>
-                    <span className="font-medium text-gray-900">{item}</span>
+                    <div>
+                      <span className="font-medium text-gray-900">{item.title}</span>
+                      <span className="text-gray-600"> — {item.desc}</span>
+                    </div>
                   </li>
                 ))}
               </ul>
             </div>
 
             <p className="text-gray-700 text-center italic mt-8">
-              Sprouttie is designed around these principles — not as rules, but as support.
+              "Sprouttie is designed around these principles, not as rules — but as support."
             </p>
           </motion.section>
 
