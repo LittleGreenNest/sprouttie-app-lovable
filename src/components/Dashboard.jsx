@@ -11,6 +11,7 @@ import TipsCarousel from './dashboard/TipsCarousel';
 import ProgressGarden from './dashboard/ProgressGarden';
 import CelebrationModal from './dashboard/CelebrationModal';
 import MilestoneModal from './gamification/MilestoneModal';
+import MilestonesListModal from './gamification/MilestonesListModal';
 import FlashedWordsGrid from './tracking/FlashedWordsGrid';
 import CSVImport from './CSVImport';
 import { checkForNewMilestone } from '../utils/milestones';
@@ -29,6 +30,7 @@ const Dashboard = () => {
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebrationWords, setCelebrationWords] = useState(0);
   const [showMilestone, setShowMilestone] = useState(false);
+  const [showMilestonesList, setShowMilestonesList] = useState(false);
   const [currentMilestone, setCurrentMilestone] = useState(null);
   const [achievedMilestones, setAchievedMilestones] = useState([]);
   const [encouragement, setEncouragement] = useState(null);
@@ -289,11 +291,19 @@ one,yī,一,Numbers`;
         wordsFlashed={celebrationWords}
       />
 
-      {/* Milestone Modal */}
+      {/* Milestone Modal (for newly achieved milestones) */}
       <MilestoneModal 
         show={showMilestone}
         onClose={() => setShowMilestone(false)}
         milestone={currentMilestone}
+      />
+
+      {/* Milestones List Modal (for viewing all milestones) */}
+      <MilestonesListModal
+        show={showMilestonesList}
+        onClose={() => setShowMilestonesList(false)}
+        achievedMilestones={achievedMilestones}
+        stats={stats}
       />
 
       {/* CSV Import Modal */}
@@ -520,7 +530,7 @@ one,yī,一,Numbers`;
               <p className="text-gray-700 font-medium">{encouragement.message}</p>
             </div>
             <button 
-              onClick={() => setShowMilestone(true)}
+              onClick={() => setShowMilestonesList(true)}
               className="text-sprouttie-green-dark hover:text-sprouttie-green font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-sprouttie-green rounded-lg px-2 py-1"
               aria-label="View milestones and achievements"
             >
