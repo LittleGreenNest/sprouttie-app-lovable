@@ -77,11 +77,12 @@ const DailyTrackerImproved = () => {
       const currentSet = sets.find(s => s.id === editingSetId);
       if (currentSet) {
         const currentSetCardIds = new Set(currentSet.flashcardIds || []);
-        const available = flashcards.filter(card => !currentSetCardIds.has(card.id));
+        // Filter out words already in set AND words that have been flashed
+        const available = flashcards.filter(card => !currentSetCardIds.has(card.id) && !flashedWords.has(card.id));
         setAvailableWords(available);
       }
     }
-  }, [flashcards, sets, editingSetId]);
+  }, [flashcards, sets, editingSetId, flashedWords]);
 
   // 🔄 ROTATION ENGINE: Load session status and calculate summary
   const loadDayData = async () => {
