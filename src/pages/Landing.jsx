@@ -99,16 +99,53 @@ const Landing = () => {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="flex justify-center"
+              transition={{ duration: 0.7, delay: 0.2 }}
+              className="flex justify-center relative"
             >
+              {/* Decorative background circles */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-72 sm:w-96 h-72 sm:h-96 bg-sprouttie-green-light/30 rounded-full animate-pulse-glow" />
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-56 sm:w-72 h-56 sm:h-72 bg-sprouttie-mint/50 rounded-full" />
+              </div>
+              
+              {/* Mascot */}
               <img 
                 src="/images/sprouttie-mascot.png" 
                 alt="Sprouttie Mascot"
-                className="w-64 sm:w-80 drop-shadow-xl"
+                className="relative z-10 w-72 sm:w-96 lg:w-[28rem] drop-shadow-2xl animate-bounce-leaf"
               />
+              
+              {/* Floating decorative elements */}
+              <motion.div 
+                className="absolute top-4 right-4 sm:top-8 sm:right-8 bg-white rounded-xl p-3 shadow-lg border border-sprouttie-green/10"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6 }}
+              >
+                <span className="text-2xl">🌱</span>
+              </motion.div>
+              
+              <motion.div 
+                className="absolute bottom-8 left-0 sm:bottom-12 sm:left-4 bg-white rounded-xl p-3 shadow-lg border border-sprouttie-green/10"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.8 }}
+              >
+                <span className="text-2xl">✨</span>
+              </motion.div>
+              
+              <motion.div 
+                className="absolute top-1/2 -right-2 sm:right-0 bg-sprouttie-coral-light text-sprouttie-coral-dark rounded-full px-3 py-1.5 text-xs font-medium shadow-md"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 1 }}
+              >
+                Fun & Easy!
+              </motion.div>
             </motion.div>
           </div>
         </div>
