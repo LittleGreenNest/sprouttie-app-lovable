@@ -47,10 +47,10 @@
 
 @layer base {
   :root {
-    /* Sprouttie Color Palette - Apple Green, Beige, Pastel Coral */
-    --sprouttie-green: 95 70% 45%;
-    --sprouttie-green-light: 95 65% 75%;
-    --sprouttie-green-dark: 95 70% 35%;
+    /* Sprouttie Color Palette - Sage Green, Beige, Pastel Coral */
+    --sprouttie-green: 145 35% 48%;
+    --sprouttie-green-light: 145 30% 78%;
+    --sprouttie-green-dark: 145 40% 32%;
     
     --sprouttie-beige: 40 40% 92%;
     --sprouttie-beige-dark: 40 40% 85%;
@@ -60,7 +60,7 @@
     --sprouttie-coral-dark: 15 85% 65%;
     
     --sprouttie-cream: 45 60% 97%;
-    --sprouttie-mint: 95 50% 92%;
+    --sprouttie-mint: 145 25% 93%;
     
     /* Semantic Colors */
     --background: var(--sprouttie-cream);
@@ -73,10 +73,10 @@
     --error: 0 70% 60%;
     
     /* UI State Colors */
-    --muted: 95 15% 92%;
-    --muted-foreground: 95 10% 45%;
-    --border: 95 20% 88%;
-    --input: 95 20% 88%;
+    --muted: 145 15% 92%;
+    --muted-foreground: 145 10% 45%;
+    --border: 145 15% 85%;
+    --input: 145 15% 85%;
     --ring: var(--sprouttie-green);
     
     /* Gradients */
