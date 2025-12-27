@@ -45,7 +45,7 @@ const Landing = () => {
             <a href="#features" className="hover:text-sprouttie-green-dark transition-colors">Get the free app</a>
             <Link to="/about" className="hover:text-sprouttie-green-dark transition-colors">About Sprouttie</Link>
             <Link to="/print" className="hover:text-sprouttie-green-dark transition-colors">Print</Link>
-            <a href="#insights" className="hover:text-sprouttie-green-dark transition-colors">Insights</a>
+            <Link to="/insights" className="hover:text-sprouttie-green-dark transition-colors">Insights</Link>
             <a href="#books" className="hover:text-sprouttie-green-dark transition-colors">Booklist</a>
           </div>
           <Link
