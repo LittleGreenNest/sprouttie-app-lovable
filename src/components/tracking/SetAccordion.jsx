@@ -87,7 +87,12 @@ const SetAccordion = ({
             <div className="p-4 pt-0 border-t-2 border-[hsl(var(--border))]">
               {/* Words list */}
               <div className="mb-4 flex flex-wrap gap-2">
-                {flashcards.map((card, idx) => {
+                {/* Sort flashcards by created_at so oldest appears first */}
+                {[...flashcards].sort((a, b) => {
+                  const aDate = a.created_at || '9999-12-31';
+                  const bDate = b.created_at || '9999-12-31';
+                  return new Date(aDate) - new Date(bDate);
+                }).map((card, idx) => {
                   const isFlashed = flashedWords.has(card.id);
                   const addedDate = card.created_at ? new Date(card.created_at) : null;
                   const timeAgo = addedDate ? (() => {
