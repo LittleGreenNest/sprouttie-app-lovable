@@ -88,11 +88,15 @@ const SetAccordion = ({
               {/* Words list */}
               <div className="mb-4 flex flex-wrap gap-2">
                 {/* Sort flashcards by created_at so oldest appears first */}
-                {[...flashcards].sort((a, b) => {
-                  const aDate = a.created_at || '9999-12-31';
-                  const bDate = b.created_at || '9999-12-31';
-                  return new Date(aDate) - new Date(bDate);
-                }).map((card, idx) => {
+                {(() => {
+                  const sortedCards = [...flashcards].sort((a, b) => {
+                    const aDate = a.created_at || '9999-12-31';
+                    const bDate = b.created_at || '9999-12-31';
+                    return new Date(aDate) - new Date(bDate);
+                  });
+                  const lastIdx = sortedCards.length - 1;
+                  
+                  return sortedCards.map((card, idx) => {
                   const isFlashed = flashedWords.has(card.id);
                   const addedDate = card.created_at ? new Date(card.created_at) : null;
                   const timeAgo = addedDate ? (() => {
@@ -107,6 +111,9 @@ const SetAccordion = ({
                     if (diffMins > 0) return `${diffMins}m ago`;
                     return 'just now';
                   })() : null;
+                  
+                  const isOldest = idx === 0;
+                  const isNewest = idx === lastIdx && lastIdx > 0;
                   
                   return (
                     <div
@@ -137,8 +144,11 @@ const SetAccordion = ({
                         )}
                       </div>
                       
-                      {idx === 0 && (
-                        <span className="text-xs text-amber-600">🌱</span>
+                      {isOldest && (
+                        <span className="text-xs text-amber-600" title="Oldest word">🌱</span>
+                      )}
+                      {isNewest && (
+                        <span className="text-xs text-blue-500" title="Newest word">✨</span>
                       )}
                       
                       {/* Status pill */}
@@ -151,7 +161,8 @@ const SetAccordion = ({
                       </span>
                     </div>
                   );
-                })}
+                });
+                })()}
               </div>
 
               {/* Round chips */}
