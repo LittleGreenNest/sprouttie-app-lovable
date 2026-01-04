@@ -90,9 +90,31 @@ const SetAccordion = ({
                 {/* Sort flashcards by created_at so oldest appears first */}
                 {(() => {
                   const sortedCards = [...flashcards].sort((a, b) => {
-                    const aDate = a.created_at || '9999-12-31';
-                    const bDate = b.created_at || '9999-12-31';
-                    return new Date(aDate) - new Date(bDate);
+                    // Sort by when the word was added to THIS set (date_introduced),
+                    // falling back to when it was first created in the system (created_at).
+                    const aSetKey = a.date_introduced || a.created_at || '9999-12-31';
+                    const bSetKey = b.date_introduced || b.created_at || '9999-12-31';
+
+                    const aSetTime = new Date(aSetKey).getTime();
+                    const bSetTime = new Date(bSetKey).getTime();
+
+                    const safeASetTime = Number.isFinite(aSetTime) ? aSetTime : Number.POSITIVE_INFINITY;
+                    const safeBSetTime = Number.isFinite(bSetTime) ? bSetTime : Number.POSITIVE_INFINITY;
+
+                    if (safeASetTime !== safeBSetTime) return safeASetTime - safeBSetTime;
+
+                    // If multiple words were introduced on the same day, fall back to created_at
+                    // for a stable, intuitive order.
+                    const aCreatedKey = a.created_at || '9999-12-31';
+                    const bCreatedKey = b.created_at || '9999-12-31';
+                    const aCreatedTime = new Date(aCreatedKey).getTime();
+                    const bCreatedTime = new Date(bCreatedKey).getTime();
+                    const safeACreatedTime = Number.isFinite(aCreatedTime) ? aCreatedTime : Number.POSITIVE_INFINITY;
+                    const safeBCreatedTime = Number.isFinite(bCreatedTime) ? bCreatedTime : Number.POSITIVE_INFINITY;
+
+                    if (safeACreatedTime !== safeBCreatedTime) return safeACreatedTime - safeBCreatedTime;
+
+                    return String(a.id).localeCompare(String(b.id));
                   });
                   const lastIdx = sortedCards.length - 1;
                   
