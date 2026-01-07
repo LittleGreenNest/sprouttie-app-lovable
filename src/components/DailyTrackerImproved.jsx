@@ -9,8 +9,11 @@ import NotesList from './tracking/NotesList';
 import UpgradeBanner from './tracking/UpgradeBanner';
 import PronunciationButton from './pronunciation/PronunciationButton';
 import { DailyTrackerSkeleton } from './ui/Skeleton';
+import CalendarGridView from './tracking/CalendarGridView';
+import { CalendarDays, Table } from 'lucide-react';
 
 const DailyTrackerImproved = () => {
+  const [viewMode, setViewMode] = useState('calendar'); // 'calendar' | 'daily'
   const { currentUser, plan: userPlan } = useAuth(); // Use plan from AuthContext - no extra fetch needed
   const { sets, flashcards, getFlashcardsForSet, categories, updateSetFlashcards, addFlashcard, addCategory, loading: flashcardsLoading } = useFlashcards();
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -816,13 +819,47 @@ const DailyTrackerImproved = () => {
       {/* Upgrade Banner */}
       <UpgradeBanner userPlan={userPlan} />
 
-      {/* Day Header with Progress */}
-      <DayHeader
-        selectedDate={selectedDate}
-        onChangeDate={changeDate}
-        completedCount={completedCount}
-        totalGoal={dailyGoal}
-      />
+      {/* View Toggle */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-semibold text-slate-800">Daily Tracking</h2>
+        <div className="flex items-center bg-slate-100 rounded-lg p-1">
+          <button
+            onClick={() => setViewMode('calendar')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              viewMode === 'calendar'
+                ? 'bg-white text-slate-800 shadow-sm'
+                : 'text-slate-600 hover:text-slate-800'
+            }`}
+          >
+            <CalendarDays className="w-4 h-4" />
+            Week
+          </button>
+          <button
+            onClick={() => setViewMode('daily')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              viewMode === 'daily'
+                ? 'bg-white text-slate-800 shadow-sm'
+                : 'text-slate-600 hover:text-slate-800'
+            }`}
+          >
+            <Table className="w-4 h-4" />
+            Day
+          </button>
+        </div>
+      </div>
+
+      {/* Calendar Grid View */}
+      {viewMode === 'calendar' ? (
+        <CalendarGridView />
+      ) : (
+        <>
+          {/* Day Header with Progress */}
+          <DayHeader
+            selectedDate={selectedDate}
+            onChangeDate={changeDate}
+            completedCount={completedCount}
+            totalGoal={dailyGoal}
+          />
 
       {/* 🔄 ROTATION SUMMARY */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
@@ -1347,6 +1384,8 @@ const DailyTrackerImproved = () => {
 
       {/* Sticky Note Button */}
       <StickyNoteButton onAddNote={addNote} familyMember={familyMember} />
+        </>
+      )}
     </div>
   );
 };
