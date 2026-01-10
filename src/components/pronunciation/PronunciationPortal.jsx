@@ -8,8 +8,15 @@ import PronunciationButton from './PronunciationButton';
 import PronunciationCSVImport from './PronunciationCSVImport';
 
 const PronunciationPortal = () => {
-  const { currentUser, plan: userPlan } = useAuth(); // Use plan from AuthContext
+  const { currentUser, plan: rawUserPlan } = useAuth(); // Use plan from AuthContext
   const { flashcards: contextFlashcards, loading: flashcardsLoading } = useFlashcards();
+
+  // Pre-launch override: keep the portal fully usable while you're still building.
+  const prelaunchUnlock =
+    import.meta.env.DEV || localStorage.getItem('sprouttie_prelaunch_unlock') === 'true';
+
+  const userPlan = prelaunchUnlock ? 'pro' : rawUserPlan;
+
   const [searchQuery, setSearchQuery] = useState('');
   const [words, setWords] = useState([]);
   const [pronunciations, setPronunciations] = useState({});
