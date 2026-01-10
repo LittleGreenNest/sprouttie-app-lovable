@@ -144,13 +144,13 @@ const MilestonesListModal = ({ show, onClose, achievedMilestones = [], stats = {
           {/* Content */}
           <div className="p-6 overflow-y-auto max-h-[calc(85vh-180px)]">
             <MilestoneSection 
-              title="Words Learned" 
+              title="Words Introduced" 
               emoji="📚" 
               milestones={wordMilestones} 
             />
             <MilestoneSection 
-              title="Learning Streaks" 
-              emoji="🔥" 
+              title="Continuity" 
+              emoji="🌿" 
               milestones={streakMilestones} 
             />
             <MilestoneSection 

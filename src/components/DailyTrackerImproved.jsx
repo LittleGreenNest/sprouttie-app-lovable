@@ -1263,24 +1263,25 @@ const DailyTrackerImproved = () => {
       </div>
 
 
-      {/* Track Child's Engagement */}
+      {/* Your Observations */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-        <h4 className="font-bold text-xl text-slate-800 mb-4 text-center">
-          Track Child's Engagement
+        <h4 className="font-bold text-xl text-slate-800 mb-2 text-center">
+          Your Observations
         </h4>
+        <p className="text-sm text-slate-500 text-center mb-4 italic">For reflection only — not a score.</p>
         
         {/* Existing Data Info Banner */}
         {hasExistingEngagementData && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800 text-center">
-              ℹ️ Previously saved engagement data has been loaded. Make any changes and save to update.
+              ℹ️ Previously saved observations have been loaded. Make any changes and save to update.
             </p>
           </div>
         )}
         
         {/* Engagement Rating */}
         <div className="mb-6">
-          <p className="text-slate-700 text-center mb-4">How engaged was your child today?</p>
+          <p className="text-slate-700 text-center mb-4">What did you notice about engagement?</p>
           <div className="flex justify-center gap-3 mb-2">
             {[
               { value: 1, emoji: '😐' },

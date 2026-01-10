@@ -50,10 +50,13 @@ const ProgressGarden = ({ stats }) => {
       className="glass p-8 rounded-3xl shadow-lg mb-6"
     >
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-2xl font-bold text-sprouttie-green-dark flex items-center gap-2">
-          <span>🌿</span>
-          Your Progress Garden
-        </h3>
+        <div>
+          <h3 className="text-2xl font-bold text-sprouttie-green-dark flex items-center gap-2">
+            <span>🌿</span>
+            Your Learning Garden
+          </h3>
+          <p className="text-sm text-gray-500 mt-1 italic">This garden grows at its own pace.</p>
+        </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/garden-guide')}
@@ -63,9 +66,6 @@ const ProgressGarden = ({ stats }) => {
             <HelpCircle size={16} />
             <span className="hidden sm:inline">How it works</span>
           </button>
-          <div className="text-sm text-gray-600 bg-white/50 px-4 py-2 rounded-full">
-            Week {Math.ceil(stats.currentStreak / 7)}
-          </div>
         </div>
       </div>
 
@@ -171,26 +171,10 @@ const ProgressGarden = ({ stats }) => {
             </div>
           </div>
 
-          {/* Progress to Next Milestone */}
-          <div className="bg-gradient-to-r from-sprouttie-beige to-sprouttie-mint rounded-2xl p-4">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="font-semibold text-gray-700">Progress to Next Milestone</span>
-              <span className="font-bold text-sprouttie-green-dark">
-                {Math.min((stats.currentStreak / 30) * 100, 100).toFixed(0)}%
-              </span>
-            </div>
-            <div className="bg-white/50 rounded-full h-3 overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min((stats.currentStreak / 30) * 100, 100)}%` }}
-                transition={{ duration: 1.5, delay: 0.5 }}
-                className="h-full bg-gradient-to-r from-sprouttie-green to-emerald-400 rounded-full"
-              />
-            </div>
-            <p className="text-xs text-gray-600 text-center mt-2">
-              {30 - stats.currentStreak > 0 
-                ? `${30 - stats.currentStreak} days to Master Gardener! 🏆` 
-                : 'Master Gardener achieved! 🎉'}
+          {/* Garden Growth Note */}
+          <div className="bg-gradient-to-r from-sprouttie-beige to-sprouttie-mint rounded-2xl p-4 text-center">
+            <p className="text-sm text-gray-700">
+              🌱 Every session adds to your garden's growth
             </p>
           </div>
         </div>

@@ -140,7 +140,7 @@ const AppContent = () => {
           className={`px-4 py-2 whitespace-nowrap ${activeTab === 'daily-tracking' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
           onClick={() => handleTabChange('daily-tracking')}
         >
-          Daily Tracking
+          Session Log
         </button>
         <button 
           className={`px-4 py-2 whitespace-nowrap ${activeTab === 'flashed-history' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}

@@ -346,9 +346,9 @@ const FlashedHistory = () => {
             </div>
           </div>
 
-          {/* Cards Learned */}
+          {/* Cards Introduced */}
           <div className="bg-muted/30 rounded-xl p-5 text-center">
-            <div className="text-sm text-muted-foreground mb-2">Cards Learned</div>
+            <div className="text-sm text-muted-foreground mb-2">Cards Introduced</div>
             <div className="text-4xl font-bold text-foreground">{monthlySummary.cardsLearned}</div>
             <div className="text-sm mt-1">
               <span className="text-emerald-600 font-medium">↑ {Math.abs(monthlySummary.cardsDiff)}</span>
