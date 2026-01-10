@@ -43,6 +43,8 @@ const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Landing = lazy(() => import('./pages/Landing'));
 const ComingSoonPage = lazy(() => import('./components/ui/ComingSoonPage'));
+const PronunciationPortal = lazy(() => import('./components/pronunciation/PronunciationPortal'));
+const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlanner'));
 const About = lazy(() => import('./pages/About'));
 const Insights = lazy(() => import('./pages/Insights'));
 
@@ -164,22 +166,17 @@ const AppContent = () => {
         >
           Words He Says
         </button>
-        {/* Pro Sprout features - Coming Soon */}
         <button 
-          className="px-4 py-2 whitespace-nowrap text-gray-400 cursor-not-allowed relative group"
-          disabled
-          title="Coming soon with Pro Sprout plan"
+          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'pronunciation' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
+          onClick={() => handleTabChange('pronunciation')}
         >
           🎧 Pronunciation
-          <span className="absolute -top-1 -right-1 bg-amber-400 text-[10px] text-amber-900 px-1 rounded font-medium">Soon</span>
         </button>
         <button 
-          className="px-4 py-2 whitespace-nowrap text-gray-400 cursor-not-allowed relative group"
-          disabled
-          title="Coming soon with Pro Sprout plan"
+          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'word-planner' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
+          onClick={() => handleTabChange('word-planner')}
         >
           📅 Word Planner
-          <span className="absolute -top-1 -right-1 bg-amber-400 text-[10px] text-amber-900 px-1 rounded font-medium">Soon</span>
         </button>
         {/* Hidden tabs: Books, Bingo Generator, Activity History */}
       </div>
@@ -202,21 +199,8 @@ const AppContent = () => {
             <Route path="/tracker-mockup" element={<FlashingTrackerMockup />} />
             <Route path="/garden-guide" element={<GardenGuide />} />
             
-            {/* Pro Sprout features - Coming Soon */}
-            <Route path="/pronunciation" element={
-              <ComingSoonPage 
-                featureName="Pronunciation Portal" 
-                featureDescription="Learn proper pronunciation with audio guides and practice tools."
-                emoji="🎧"
-              />
-            } />
-            <Route path="/word-planner" element={
-              <ComingSoonPage 
-                featureName="Word Planner" 
-                featureDescription="Plan your weekly vocabulary goals and track progress over time."
-                emoji="📅"
-              />
-            } />
+            <Route path="/pronunciation" element={<PronunciationPortal />} />
+            <Route path="/word-planner" element={<WeeklyWordPlanner />} />
 
             {/* profile page */}
             <Route path="/profile" element={<Profile />} />
