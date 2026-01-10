@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 const ProgressHero = ({ stats, progressPercent }) => {
   return (
     <div className="grid md:grid-cols-2 gap-6 mb-6">
-      {/* Words Learned - Hero Element */}
+      {/* Words Introduced - Hero Element */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -12,7 +12,7 @@ const ProgressHero = ({ stats, progressPercent }) => {
         className="glass rounded-3xl p-6 shadow-xl border border-white/50 hover-glow"
       >
         <div className="flex flex-col items-center">
-          <h3 className="text-base font-semibold text-gray-600 mb-3">Words Learned</h3>
+          <h3 className="text-base font-semibold text-gray-600 mb-3">Words Introduced</h3>
           
           {/* Large Circular Progress */}
           <div className="relative w-32 h-32 mb-3">
@@ -87,7 +87,7 @@ const ProgressHero = ({ stats, progressPercent }) => {
         </div>
       </motion.div>
 
-      {/* Current Streak - Hero Element */}
+      {/* Recent Activity - Hero Element */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -95,9 +95,9 @@ const ProgressHero = ({ stats, progressPercent }) => {
         className="glass rounded-3xl p-6 shadow-xl border border-white/50 hover-glow"
       >
         <div className="flex flex-col items-center">
-          <h3 className="text-base font-semibold text-gray-600 mb-3">Current Streak</h3>
+          <h3 className="text-base font-semibold text-gray-600 mb-3">Recent Activity</h3>
           
-          {/* Large Streak Display */}
+          {/* Activity Display */}
           <motion.div
             animate={{ 
               scale: [1, 1.05, 1],
@@ -128,19 +128,19 @@ const ProgressHero = ({ stats, progressPercent }) => {
             >
               {stats.currentStreak}
             </motion.p>
-            <p className="text-base text-gray-600 mb-2">day{stats.currentStreak !== 1 ? 's' : ''}</p>
+            <p className="text-base text-gray-600 mb-2">session{stats.currentStreak !== 1 ? 's' : ''} this week</p>
             
-            <div className="bg-gradient-to-r from-orange-100 to-yellow-100 rounded-full px-6 py-2">
-              <p className="text-sm font-medium text-orange-700">
+            <div className="bg-gradient-to-r from-sprouttie-beige to-sprouttie-mint rounded-full px-6 py-2">
+              <p className="text-sm font-medium text-gray-700">
                 {stats.currentStreak === 0 
-                  ? "Start today! 🔥" 
+                  ? "Ready when you are 🌱" 
                   : stats.currentStreak < 3 
-                  ? "Building momentum! 🔥"
+                  ? "Lovely consistency!"
                   : stats.currentStreak < 7
-                  ? "On fire! Keep it up! 🔥🔥"
+                  ? "Beautiful rhythm 🌿"
                   : stats.currentStreak < 14
-                  ? "Unstoppable! 🔥🔥🔥"
-                  : "Legendary streak! 🔥🔥🔥🔥"}
+                  ? "Wonderful routine ✨"
+                  : "Such dedication! 💚"}
               </p>
             </div>
           </div>
