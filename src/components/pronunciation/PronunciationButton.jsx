@@ -21,17 +21,23 @@ const PronunciationButton = ({
     free: ['en'],
     print: ['en', 'zh'],
     'print-year': ['en', 'zh'],
-    pro: ['en', 'zh', 'yue', 'nan']
+    pro: ['en', 'zh', 'yue', 'nan'],
   };
 
   const languageLabels = {
     en: 'English',
     zh: '华语',
     yue: '粤语',
-    nan: '福建话'
+    nan: '福建话',
   };
 
-  const hasAccess = languageAccess[userPlan]?.includes(language) || false;
+  // Pre-launch override: unlock for testing in dev or when the flag is set.
+  const prelaunchUnlock =
+    import.meta.env.DEV || localStorage.getItem('sprouttie_prelaunch_unlock') === 'true';
+
+  const effectivePlan = prelaunchUnlock ? 'pro' : userPlan;
+
+  const hasAccess = languageAccess[effectivePlan]?.includes(language) || false;
 
   const handlePlay = async () => {
     if (!hasAccess) {
