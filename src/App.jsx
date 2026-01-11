@@ -47,7 +47,7 @@ const PronunciationPortal = lazy(() => import('./components/pronunciation/Pronun
 const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlanner'));
 const About = lazy(() => import('./pages/About'));
 const Insights = lazy(() => import('./pages/Insights'));
-const Support = lazy(() => import('./pages/Support'));
+const Support = lazy(() => import('@/pages/Support'));
 
 // Loading spinner component
 const LoadingSpinner = () => (
