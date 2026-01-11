@@ -47,6 +47,7 @@ const PronunciationPortal = lazy(() => import('./components/pronunciation/Pronun
 const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlanner'));
 const About = lazy(() => import('./pages/About'));
 const Insights = lazy(() => import('./pages/Insights'));
+const Support = lazy(() => import('./pages/Support'));
 
 // Loading spinner component
 const LoadingSpinner = () => (
@@ -232,6 +233,7 @@ function App() {
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
+                <Route path="/support" element={<Support />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/insights" element={<Insights />} />
                 <Route path="/plans" element={<Plans />} />
