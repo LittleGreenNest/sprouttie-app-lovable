@@ -45,7 +45,6 @@ const Landing = lazy(() => import('./pages/Landing'));
 const ComingSoonPage = lazy(() => import('./components/ui/ComingSoonPage'));
 const PronunciationPortal = lazy(() => import('./components/pronunciation/PronunciationPortal'));
 const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlanner'));
-const About = lazy(() => import('./pages/About'));
 const Insights = lazy(() => import('./pages/Insights'));
 const Support = lazy(() => import('@/pages/Support'));
 
@@ -234,7 +233,6 @@ function App() {
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/support" element={<Support />} />
-                <Route path="/about" element={<About />} />
                 <Route path="/insights" element={<Insights />} />
                 <Route path="/plans" element={<Plans />} />
                 <Route path="/pdf-success" element={<PDFSuccess />} />
