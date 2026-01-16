@@ -41,7 +41,7 @@ const GardenGuide = lazy(() => import('./components/dashboard/GardenGuide'));
 const Install = lazy(() => import('./pages/Install'));
 const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
-const Landing = lazy(() => import('./pages/Landing'));
+
 const ComingSoonPage = lazy(() => import('./components/ui/ComingSoonPage'));
 const PronunciationPortal = lazy(() => import('./components/pronunciation/PronunciationPortal'));
 const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlanner'));
@@ -224,8 +224,8 @@ function App() {
             <Suspense fallback={<LoadingSpinner />}>
               <Routes>
                 {/* Public routes */}
-                <Route path="/" element={<Landing />} />
-                <Route path="/login" element={<Login />} />
+                <Route path="/" element={<Login />} />
+                <Route path="/login" element={<Navigate to="/" replace />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
