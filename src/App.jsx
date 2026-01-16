@@ -45,7 +45,6 @@ const Landing = lazy(() => import('./pages/Landing'));
 const ComingSoonPage = lazy(() => import('./components/ui/ComingSoonPage'));
 const PronunciationPortal = lazy(() => import('./components/pronunciation/PronunciationPortal'));
 const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlanner'));
-const Insights = lazy(() => import('./pages/Insights'));
 const Support = lazy(() => import('@/pages/Support'));
 
 // Loading spinner component
@@ -233,7 +232,6 @@ function App() {
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/support" element={<Support />} />
-                <Route path="/insights" element={<Insights />} />
                 <Route path="/plans" element={<Plans />} />
                 <Route path="/pdf-success" element={<PDFSuccess />} />
                 <Route path="/install" element={<Install />} />
