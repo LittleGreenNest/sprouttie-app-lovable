@@ -29,7 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 const PDFSuccess = lazy(() => import('./pdf-success'));
 const Profile = lazy(() => import('./components/user/Profile'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
-const DailyTrackerImproved = lazy(() => import('./components/DailyTrackerImproved'));
+const FlashcardScheduler = lazy(() => import('./components/FlashcardScheduler'));
 const FlashcardManager = lazy(() => import('./components/FlashcardManager'));
 const AllWords = lazy(() => import('./components/AllWords'));
 const SpokenWords = lazy(() => import('./components/SpokenWords'));
@@ -190,7 +190,7 @@ const AppContent = () => {
 
             {/* tab pages */}
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/daily-tracking" element={<DailyTrackerImproved />} />
+            <Route path="/daily-tracking" element={<FlashcardScheduler />} />
             <Route path="/flashed-history" element={<FlashedHistory />} />
             <Route path="/all-words" element={<AllWords />} />
             <Route path="/spoken-words" element={<SpokenWords />} />
