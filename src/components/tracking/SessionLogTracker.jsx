@@ -188,31 +188,37 @@ const SessionLogTracker = () => {
           await recordSessionOccurred();
         }
         
-        // Insert a record for each flashcard in the set
+        // Upsert a record for each flashcard in the set (avoid duplicate key error)
         for (const card of setFlashcards) {
           await supabase
             .from('daily_tracking')
-            .insert({
+            .upsert({
               user_id: currentUser.id,
               flashcard_id: card.id,
               date: dateString,
               status: 'flashed',
               flashed_at: new Date().toISOString(),
               notes: JSON.stringify({ setId, round })
+            }, { 
+              onConflict: 'user_id,flashcard_id,date',
+              ignoreDuplicates: false 
             });
         }
         
-        // If no flashcards, insert a placeholder
+        // If no flashcards, upsert a placeholder
         if (setFlashcards.length === 0) {
           await supabase
             .from('daily_tracking')
-            .insert({
+            .upsert({
               user_id: currentUser.id,
               flashcard_id: `set-${setId}`,
               date: dateString,
               status: 'flashed',
               flashed_at: new Date().toISOString(),
               notes: JSON.stringify({ setId, round })
+            }, { 
+              onConflict: 'user_id,flashcard_id,date',
+              ignoreDuplicates: false 
             });
         }
         
