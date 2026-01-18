@@ -3,8 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
 import { useFlashcards } from '../../context/FlashcardContext';
 import { toast } from 'react-toastify';
-import { ChevronLeft, ChevronRight, Pencil, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, Check, Plus, X } from 'lucide-react';
 import UpgradeBanner from './UpgradeBanner';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const SessionLogTracker = () => {
   const { currentUser } = useAuth();
@@ -13,8 +14,8 @@ const SessionLogTracker = () => {
   // Date state
   const [selectedDate, setSelectedDate] = useState(new Date());
   
-  // Tracking state
-  const [roundTracking, setRoundTracking] = useState({}); // { `${setId}-${wordId}-${round}`: boolean }
+  // Tracking state - now at SET level: { `${setId}-${round}`: boolean }
+  const [roundTracking, setRoundTracking] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
@@ -33,6 +34,7 @@ const SessionLogTracker = () => {
   
   // Edit modal state
   const [editingSetId, setEditingSetId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Session occurred flag
   const [sessionOccurred, setSessionOccurred] = useState(false);
@@ -44,14 +46,7 @@ const SessionLogTracker = () => {
   
   // Calculate completed sessions
   const completedSessions = useMemo(() => {
-    const completedRounds = new Set();
-    Object.entries(roundTracking).forEach(([key, value]) => {
-      if (value) {
-        const [setId, , round] = key.split('-');
-        completedRounds.add(`${setId}-${round}`);
-      }
-    });
-    return completedRounds.size;
+    return Object.values(roundTracking).filter(v => v).length;
   }, [roundTracking]);
 
   // Load data when date or user changes
@@ -77,21 +72,21 @@ const SessionLogTracker = () => {
       
       if (error) throw error;
       
-      // Parse tracking data into round tracking state
+      // Parse tracking data into set-level round tracking
       const tracking = {};
       let loadedEngagement = null;
       let loadedPeakTime = null;
-      let loadedNotes = '';
       
       (trackingData || []).forEach(record => {
         if (record.status === 'flashed' && record.notes) {
           try {
             const metadata = JSON.parse(record.notes);
-            if (metadata.setId && metadata.round && record.flashcard_id) {
-              tracking[`${metadata.setId}-${record.flashcard_id}-${metadata.round}`] = true;
+            if (metadata.setId !== undefined && metadata.round) {
+              // Mark set-round as complete
+              tracking[`${metadata.setId}-${metadata.round}`] = true;
             }
           } catch (e) {
-            // Not JSON - could be daily notes
+            // Not JSON
           }
         }
         
@@ -114,13 +109,12 @@ const SessionLogTracker = () => {
       
       setSessionOccurred(sessionData?.session_occurred || false);
       if (sessionData?.notes) {
-        loadedNotes = sessionData.notes;
+        setNotes(sessionData.notes);
       }
       
       setRoundTracking(tracking);
       setEngagement(loadedEngagement);
       setPeakTime(loadedPeakTime);
-      setNotes(loadedNotes);
     } catch (error) {
       console.error('Error loading tracking data:', error);
       toast.error('Failed to load tracking data');
@@ -163,18 +157,19 @@ const SessionLogTracker = () => {
     }
   };
 
-  const toggleRound = async (setId, wordId, round) => {
+  const toggleSetRound = async (setId, round) => {
     if (!currentUser) {
       toast.error('Please log in to track sessions');
       return;
     }
     
-    const key = `${setId}-${wordId}-${round}`;
+    const key = `${setId}-${round}`;
     const isCurrentlyChecked = roundTracking[key];
+    const setFlashcards = getFlashcardsForSet(setId);
     
     try {
       if (isCurrentlyChecked) {
-        // Uncheck - delete the tracking record
+        // Uncheck - delete all tracking records for this set-round
         setRoundTracking(prev => ({ ...prev, [key]: false }));
         
         await supabase
@@ -182,11 +177,10 @@ const SessionLogTracker = () => {
           .delete()
           .eq('user_id', currentUser.id)
           .eq('date', dateString)
-          .eq('flashcard_id', wordId)
           .like('notes', `%"setId":${setId}%`)
           .like('notes', `%"round":${round}%`);
       } else {
-        // Check - create tracking record
+        // Check - create tracking records for ALL words in the set
         setRoundTracking(prev => ({ ...prev, [key]: true }));
         
         // Auto-trigger rotation on first tracking
@@ -194,16 +188,35 @@ const SessionLogTracker = () => {
           await recordSessionOccurred();
         }
         
-        await supabase
-          .from('daily_tracking')
-          .insert({
-            user_id: currentUser.id,
-            flashcard_id: wordId,
-            date: dateString,
-            status: 'flashed',
-            flashed_at: new Date().toISOString(),
-            notes: JSON.stringify({ setId, round })
-          });
+        // Insert a record for each flashcard in the set
+        for (const card of setFlashcards) {
+          await supabase
+            .from('daily_tracking')
+            .insert({
+              user_id: currentUser.id,
+              flashcard_id: card.id,
+              date: dateString,
+              status: 'flashed',
+              flashed_at: new Date().toISOString(),
+              notes: JSON.stringify({ setId, round })
+            });
+        }
+        
+        // If no flashcards, insert a placeholder
+        if (setFlashcards.length === 0) {
+          await supabase
+            .from('daily_tracking')
+            .insert({
+              user_id: currentUser.id,
+              flashcard_id: `set-${setId}`,
+              date: dateString,
+              status: 'flashed',
+              flashed_at: new Date().toISOString(),
+              notes: JSON.stringify({ setId, round })
+            });
+        }
+        
+        toast.success(`Set ${setId} - Round ${round} complete!`);
       }
     } catch (error) {
       console.error('Error toggling round:', error);
@@ -273,23 +286,17 @@ const SessionLogTracker = () => {
           });
       }
       
-      // Update engagement on a tracking record if we have one
+      // Update engagement on tracking records
       if (engagement || peakTime) {
-        const trackingKeys = Object.entries(roundTracking).filter(([, v]) => v);
-        if (trackingKeys.length > 0) {
-          const [firstKey] = trackingKeys[0];
-          const [setId, wordId] = firstKey.split('-');
-          
-          await supabase
-            .from('daily_tracking')
-            .update({ 
-              engagement: engagement,
-              time_of_day: peakTime 
-            })
-            .eq('user_id', currentUser.id)
-            .eq('date', dateString)
-            .eq('flashcard_id', wordId);
-        }
+        await supabase
+          .from('daily_tracking')
+          .update({ 
+            engagement: engagement,
+            time_of_day: peakTime 
+          })
+          .eq('user_id', currentUser.id)
+          .eq('date', dateString)
+          .eq('status', 'flashed');
       }
       
       toast.success('Records saved successfully!');
@@ -342,6 +349,44 @@ const SessionLogTracker = () => {
       isOldest: index === 0,
       dayCount: card.active_day_count || 1
     }));
+  };
+
+  // Get available words for adding to set (not in any set)
+  const getAvailableWords = () => {
+    const wordsInSets = new Set();
+    sets.forEach(set => {
+      const setCards = getFlashcardsForSet(set.id);
+      setCards.forEach(card => wordsInSets.add(card.id));
+    });
+    
+    return flashcards.filter(card => 
+      !wordsInSets.has(card.id) &&
+      (card.front?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+       card.back?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+       card.word?.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  };
+
+  const handleAddWordToSet = async (wordId) => {
+    if (!editingSetId) return;
+    
+    const currentSet = sets.find(s => s.id === editingSetId);
+    if (!currentSet) return;
+    
+    const currentIds = currentSet.flashcardIds || [];
+    await updateSetFlashcards(editingSetId, [...currentIds, wordId]);
+    toast.success('Word added to set');
+  };
+
+  const handleRemoveWordFromSet = async (wordId) => {
+    if (!editingSetId) return;
+    
+    const currentSet = sets.find(s => s.id === editingSetId);
+    if (!currentSet) return;
+    
+    const currentIds = currentSet.flashcardIds || [];
+    await updateSetFlashcards(editingSetId, currentIds.filter(id => id !== wordId));
+    toast.success('Word removed from set');
   };
 
   // Set colors for visual grouping
@@ -458,120 +503,171 @@ const SessionLogTracker = () => {
         </div>
       </div>
       
-      {/* Tracking Table */}
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-secondary/50">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Set</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Word</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">Day</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">R1</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">R2</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">R3</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {sets.map((set, setIndex) => {
-              const words = getSetWordsWithMeta(set.id);
-              const setColor = setColors[setIndex % setColors.length];
-              
-              return words.length > 0 ? (
-                words.map((word, wordIndex) => (
-                  <tr key={`${set.id}-${word.id}`} className="hover:bg-secondary/30 transition-colors">
-                    {/* Set indicator - only show on first word */}
-                    <td className="px-4 py-3">
-                      {wordIndex === 0 && (
-                        <div className={`w-8 h-8 rounded-full ${setColor}`} />
-                      )}
-                    </td>
-                    
-                    {/* Word with oldest badge */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-foreground">{word.front || word.word}</span>
-                        {word.isOldest && (
-                          <span className="px-2 py-0.5 bg-secondary text-xs text-muted-foreground rounded">
-                            Oldest
-                          </span>
-                        )}
-                      </div>
-                      {word.back && word.back !== word.front && (
-                        <div className="text-xs text-muted-foreground">{word.back}</div>
-                      )}
-                    </td>
-                    
-                    {/* Day count */}
-                    <td className="px-4 py-3 text-center">
-                      <span className="text-sm text-muted-foreground">
-                        {word.dayCount || '-'}
-                      </span>
-                    </td>
-                    
-                    {/* Round checkboxes */}
+      {/* Tracking Cards - One per Set */}
+      <div className="space-y-4">
+        {sets.map((set, setIndex) => {
+          const words = getSetWordsWithMeta(set.id);
+          const setColor = setColors[setIndex % setColors.length];
+          const roundsCompleted = [1, 2, 3].filter(r => roundTracking[`${set.id}-${r}`]).length;
+          
+          return (
+            <div 
+              key={set.id} 
+              className="bg-card rounded-xl border border-border overflow-hidden"
+            >
+              {/* Set Header */}
+              <div className="flex items-center justify-between p-4 border-b border-border bg-secondary/30">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full ${setColor} flex items-center justify-center text-white font-bold`}>
+                    {setIndex + 1}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-foreground">Set {setIndex + 1}</div>
+                    <div className="text-sm text-muted-foreground">{words.length} words</div>
+                  </div>
+                </div>
+                
+                {/* Round Checkboxes */}
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-3">
                     {[1, 2, 3].map(round => {
-                      const isChecked = roundTracking[`${set.id}-${word.id}-${round}`];
+                      const isChecked = roundTracking[`${set.id}-${round}`];
                       return (
-                        <td key={round} className="px-4 py-3 text-center">
+                        <div key={round} className="flex flex-col items-center gap-1">
+                          <span className="text-xs text-muted-foreground">R{round}</span>
                           <button
-                            onClick={() => toggleRound(set.id, word.id, round)}
-                            className={`w-6 h-6 rounded border-2 transition-all flex items-center justify-center ${
+                            onClick={() => toggleSetRound(set.id, round)}
+                            className={`w-8 h-8 rounded border-2 transition-all flex items-center justify-center ${
                               isChecked 
                                 ? 'bg-primary border-primary text-white' 
-                                : 'border-border hover:border-primary'
+                                : 'border-border hover:border-primary bg-background'
                             }`}
                           >
-                            {isChecked && <Check className="w-4 h-4" />}
+                            {isChecked && <Check className="w-5 h-5" />}
                           </button>
-                        </td>
+                        </div>
                       );
                     })}
-                    
-                    {/* Status */}
-                    <td className="px-4 py-3 text-center">
-                      {/* Status indicator could go here */}
-                    </td>
-                    
-                    {/* Actions - only show on first word */}
-                    <td className="px-4 py-3 text-center">
-                      {wordIndex === 0 && (
-                        <button
-                          onClick={() => setEditingSetId(set.id)}
-                          className="p-1.5 rounded hover:bg-secondary transition-colors"
-                        >
-                          <Pencil className="w-4 h-4 text-muted-foreground" />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr key={set.id} className="hover:bg-secondary/30">
-                  <td className="px-4 py-3">
-                    <div className={`w-8 h-8 rounded-full ${setColor}`} />
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground italic" colSpan={6}>
-                    No words in this set
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <button
-                      onClick={() => setEditingSetId(set.id)}
-                      className="p-1.5 rounded hover:bg-secondary transition-colors"
+                  </div>
+                  
+                  <div className="text-sm text-muted-foreground">
+                    {roundsCompleted}/3
+                  </div>
+                  
+                  <button
+                    onClick={() => setEditingSetId(editingSetId === set.id ? null : set.id)}
+                    className="p-2 rounded hover:bg-secondary transition-colors"
+                  >
+                    <Pencil className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
+              </div>
+              
+              {/* Words List */}
+              <div className="p-4">
+                <div className="flex flex-wrap gap-2">
+                  {words.map(word => (
+                    <div 
+                      key={word.id}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-secondary/50 rounded-full"
                     >
-                      <Pencil className="w-4 h-4 text-muted-foreground" />
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                      <span className="text-sm font-medium text-foreground">
+                        {word.front || word.word}
+                      </span>
+                      {word.isOldest && (
+                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">
+                          Oldest
+                        </span>
+                      )}
+                      {word.back && word.back !== (word.front || word.word) && (
+                        <span className="text-xs text-muted-foreground">
+                          ({word.back})
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {words.length === 0 && (
+                    <span className="text-sm text-muted-foreground italic">No words in this set</span>
+                  )}
+                </div>
+              </div>
+              
+              {/* Edit Panel */}
+              <AnimatePresence>
+                {editingSetId === set.id && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="border-t border-border overflow-hidden"
+                  >
+                    <div className="p-4 bg-secondary/20 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-foreground">Edit Set {setIndex + 1}</h4>
+                        <button
+                          onClick={() => setEditingSetId(null)}
+                          className="p-1 rounded hover:bg-secondary"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      
+                      {/* Current words with remove option */}
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">Current words (click to remove):</p>
+                        <div className="flex flex-wrap gap-2">
+                          {words.map(word => (
+                            <button
+                              key={word.id}
+                              onClick={() => handleRemoveWordFromSet(word.id)}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-full text-sm transition-colors"
+                            >
+                              <span>{word.front || word.word}</span>
+                              <X className="w-3 h-3" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Add new words */}
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">Add words:</p>
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Search available words..."
+                          className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm mb-2"
+                        />
+                        <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                          {getAvailableWords().slice(0, 20).map(word => (
+                            <button
+                              key={word.id}
+                              onClick={() => handleAddWordToSet(word.id)}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-full text-sm transition-colors"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>{word.front || word.word}</span>
+                            </button>
+                          ))}
+                          {getAvailableWords().length === 0 && (
+                            <span className="text-sm text-muted-foreground italic">
+                              No available words. Add more in Manage Flashcards.
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
         
         {sets.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <p>No sets configured yet. Add flashcards to sets in Manage Flashcards.</p>
+          <div className="text-center py-12 bg-card rounded-xl border border-border">
+            <p className="text-muted-foreground">No sets configured. Add flashcards to sets in Manage Flashcards.</p>
           </div>
         )}
       </div>
