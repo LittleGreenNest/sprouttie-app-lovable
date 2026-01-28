@@ -665,7 +665,7 @@ const SessionLogTracker = () => {
                           >
                             <option value="all">All Categories</option>
                             {categories.map(cat => (
-                              <option key={cat} value={cat}>{cat}</option>
+                              <option key={cat.id || cat} value={cat.name || cat}>{cat.name || cat}</option>
                             ))}
                           </select>
                           
