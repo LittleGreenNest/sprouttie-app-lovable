@@ -700,6 +700,9 @@ const SessionLogTracker = () => {
                             >
                               <Plus className="w-3 h-3" />
                               <span>{word.front || word.word}</span>
+                              {word.folder && (
+                                <span className="text-xs opacity-70">({word.folder})</span>
+                              )}
                               {word.card_type === 'phrase' && (
                                 <span className="text-xs opacity-60">📝</span>
                               )}
