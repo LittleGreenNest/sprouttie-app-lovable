@@ -45,6 +45,7 @@ const Privacy = lazy(() => import('./pages/Privacy'));
 const ComingSoonPage = lazy(() => import('./components/ui/ComingSoonPage'));
 const PronunciationPortal = lazy(() => import('./components/pronunciation/PronunciationPortal'));
 const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlanner'));
+const BookRecommendations = lazy(() => import('./components/storybooks/BookRecommendations'));
 const Support = lazy(() => import('@/pages/Support'));
 
 // Loading spinner component
@@ -177,7 +178,12 @@ const AppContent = () => {
         >
           📅 Word Planner
         </button>
-        {/* Hidden tabs: Books, Bingo Generator, Activity History */}
+        <button 
+          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'book-recommendations' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
+          onClick={() => handleTabChange('book-recommendations')}
+        >
+          📚 Books
+        </button>
       </div>
 
       {/* Active Tab Content with Suspense for lazy loading */}
@@ -200,6 +206,7 @@ const AppContent = () => {
             
             <Route path="/pronunciation" element={<PronunciationPortal />} />
             <Route path="/word-planner" element={<WeeklyWordPlanner />} />
+            <Route path="/book-recommendations" element={<BookRecommendations />} />
 
             {/* profile page */}
             <Route path="/profile" element={<Profile />} />
