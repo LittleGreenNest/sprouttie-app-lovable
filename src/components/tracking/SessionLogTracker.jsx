@@ -35,6 +35,8 @@ const SessionLogTracker = () => {
   // Edit modal state
   const [editingSetId, setEditingSetId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState('all');
   
   // Session occurred flag
   const [sessionOccurred, setSessionOccurred] = useState(false);
@@ -365,12 +367,26 @@ const SessionLogTracker = () => {
       setCards.forEach(card => wordsInSets.add(card.id));
     });
     
-    return flashcards.filter(card => 
-      !wordsInSets.has(card.id) &&
-      (card.front?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-       card.back?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-       card.word?.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    return flashcards.filter(card => {
+      // Exclude words already in sets
+      if (wordsInSets.has(card.id)) return false;
+      
+      // Filter by search query
+      const matchesSearch = !searchQuery || 
+        card.front?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        card.back?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        card.word?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Filter by category (folder)
+      const matchesCategory = selectedCategoryFilter === 'all' || 
+        card.folder === selectedCategoryFilter;
+      
+      // Filter by type (word or phrase)
+      const matchesType = selectedTypeFilter === 'all' || 
+        card.card_type === selectedTypeFilter;
+      
+      return matchesSearch && matchesCategory && matchesType;
+    });
   };
 
   const handleAddWordToSet = async (wordId) => {
@@ -638,6 +654,34 @@ const SessionLogTracker = () => {
                       {/* Add new words */}
                       <div>
                         <p className="text-sm text-muted-foreground mb-2">Add words:</p>
+                        
+                        {/* Filter Row */}
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {/* Category Filter */}
+                          <select
+                            value={selectedCategoryFilter}
+                            onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                            className="px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm flex-1 min-w-[120px]"
+                          >
+                            <option value="all">All Categories</option>
+                            {categories.map(cat => (
+                              <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                          </select>
+                          
+                          {/* Type Filter (Word vs Phrase) */}
+                          <select
+                            value={selectedTypeFilter}
+                            onChange={(e) => setSelectedTypeFilter(e.target.value)}
+                            className="px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm"
+                          >
+                            <option value="all">All Types</option>
+                            <option value="word">Words</option>
+                            <option value="phrase">Phrases</option>
+                          </select>
+                        </div>
+                        
+                        {/* Search Input */}
                         <input
                           type="text"
                           value={searchQuery}
@@ -645,8 +689,10 @@ const SessionLogTracker = () => {
                           placeholder="Search available words..."
                           className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm mb-2"
                         />
-                        <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                          {getAvailableWords().slice(0, 20).map(word => (
+                        
+                        {/* Available Words List */}
+                        <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                          {getAvailableWords().slice(0, 30).map(word => (
                             <button
                               key={word.id}
                               onClick={() => handleAddWordToSet(word.id)}
@@ -654,11 +700,19 @@ const SessionLogTracker = () => {
                             >
                               <Plus className="w-3 h-3" />
                               <span>{word.front || word.word}</span>
+                              {word.card_type === 'phrase' && (
+                                <span className="text-xs opacity-60">📝</span>
+                              )}
                             </button>
                           ))}
                           {getAvailableWords().length === 0 && (
                             <span className="text-sm text-muted-foreground italic">
-                              No available words. Add more in Manage Flashcards.
+                              No available words{selectedCategoryFilter !== 'all' || selectedTypeFilter !== 'all' ? ' matching filters' : ''}. Add more in Manage Flashcards.
+                            </span>
+                          )}
+                          {getAvailableWords().length > 30 && (
+                            <span className="text-xs text-muted-foreground">
+                              +{getAvailableWords().length - 30} more (use filters or search)
                             </span>
                           )}
                         </div>
