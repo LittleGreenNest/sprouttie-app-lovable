@@ -496,13 +496,6 @@ export const FlashcardProvider = ({ children }) => {
       .map(id => flashcards.find(card => card.id === id))
       .filter(Boolean);
   }, [sets, flashcards]);
-    const set = sets.find(s => s.id === setId);
-    if (!set) return [];
-    
-    return set.flashcardIds
-      .map(id => flashcards.find(card => card.id === id))
-      .filter(Boolean);
-  };
   
   // Record daily tracking data (still localStorage for backwards compatibility)
   const saveTrackingData = (data) => {
