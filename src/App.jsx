@@ -220,57 +220,73 @@ const AppContent = () => {
   );
 };
 
+// Wrapper that adds FlashcardProvider only for authenticated routes
+const AuthenticatedApp = () => {
+  return (
+    <FlashcardProvider>
+      <AppContent />
+    </FlashcardProvider>
+  );
+};
+
+// Protected wrapper for print route
+const ProtectedPrint = () => {
+  return (
+    <FlashcardProvider>
+      <PrintFlashcards />
+    </FlashcardProvider>
+  );
+};
+
 // Main App component
 function App() {
   return (
     <Router>
       <AuthProvider>
-        <FlashcardProvider>
-          <div className="min-h-screen bg-gray-50">
-            <Navbar />
-            <Suspense fallback={<LoadingSpinner />}>
-              <Routes>
-                {/* Public routes */}
-                <Route path="/" element={<Login />} />
-                <Route path="/login" element={<Navigate to="/" replace />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/support" element={<Support />} />
-                <Route path="/plans" element={<Plans />} />
-                <Route path="/pdf-success" element={<PDFSuccess />} />
-                <Route path="/install" element={<Install />} />
-                
-                {/* Protected Print Flashcards route */}
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/print" element={<PrintFlashcards />} />
-                </Route>
+        <div className="min-h-screen bg-gray-50">
+          <Navbar />
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              {/* Public routes - NO FlashcardProvider needed */}
+              <Route path="/" element={<Login />} />
+              <Route path="/login" element={<Navigate to="/" replace />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/support" element={<Support />} />
+              <Route path="/plans" element={<Plans />} />
+              <Route path="/pdf-success" element={<PDFSuccess />} />
+              <Route path="/install" element={<Install />} />
+              
+              {/* Protected Print Flashcards route - with FlashcardProvider */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/print" element={<ProtectedPrint />} />
+              </Route>
 
-                {/* Protected routes */}
-                <Route path="/*" element={<AppContent />} />
-              </Routes>
-            </Suspense>
-            
-            {/* PWA Install Prompt */}
-            <InstallPrompt />
-            
-            {/* Toast Container for notifications */}
-            <ToastContainer 
-              position="top-center" 
-              autoClose={3000} 
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="light"
-            />
-          </div>
-        </FlashcardProvider>
+              {/* Protected routes - FlashcardProvider wraps AppContent */}
+              <Route path="/*" element={<AuthenticatedApp />} />
+            </Routes>
+          </Suspense>
+          
+          {/* PWA Install Prompt */}
+          <InstallPrompt />
+          
+          {/* Toast Container for notifications */}
+          <ToastContainer 
+            position="top-center" 
+            autoClose={3000} 
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
+        </div>
       </AuthProvider>
     </Router>
   );
