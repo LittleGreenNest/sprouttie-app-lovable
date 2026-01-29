@@ -1,5 +1,5 @@
 // context/FlashcardContext.js - Supabase-backed flashcard storage
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 
@@ -48,7 +48,6 @@ export const FlashcardProvider = ({ children }) => {
   const currentUser = authContext?.currentUser;
   const [categories, setCategories] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
-  const [sets, setSets] = useState(defaultSets);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [migrationDone, setMigrationDone] = useState(false);
@@ -63,12 +62,10 @@ export const FlashcardProvider = ({ children }) => {
     }
   }, [currentUser?.id]);
 
-  // Build sets from flashcards when flashcards are loaded
-  useEffect(() => {
-    if (flashcards.length > 0) {
-      const builtSets = buildSetsFromFlashcards(flashcards);
-      setSets(builtSets);
-    }
+  // Memoize sets derived from flashcards to prevent recalculation
+  const sets = useMemo(() => {
+    if (flashcards.length === 0) return defaultSets;
+    return buildSetsFromFlashcards(flashcards);
   }, [flashcards]);
 
   // No need for localStorage cleanup - sets are derived from Supabase
@@ -414,14 +411,8 @@ export const FlashcardProvider = ({ children }) => {
   };
   
   const deleteFlashcard = async (id) => {
-    // Remove from sets first
-    const inSets = sets.some(set => set.flashcardIds.includes(id));
-    if (inSets) {
-      setSets(prev => prev.map(set => ({
-        ...set,
-        flashcardIds: set.flashcardIds.filter(cardId => cardId !== id)
-      })));
-    }
+    // Sets are derived from flashcards, so just delete the flashcard
+    // and the set will auto-update via useMemo
 
     if (currentUser?.id) {
       try {
@@ -447,20 +438,9 @@ export const FlashcardProvider = ({ children }) => {
   };
   
   // Set operations - now persisted to Supabase via set_number field
-  const updateSetFlashcards = async (setId, flashcardIds, flashcardDates = null) => {
-    // Update local state immediately
-    setSets(prev => prev.map(set => {
-      if (set.id === setId) {
-        const updatedSet = { ...set, flashcardIds };
-        if (flashcardDates !== null) {
-          updatedSet.flashcardDates = flashcardDates;
-        }
-        return updatedSet;
-      }
-      return set;
-    }));
-
-    // Update flashcards local state with new set_number
+  // Sets are derived from flashcards via useMemo, so we only update flashcards state
+  const updateSetFlashcards = useCallback(async (setId, flashcardIds, flashcardDates = null) => {
+    // Update flashcards local state with new set_number (sets will auto-derive)
     setFlashcards(prev => prev.map(card => {
       if (flashcardIds.includes(card.id)) {
         return { ...card, set_number: setId };
@@ -497,18 +477,25 @@ export const FlashcardProvider = ({ children }) => {
         console.error("Error updating set in Supabase:", error);
       }
     }
-  };
+  }, [currentUser?.id]);
   
-  // Get flashcards by category
-  const getFlashcardsByCategory = (categoryId) => {
+  // Memoized: Get flashcards by category
+  const getFlashcardsByCategory = useCallback((categoryId) => {
     return flashcards.filter(card => 
       card.categoryId === categoryId || 
       card.categoryId === categories.find(c => c.id === categoryId)?.name
     );
-  };
+  }, [flashcards, categories]);
   
-  // Get flashcards for a set
-  const getFlashcardsForSet = (setId) => {
+  // Memoized: Get flashcards for a set
+  const getFlashcardsForSet = useCallback((setId) => {
+    const set = sets.find(s => s.id === setId);
+    if (!set) return [];
+    
+    return set.flashcardIds
+      .map(id => flashcards.find(card => card.id === id))
+      .filter(Boolean);
+  }, [sets, flashcards]);
     const set = sets.find(s => s.id === setId);
     if (!set) return [];
     
