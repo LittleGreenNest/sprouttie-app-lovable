@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const SessionLogTracker = () => {
   const { currentUser } = useAuth();
-  const { sets, flashcards, getFlashcardsForSet, updateSetFlashcards, categories } = useFlashcards();
+  const { sets, flashcards, getFlashcardsForSet, updateSetFlashcards, categories, refreshFlashcards } = useFlashcards();
   
   // Date state
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -51,9 +51,10 @@ const SessionLogTracker = () => {
     return Object.values(roundTracking).filter(v => v).length;
   }, [roundTracking]);
 
-  // Load data when date or user changes
+  // Load data when date or user changes - also refresh flashcards to ensure sync
   useEffect(() => {
     if (currentUser) {
+      refreshFlashcards(); // Ensure flashcards are synced from DB
       loadTrackingData();
       loadRotationSummary();
     } else {
