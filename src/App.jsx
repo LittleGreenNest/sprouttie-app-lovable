@@ -1,5 +1,5 @@
 // App.js - Main Application File with Lazy Loading for Performance
-import React, { useState, Suspense, lazy } from 'react';
+import React, { useState, Suspense, lazy, useRef, useEffect as useReactEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -55,6 +55,22 @@ const LoadingSpinner = () => (
   </div>
 );
 
+// Navigation tab configuration
+const PRIMARY_TABS = [
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'daily-tracking', label: 'Session Log' },
+  { id: 'manage-flashcards', label: 'Flashcards' },
+  { id: 'book-recommendations', label: '📚 Books' },
+];
+
+const MORE_TABS = [
+  { id: 'flashed-history', label: 'Flashed History' },
+  { id: 'all-words', label: 'All Words' },
+  { id: 'spoken-words', label: 'Words He Says' },
+  { id: 'pronunciation', label: '🎧 Pronunciation' },
+  { id: 'word-planner', label: '📅 Word Planner' },
+];
+
 export const fetchUserPlan = async (userEmail) => {
   const { data, error } = await supabase
     .from('users')
@@ -70,7 +86,86 @@ export const fetchUserPlan = async (userEmail) => {
   return data?.plan || 'free';
 };
 
-// AppContent component to handle tab navigation after authentication
+// Navigation Tabs Component with "More" dropdown
+const NavigationTabs = ({ activeTab, onTabChange }) => {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useReactEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setMoreOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const isMoreTabActive = MORE_TABS.some(tab => tab.id === activeTab);
+  const activeMoreLabel = MORE_TABS.find(tab => tab.id === activeTab)?.label;
+
+  return (
+    <div className="flex mb-6 border-b items-center">
+      {/* Primary tabs */}
+      {PRIMARY_TABS.map(tab => (
+        <button
+          key={tab.id}
+          className={`px-3 sm:px-4 py-2 whitespace-nowrap text-sm sm:text-base ${
+            activeTab === tab.id 
+              ? 'bg-green-100 border-b-2 border-green-500 font-medium' 
+              : 'hover:bg-gray-100'
+          }`}
+          onClick={() => onTabChange(tab.id)}
+        >
+          {tab.label}
+        </button>
+      ))}
+
+      {/* More dropdown */}
+      <div className="relative" ref={dropdownRef}>
+        <button
+          className={`px-3 sm:px-4 py-2 whitespace-nowrap text-sm sm:text-base flex items-center gap-1 ${
+            isMoreTabActive 
+              ? 'bg-green-100 border-b-2 border-green-500 font-medium' 
+              : 'hover:bg-gray-100'
+          }`}
+          onClick={() => setMoreOpen(!moreOpen)}
+        >
+          {isMoreTabActive ? activeMoreLabel : 'More'}
+          <svg 
+            className={`w-3 h-3 transition-transform ${moreOpen ? 'rotate-180' : ''}`} 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {/* Dropdown menu */}
+        {moreOpen && (
+          <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+            {MORE_TABS.map(tab => (
+              <button
+                key={tab.id}
+                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                  activeTab === tab.id ? 'bg-green-50 text-green-700 font-medium' : 'text-gray-700'
+                }`}
+                onClick={() => {
+                  onTabChange(tab.id);
+                  setMoreOpen(false);
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 const AppContent = () => {
   const { currentUser, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -128,63 +223,8 @@ const AppContent = () => {
         </div>
       </div>
       
-      {/* Navigation Tabs - with proper spacing from header */}
-      <div className="flex mb-6 border-b overflow-x-auto">
-        <button 
-          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
-          onClick={() => handleTabChange('dashboard')}
-        >
-          Dashboard
-        </button>
-        <button 
-          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'daily-tracking' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
-          onClick={() => handleTabChange('daily-tracking')}
-        >
-          Session Log
-        </button>
-        <button 
-          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'flashed-history' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
-          onClick={() => handleTabChange('flashed-history')}
-        >
-          Flashed History
-        </button>
-        <button
-          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'all-words' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
-          onClick={() => handleTabChange('all-words')}
-        >
-          All Words
-        </button>
-        <button 
-          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'manage-flashcards' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
-          onClick={() => handleTabChange('manage-flashcards')}
-        >
-          Manage Flashcards
-        </button>
-        <button 
-          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'spoken-words' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
-          onClick={() => handleTabChange('spoken-words')}
-        >
-          Words He Says
-        </button>
-        <button 
-          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'pronunciation' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
-          onClick={() => handleTabChange('pronunciation')}
-        >
-          🎧 Pronunciation
-        </button>
-        <button 
-          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'word-planner' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
-          onClick={() => handleTabChange('word-planner')}
-        >
-          📅 Word Planner
-        </button>
-        <button 
-          className={`px-4 py-2 whitespace-nowrap ${activeTab === 'book-recommendations' ? 'bg-green-100 border-b-2 border-green-500 font-medium' : 'hover:bg-gray-100'}`}
-          onClick={() => handleTabChange('book-recommendations')}
-        >
-          📚 Books
-        </button>
-      </div>
+      {/* Navigation Tabs - with dropdown for secondary tabs */}
+      <NavigationTabs activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* Active Tab Content with Suspense for lazy loading */}
       <Suspense fallback={<LoadingSpinner />}>
