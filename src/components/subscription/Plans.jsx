@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../integrations/supabase/client';
 import WaitlistForm from '../WaitlistForm';
-
+import DowngradeReview from './DowngradeReview';
 const plans = [
   {
     name: 'Free',
@@ -309,34 +309,19 @@ export default function Plans() {
         </div>
       )}
 
-      {/* Free plan confirmation modal */}
+      {/* Downgrade Review Modal */}
       {showFreeConfirm && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto py-8"
           onClick={() => setShowFreeConfirm(false)}
         >
-          <div
-            className="bg-white rounded-lg p-6 max-w-md mx-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Confirm Downgrade</h3>
-            <p className="text-sm text-gray-600 mb-6">
-              Are you sure you want to downgrade to the Free plan? You'll lose access to premium features like printable PDFs and unlimited story generation.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowFreeConfirm(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDowngradeToFree}
-                className="px-4 py-2 bg-orange-600 text-white rounded-md text-sm font-medium hover:bg-orange-700"
-              >
-                Yes, Downgrade to Free
-              </button>
-            </div>
+          <div onClick={(e) => e.stopPropagation()}>
+            <DowngradeReview
+              currentPlan={userPlan}
+              onCancel={() => setShowFreeConfirm(false)}
+              onConfirm={handleDowngradeToFree}
+              loading={loading}
+            />
           </div>
         </div>
       )}
