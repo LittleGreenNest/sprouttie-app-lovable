@@ -27,6 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Lazy-loaded components for better initial load
 const PDFSuccess = lazy(() => import('./pdf-success'));
+const UpgradeSuccess = lazy(() => import('./components/subscription/UpgradeSuccess'));
 const Profile = lazy(() => import('./components/user/Profile'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const SessionLogTracker = lazy(() => import('./components/tracking/SessionLogTracker'));
@@ -298,6 +299,7 @@ function App() {
               <Route path="/support" element={<Support />} />
               <Route path="/plans" element={<Plans />} />
               <Route path="/pdf-success" element={<PDFSuccess />} />
+              <Route path="/upgrade-success" element={<UpgradeSuccess />} />
               <Route path="/install" element={<Install />} />
               
               {/* Protected Print Flashcards route - with FlashcardProvider */}
