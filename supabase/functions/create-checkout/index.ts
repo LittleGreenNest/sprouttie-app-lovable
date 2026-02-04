@@ -96,7 +96,7 @@ serve(async (req) => {
         },
       ],
       mode: 'subscription',
-      success_url: `${origin}/profile?success=true`,
+      success_url: `${origin}/upgrade-success?plan=${planKey}`,
       cancel_url: `${origin}/plans?canceled=true`,
       metadata: {
         user_id: user.id,
