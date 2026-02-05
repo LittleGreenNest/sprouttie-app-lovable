@@ -15,6 +15,7 @@
    const [importResults, setImportResults] = useState(null);
    const [error, setError] = useState(null);
    const [duplicateHandling, setDuplicateHandling] = useState('skip');
+  const [parsing, setParsing] = useState(false);
  
    const handleFileSelect = (e) => {
      const selectedFile = e.target.files[0];
@@ -32,12 +33,14 @@
      setError(null);
      setImportResults(null);
      setParsedData(null);
+    setParsing(true);
  
      // Parse CSV
      Papa.parse(selectedFile, {
        header: true,
        skipEmptyLines: true,
        complete: (results) => {
+        setParsing(false);
          if (results.errors.length > 0) {
            setError('Error parsing file: ' + results.errors[0].message);
            return;
@@ -83,6 +86,7 @@
          setParsedData(normalizedData);
        },
        error: (err) => {
+        setParsing(false);
          setError('Failed to parse file: ' + err.message);
        }
      });
@@ -204,6 +208,7 @@
      setParsedData(null);
      setImportResults(null);
      setError(null);
+    setParsing(false);
    };
  
    const handleClose = () => {
@@ -216,19 +221,20 @@
    const categories = parsedData ? [...new Set(parsedData.map(c => c.category))] : [];
  
    return (
-     <AnimatePresence>
+    <AnimatePresence mode="wait">
+      {isOpen && (
        <motion.div
          initial={{ opacity: 0 }}
          animate={{ opacity: 1 }}
          exit={{ opacity: 0 }}
-         className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4"
          onClick={(e) => e.target === e.currentTarget && handleClose()}
        >
          <motion.div
            initial={{ scale: 0.9, opacity: 0 }}
            animate={{ scale: 1, opacity: 1 }}
            exit={{ scale: 0.9, opacity: 0 }}
-           className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto relative"
          >
            {/* Header */}
            <div className="flex items-center justify-between mb-6">
@@ -306,7 +312,12 @@
                    className="hidden"
                  />
                  <Upload className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-                 {file ? (
+                {parsing ? (
+                  <div className="flex flex-col items-center">
+                    <div className="w-5 h-5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mb-2" />
+                    <p className="text-sm text-slate-600">Parsing file...</p>
+                  </div>
+                ) : file ? (
                    <p className="text-sm font-medium text-emerald-600">{file.name}</p>
                  ) : (
                    <>
@@ -398,6 +409,7 @@
            )}
          </motion.div>
        </motion.div>
+      )}
      </AnimatePresence>
    );
  };
