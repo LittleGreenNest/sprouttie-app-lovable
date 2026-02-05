@@ -216,8 +216,6 @@
      onClose();
    };
  
-   if (!isOpen) return null;
- 
    const categories = parsedData ? [...new Set(parsedData.map(c => c.category))] : [];
  
    return (
