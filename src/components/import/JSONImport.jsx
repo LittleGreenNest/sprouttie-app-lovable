@@ -5,11 +5,130 @@
  import { useAuth } from '../../context/AuthContext';
  import { logActivity, ACTIVITY_TYPES } from '../../utils/activityLogger';
  
+/**
+ * Normalize flashcard data from various export formats
+ * Supports: Sprouttie exports, generic JSON arrays, and other common formats
+ */
+const normalizeFlashcardData = (data) => {
+  // Case 1: Standard Sprouttie export format
+  if (data.appName === 'Sprouttie' && data.data?.flashcards) {
+    return {
+      flashcards: data.data.flashcards.map(card => ({
+        word: card.word || card.front || '',
+        english: card.english || card.back || '',
+        category: card.category || card.folder || 'Imported',
+        card_type: card.card_type || 'word',
+        phrase_group: card.phrase_group || null,
+        card_status: card.card_status || 'waiting',
+        mastery_level: card.mastery_level || 0,
+        active_day_count: card.active_day_count || 0,
+        set_number: card.set_number || null,
+        date_introduced: card.date_introduced || null,
+        date_retired: card.date_retired || null,
+      })),
+      categories: data.data.categories || [],
+      summary: data.summary || null,
+      format: 'sprouttie',
+    };
+  }
+
+  // Case 2: Direct array of flashcards (legacy or simplified export)
+  if (Array.isArray(data)) {
+    return {
+      flashcards: data.map(card => ({
+        word: card.word || card.front || card.chinese || card.hanzi || card.text || '',
+        english: card.english || card.back || card.meaning || card.translation || '',
+        category: card.category || card.folder || card.categoryId || 'Imported',
+        card_type: card.card_type || card.type || 'word',
+        phrase_group: card.phrase_group || null,
+        card_status: card.card_status || card.status || 'waiting',
+        mastery_level: card.mastery_level || 0,
+        active_day_count: card.active_day_count || 0,
+        set_number: card.set_number || null,
+        date_introduced: card.date_introduced || null,
+        date_retired: card.date_retired || null,
+      })),
+      categories: [],
+      summary: null,
+      format: 'array',
+    };
+  }
+
+  // Case 3: Object with flashcards array at root level
+  if (data.flashcards && Array.isArray(data.flashcards)) {
+    return {
+      flashcards: data.flashcards.map(card => ({
+        word: card.word || card.front || card.chinese || card.hanzi || '',
+        english: card.english || card.back || card.meaning || '',
+        category: card.category || card.folder || 'Imported',
+        card_type: card.card_type || 'word',
+        phrase_group: card.phrase_group || null,
+        card_status: card.card_status || 'waiting',
+        mastery_level: card.mastery_level || 0,
+        active_day_count: card.active_day_count || 0,
+        set_number: card.set_number || null,
+        date_introduced: card.date_introduced || null,
+        date_retired: card.date_retired || null,
+      })),
+      categories: data.categories || [],
+      summary: data.summary || null,
+      format: 'root-flashcards',
+    };
+  }
+
+  // Case 4: Object with cards array (alternative naming)
+  if (data.cards && Array.isArray(data.cards)) {
+    return {
+      flashcards: data.cards.map(card => ({
+        word: card.word || card.front || card.chinese || '',
+        english: card.english || card.back || card.meaning || '',
+        category: card.category || card.folder || 'Imported',
+        card_type: card.card_type || 'word',
+        phrase_group: card.phrase_group || null,
+        card_status: card.card_status || 'waiting',
+        mastery_level: card.mastery_level || 0,
+        active_day_count: card.active_day_count || 0,
+        set_number: card.set_number || null,
+        date_introduced: card.date_introduced || null,
+        date_retired: card.date_retired || null,
+      })),
+      categories: data.categories || [],
+      summary: null,
+      format: 'root-cards',
+    };
+  }
+
+  // Case 5: Object with words array
+  if (data.words && Array.isArray(data.words)) {
+    return {
+      flashcards: data.words.map(card => ({
+        word: card.word || card.front || card.chinese || card.text || '',
+        english: card.english || card.back || card.meaning || '',
+        category: card.category || card.folder || 'Imported',
+        card_type: 'word',
+        phrase_group: null,
+        card_status: 'waiting',
+        mastery_level: 0,
+        active_day_count: 0,
+        set_number: null,
+        date_introduced: null,
+        date_retired: null,
+      })),
+      categories: data.categories || [],
+      summary: null,
+      format: 'root-words',
+    };
+  }
+
+  return null;
+};
+
  const JSONImport = ({ isOpen, onClose, onImportComplete }) => {
    const { currentUser } = useAuth();
    const fileInputRef = useRef(null);
    const [file, setFile] = useState(null);
    const [importData, setImportData] = useState(null);
+  const [normalizedData, setNormalizedData] = useState(null);
    const [importing, setImporting] = useState(false);
    const [importResults, setImportResults] = useState(null);
    const [error, setError] = useState(null);
@@ -27,24 +146,31 @@
      setFile(selectedFile);
      setError(null);
      setImportResults(null);
+    setNormalizedData(null);
  
      const reader = new FileReader();
      reader.onload = (event) => {
        try {
          const data = JSON.parse(event.target.result);
+        setImportData(data);
          
-         // Validate the export format
-         if (!data.appName || data.appName !== 'Sprouttie') {
-           setError('This file does not appear to be a Sprouttie export');
+        // Try to normalize the data
+        const normalized = normalizeFlashcardData(data);
+        
+        if (!normalized) {
+          setError('Could not recognize the file format. Please ensure it contains flashcard data.');
            return;
          }
          
-         if (!data.data || !data.data.flashcards) {
-           setError('Invalid export format: missing flashcard data');
+        if (normalized.flashcards.length === 0) {
+          setError('No flashcards found in the file.');
            return;
          }
  
-         setImportData(data);
+        // Filter out empty entries
+        normalized.flashcards = normalized.flashcards.filter(card => card.word && card.word.trim() !== '');
+        
+        setNormalizedData(normalized);
        } catch (err) {
          setError('Failed to parse JSON file: ' + err.message);
        }
@@ -53,7 +179,7 @@
    };
  
    const handleImport = async () => {
-     if (!importData || !currentUser) return;
+    if (!normalizedData || !currentUser) return;
  
      setImporting(true);
      setError(null);
@@ -72,7 +198,7 @@
        );
  
        const results = {
-         total: importData.data.flashcards.length,
+        total: normalizedData.flashcards.length,
          imported: 0,
          skipped: 0,
          replaced: 0,
@@ -81,7 +207,7 @@
  
        const flashcardsToInsert = [];
  
-       for (const card of importData.data.flashcards) {
+      for (const card of normalizedData.flashcards) {
          const word = card.word || '';
          const category = card.category || 'Imported';
          const key = `${word}::${category}`.toLowerCase();
@@ -141,6 +267,7 @@
          imported: results.imported,
          skipped: results.skipped,
          replaced: results.replaced,
+        format: normalizedData.format,
        });
  
        setImportResults(results);
@@ -159,6 +286,7 @@
    const resetState = () => {
      setFile(null);
      setImportData(null);
+    setNormalizedData(null);
      setImportResults(null);
      setError(null);
    };
@@ -170,6 +298,24 @@
  
    if (!isOpen) return null;
  
+  // Calculate summary stats from normalized data
+  const getSummaryStats = () => {
+    if (!normalizedData) return null;
+    
+    const flashcards = normalizedData.flashcards;
+    const categories = new Set(flashcards.map(c => c.category));
+    const phrases = flashcards.filter(c => c.card_type === 'phrase').length;
+    
+    return {
+      totalCategories: categories.size,
+      totalFlashcards: flashcards.length,
+      totalWords: flashcards.length - phrases,
+      totalPhrases: phrases,
+    };
+  };
+
+  const summaryStats = getSummaryStats();
+
    return (
      <AnimatePresence>
        <motion.div
@@ -193,7 +339,7 @@
                </div>
                <div>
                  <h2 className="text-xl font-bold text-slate-800">Import Flashcards</h2>
-                 <p className="text-sm text-slate-500">From Sprouttie JSON export</p>
+                <p className="text-sm text-slate-500">From JSON export file</p>
                </div>
              </div>
              <button
@@ -208,7 +354,12 @@
            {error && (
              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-               <p className="text-sm text-red-700">{error}</p>
+              <div className="text-sm text-red-700">
+                <p>{error}</p>
+                <p className="mt-2 text-xs text-red-600">
+                  Supported formats: Sprouttie exports, arrays of flashcards, or objects with flashcards/cards/words arrays.
+                </p>
+              </div>
              </div>
            )}
  
@@ -260,51 +411,78 @@
                  ) : (
                    <>
                      <p className="text-sm font-medium text-slate-700">
-                       Click to select a Sprouttie export file
+                      Click to select a JSON export file
                      </p>
-                     <p className="text-xs text-slate-500 mt-1">JSON format only</p>
+                    <p className="text-xs text-slate-500 mt-1">Supports various export formats</p>
                    </>
                  )}
                </div>
  
                {/* Preview */}
-               {importData && (
+              {normalizedData && summaryStats && (
                  <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
-                   <h3 className="font-semibold text-slate-800 mb-2">Preview</h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-slate-800">Preview</h3>
+                    <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full">
+                      {normalizedData.format === 'sprouttie' ? 'Sprouttie format' : 'Auto-detected'}
+                    </span>
+                  </div>
                    <div className="grid grid-cols-2 gap-2 text-sm">
                      <div className="p-2 bg-white rounded-lg">
                        <span className="text-slate-500">Categories:</span>
                        <span className="ml-2 font-medium text-slate-800">
-                         {importData.summary?.totalCategories || importData.data.categories?.length || 0}
+                        {summaryStats.totalCategories}
                        </span>
                      </div>
                      <div className="p-2 bg-white rounded-lg">
                        <span className="text-slate-500">Flashcards:</span>
                        <span className="ml-2 font-medium text-slate-800">
-                         {importData.summary?.totalFlashcards || importData.data.flashcards?.length || 0}
+                        {summaryStats.totalFlashcards}
                        </span>
                      </div>
                      <div className="p-2 bg-white rounded-lg">
                        <span className="text-slate-500">Words:</span>
                        <span className="ml-2 font-medium text-slate-800">
-                         {importData.summary?.totalWords || 0}
+                        {summaryStats.totalWords}
                        </span>
                      </div>
                      <div className="p-2 bg-white rounded-lg">
                        <span className="text-slate-500">Phrases:</span>
                        <span className="ml-2 font-medium text-slate-800">
-                         {importData.summary?.totalPhrases || 0}
+                        {summaryStats.totalPhrases}
                        </span>
                      </div>
                    </div>
-                   <p className="text-xs text-slate-500 mt-2">
-                     Exported: {new Date(importData.exportedAt).toLocaleDateString()}
-                   </p>
+                  
+                  {/* Sample preview */}
+                  {normalizedData.flashcards.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-slate-200">
+                      <p className="text-xs text-slate-500 mb-2">Sample entries:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {normalizedData.flashcards.slice(0, 8).map((card, idx) => (
+                          <span key={idx} className="text-xs px-2 py-1 bg-white border border-slate-200 rounded-md">
+                            {card.word}
+                          </span>
+                        ))}
+                        {normalizedData.flashcards.length > 8 && (
+                          <span className="text-xs px-2 py-1 text-slate-500">
+                            +{normalizedData.flashcards.length - 8} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {importData?.exportedAt && (
+                    <p className="text-xs text-slate-500 mt-2">
+                      Exported: {new Date(importData.exportedAt).toLocaleDateString()}
+                    </p>
+                  )}
                  </div>
                )}
  
                {/* Duplicate Handling */}
-               {importData && (
+              {normalizedData && (
                  <div className="mt-4">
                    <label className="block text-sm font-medium text-slate-700 mb-2">
                      If duplicates are found:
@@ -322,7 +500,7 @@
                )}
  
                {/* Actions */}
-               {importData && (
+              {normalizedData && (
                  <div className="mt-6 flex gap-3">
                    <button
                      onClick={handleImport}
@@ -337,7 +515,7 @@
                      ) : (
                        <>
                          <Upload className="w-4 h-4" />
-                         Import {importData.data.flashcards?.length || 0} Flashcards
+                        Import {normalizedData.flashcards.length} Flashcards
                        </>
                      )}
                    </button>
