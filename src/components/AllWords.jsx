@@ -4,13 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { useFlashcards } from '../context/FlashcardContext';
 import { getFlashcardStatsByCategory } from '../utils/supabaseApi';
-import { LayoutGrid, List, ChevronDown, ChevronUp, Download } from 'lucide-react';
+import { LayoutGrid, List, ChevronDown, ChevronUp, Download, Upload } from 'lucide-react';
 import SearchFilterBar from './all-words/SearchFilterBar';
 import GlobalProgressBar from './all-words/GlobalProgressBar';
 import CategoryCard from './all-words/CategoryCard';
 import StatsSummary from './all-words/StatsSummary';
 import { useAllWordsUIState } from '../hooks/useAllWordsUIState';
 import { generateExportData, downloadExportFile, generateCSVExport, downloadCSVFile } from '../utils/flashcardExport';
+import JSONImport from './import/JSONImport';
 
 const AllWords = () => {
   const { currentUser, plan: userPlan } = useAuth(); // Use plan from AuthContext - no extra fetch
@@ -25,6 +26,7 @@ const AllWords = () => {
   const [categoryStats, setCategoryStats] = useState({});
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [dbFlashcardsRaw, setDbFlashcardsRaw] = useState([]);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Initialize UI state management (must be before any conditional returns)
   const uiState = useAllWordsUIState(flashcardsByCategory, allCategories);
@@ -235,6 +237,15 @@ const AllWords = () => {
         </div>
         
         <div className="flex items-center gap-2">
+          {/* Import Button */}
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition-all flex items-center gap-2"
+          >
+            <Upload className="w-4 h-4" />
+            Import
+          </button>
+          
           {/* Export Button */}
           <div className="relative">
             <button
@@ -439,6 +450,16 @@ const AllWords = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Import Modal */}
+      <JSONImport
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImportComplete={() => {
+          setShowImportModal(false);
+          fetchFlashcardsAndTracking();
+        }}
+      />
     </div>
   );
 };
