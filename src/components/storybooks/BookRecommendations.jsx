@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
 import { useFlashcards } from '../../context/FlashcardContext';
-import { Book, Sparkles, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Book, Sparkles, RefreshCw, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -189,19 +189,25 @@ const BookRecommendations = () => {
       {recommendations.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2">
           {recommendations.map((book, index) => (
-            <motion.div
+            <motion.a
               key={index}
+              href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&i=stripbooks`}
+              target="_blank"
+              rel="noopener noreferrer"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-md transition-shadow"
+              className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-md transition-shadow block cursor-pointer group"
             >
               {/* Color Bar */}
               <div className={`h-2 ${colorClasses[book.coverColor]?.split(' ')[0] || 'bg-primary'}`} />
               
               <div className="p-4 space-y-3">
                 <div>
-                  <h3 className="font-semibold text-foreground">{book.title}</h3>
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{book.title}</h3>
+                    <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />
+                  </div>
                   <p className="text-sm text-muted-foreground">by {book.author}</p>
                 </div>
 
@@ -229,7 +235,7 @@ const BookRecommendations = () => {
                   </div>
                 )}
               </div>
-            </motion.div>
+            </motion.a>
           ))}
         </div>
       )}
