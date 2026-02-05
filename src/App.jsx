@@ -107,12 +107,12 @@ const NavigationTabs = ({ activeTab, onTabChange }) => {
   const activeMoreLabel = MORE_TABS.find(tab => tab.id === activeTab)?.label;
 
   return (
-    <div className="flex mb-6 border-b items-center">
+    <div className="flex mb-6 border-b items-center overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent -mx-4 px-4 sm:mx-0 sm:px-0">
       {/* Primary tabs */}
       {PRIMARY_TABS.map(tab => (
         <button
           key={tab.id}
-          className={`px-3 sm:px-4 py-2 whitespace-nowrap text-sm sm:text-base ${
+          className={`px-3 sm:px-4 py-2 whitespace-nowrap text-sm sm:text-base flex-shrink-0 ${
             activeTab === tab.id 
               ? 'bg-green-100 border-b-2 border-green-500 font-medium' 
               : 'hover:bg-gray-100'
@@ -123,8 +123,8 @@ const NavigationTabs = ({ activeTab, onTabChange }) => {
         </button>
       ))}
 
-      {/* More dropdown */}
-      <div className="relative" ref={dropdownRef}>
+      {/* More dropdown - flex-shrink-0 prevents it from shrinking */}
+      <div className="relative flex-shrink-0" ref={dropdownRef}>
         <button
           className={`px-3 sm:px-4 py-2 whitespace-nowrap text-sm sm:text-base flex items-center gap-1 ${
             isMoreTabActive 
