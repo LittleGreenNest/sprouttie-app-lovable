@@ -48,10 +48,6 @@ const PronunciationPortal = lazy(() => import('./components/pronunciation/Pronun
 const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlanner'));
 const BookRecommendations = lazy(() => import('./components/storybooks/BookRecommendations'));
 const Support = lazy(() => import('@/pages/Support'));
- 
- // LingBridge components
- const LingBridgeLayout = lazy(() => import('./components/lingbridge/LingBridgeLayout'));
- const TranslatorPage = lazy(() => import('./components/lingbridge/TranslatorPage'));
 
 // Loading spinner component
 const LoadingSpinner = () => (
@@ -66,7 +62,6 @@ const PRIMARY_TABS = [
   { id: 'daily-tracking', label: 'Session Log' },
   { id: 'manage-flashcards', label: 'Flashcards' },
   { id: 'book-recommendations', label: '📚 Books' },
-   { id: 'lingbridge', label: '🌏 LingBridge' },
 ];
 
 const MORE_TABS = [
@@ -189,7 +184,6 @@ const AppContent = () => {
     else if (path.includes('/spoken-words')) setActiveTab('spoken-words');
     else if (path.includes('/pronunciation')) setActiveTab('pronunciation');
     else if (path.includes('/book-recommendations')) setActiveTab('book-recommendations');
-     else if (path.includes('/lingbridge')) setActiveTab('lingbridge');
     else if (path.includes('/bingo-generator')) setActiveTab('bingo-generator');
     else if (path.includes('/manage-flashcards')) setActiveTab('manage-flashcards');
     else if (path.includes('/activity-history')) setActiveTab('activity-history');
@@ -199,12 +193,7 @@ const AppContent = () => {
   // Handle tab changes
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-     // Special handling for LingBridge to navigate to translator by default
-     if (tab === 'lingbridge') {
-       navigate('/lingbridge/translate');
-     } else {
-       navigate(`/${tab}`);
-     }
+    navigate(`/${tab}`);
   };
 
   // Loading state
@@ -259,15 +248,6 @@ const AppContent = () => {
             <Route path="/pronunciation" element={<PronunciationPortal />} />
             <Route path="/word-planner" element={<WeeklyWordPlanner />} />
             <Route path="/book-recommendations" element={<BookRecommendations />} />
- 
-             {/* LingBridge routes */}
-             <Route path="/lingbridge" element={<LingBridgeLayout />}>
-               <Route index element={<Navigate to="/lingbridge/translate" replace />} />
-               <Route path="translate" element={<TranslatorPage />} />
-               <Route path="tones" element={<ComingSoonPage title="Tones Guide" description="Interactive Hokkien tone learning coming soon!" />} />
-               <Route path="library" element={<ComingSoonPage title="Listen & Learn" description="Audio transcription and study materials coming soon!" />} />
-               <Route path="vocabulary" element={<ComingSoonPage title="Vocabulary" description="Vocabulary lists with image scanning coming soon!" />} />
-             </Route>
 
             {/* profile page */}
             <Route path="/profile" element={<Profile />} />

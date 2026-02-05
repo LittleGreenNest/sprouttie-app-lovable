@@ -41,39 +41,6 @@ export type Database = {
         }
         Relationships: []
       }
-      audio_cache: {
-        Row: {
-          audio_path: string
-          created_at: string | null
-          duration_ms: number | null
-          id: string
-          language: string | null
-          text_hash: string
-          text_raw: string
-          voice: string | null
-        }
-        Insert: {
-          audio_path: string
-          created_at?: string | null
-          duration_ms?: number | null
-          id?: string
-          language?: string | null
-          text_hash: string
-          text_raw: string
-          voice?: string | null
-        }
-        Update: {
-          audio_path?: string
-          created_at?: string | null
-          duration_ms?: number | null
-          id?: string
-          language?: string | null
-          text_hash?: string
-          text_raw?: string
-          voice?: string | null
-        }
-        Relationships: []
-      }
       daily_flashing_sessions: {
         Row: {
           cards_introduced: number | null
@@ -212,57 +179,6 @@ export type Database = {
           set_number?: number | null
           updated_at?: string | null
           user_id?: string
-        }
-        Relationships: []
-      }
-      lexicon: {
-        Row: {
-          audio_url: string | null
-          created_at: string | null
-          english: string | null
-          hanzi: string | null
-          id: string
-          language: string | null
-          poj: string | null
-          source: string | null
-          tags: string[] | null
-          tailo: string | null
-          tone_pattern: string[] | null
-          updated_at: string | null
-          user_id: string | null
-          variant: string | null
-        }
-        Insert: {
-          audio_url?: string | null
-          created_at?: string | null
-          english?: string | null
-          hanzi?: string | null
-          id?: string
-          language?: string | null
-          poj?: string | null
-          source?: string | null
-          tags?: string[] | null
-          tailo?: string | null
-          tone_pattern?: string[] | null
-          updated_at?: string | null
-          user_id?: string | null
-          variant?: string | null
-        }
-        Update: {
-          audio_url?: string | null
-          created_at?: string | null
-          english?: string | null
-          hanzi?: string | null
-          id?: string
-          language?: string | null
-          poj?: string | null
-          source?: string | null
-          tags?: string[] | null
-          tailo?: string | null
-          tone_pattern?: string[] | null
-          updated_at?: string | null
-          user_id?: string | null
-          variant?: string | null
         }
         Relationships: []
       }
