@@ -27,6 +27,29 @@
     white-space: normal;
   }
 
+  /* Custom scrollbar for navigation tabs */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 9999px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: #9ca3af;
+  }
+
   /* Keyboard navigation focus styles */
   .keyboard-user *:focus {
     @apply outline-none ring-2 ring-sprouttie-green ring-offset-2;
