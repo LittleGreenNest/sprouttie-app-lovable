@@ -4,16 +4,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { useFlashcards } from '../context/FlashcardContext';
 import { getFlashcardStatsByCategory } from '../utils/supabaseApi';
-import { LayoutGrid, List, ChevronDown, ChevronUp } from 'lucide-react';
+import { LayoutGrid, List, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import SearchFilterBar from './all-words/SearchFilterBar';
 import GlobalProgressBar from './all-words/GlobalProgressBar';
 import CategoryCard from './all-words/CategoryCard';
 import StatsSummary from './all-words/StatsSummary';
 import { useAllWordsUIState } from '../hooks/useAllWordsUIState';
+import { generateExportData, downloadExportFile, generateCSVExport, downloadCSVFile } from '../utils/flashcardExport';
 
 const AllWords = () => {
   const { currentUser, plan: userPlan } = useAuth(); // Use plan from AuthContext - no extra fetch
-  const { categories, flashcards: localFlashcards, updateFlashcard, loading: flashcardsLoading } = useFlashcards();
+  const { categories, flashcards: localFlashcards, updateFlashcard, loading: flashcardsLoading, sets } = useFlashcards();
   const [flashcardsByCategory, setFlashcardsByCategory] = useState({});
   const [flashedEver, setFlashedEver] = useState(new Set());
   const [loading, setLoading] = useState(true);
@@ -22,6 +23,8 @@ const AllWords = () => {
   const [newCategory, setNewCategory] = useState('');
   const [allCategories, setAllCategories] = useState([]);
   const [categoryStats, setCategoryStats] = useState({});
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [dbFlashcardsRaw, setDbFlashcardsRaw] = useState([]);
 
   // Initialize UI state management (must be before any conditional returns)
   const uiState = useAllWordsUIState(flashcardsByCategory, allCategories);
@@ -68,6 +71,9 @@ const AllWords = () => {
         .order('front', { ascending: true });
 
       if (flashcardsError) throw flashcardsError;
+
+      // Store raw flashcards for export
+      setDbFlashcardsRaw(dbFlashcards || []);
 
       // Fetch all tracking data (ever flashed) from backend
       const { data: tracking, error: trackingError } = await supabase
@@ -229,6 +235,47 @@ const AllWords = () => {
         </div>
         
         <div className="flex items-center gap-2">
+          {/* Export Button */}
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-all flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            
+            {showExportMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-20">
+                <button
+                  onClick={() => {
+                    const flashcardsToExport = dataSource === 'db' ? dbFlashcardsRaw : localFlashcards;
+                    const categoriesToExport = allCategories.map(name => ({ id: name, name }));
+                    const exportData = generateExportData(flashcardsToExport, categoriesToExport);
+                    downloadExportFile(exportData);
+                    setShowExportMenu(false);
+                  }}
+                  className="w-full px-4 py-3 text-left text-sm font-medium text-slate-700 hover:bg-emerald-50 rounded-t-xl transition-colors"
+                >
+                  Export as JSON
+                  <p className="text-xs text-slate-500 mt-0.5">For importing to another Sprouttie</p>
+                </button>
+                <button
+                  onClick={() => {
+                    const flashcardsToExport = dataSource === 'db' ? dbFlashcardsRaw : localFlashcards;
+                    const csvContent = generateCSVExport(flashcardsToExport);
+                    downloadCSVFile(csvContent);
+                    setShowExportMenu(false);
+                  }}
+                  className="w-full px-4 py-3 text-left text-sm font-medium text-slate-700 hover:bg-emerald-50 rounded-b-xl transition-colors border-t border-slate-100"
+                >
+                  Export as CSV
+                  <p className="text-xs text-slate-500 mt-0.5">For spreadsheets</p>
+                </button>
+              </div>
+            )}
+          </div>
+          
           <button
             onClick={uiState.isCompact ? uiState.expandAll : uiState.collapseAll}
             className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all"
