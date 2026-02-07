@@ -138,15 +138,19 @@ export const FlashcardProvider = ({ children }) => {
       const transformedFlashcards = (supabaseFlashcards || []).map(card => ({
         id: card.id,
         word: card.front,
+        front: card.front,
+        back: card.back,
         english: card.back,
         pinyin: '', // Supabase doesn't store pinyin separately yet
         categoryId: card.folder || 'default',
+        folder: card.folder || 'default',
         card_type: card.card_type || 'word',
         phrase_group: card.phrase_group,
         card_status: card.card_status,
         active_day_count: card.active_day_count,
         date_introduced: card.date_introduced,
         date_retired: card.date_retired,
+        created_at: card.created_at,
         mastery_level: card.mastery_level,
         set_number: card.set_number,
       }));

@@ -378,9 +378,10 @@ const SessionLogTracker = () => {
         card.back?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         card.word?.toLowerCase().includes(searchQuery.toLowerCase());
       
-      // Filter by category (folder)
+      // Filter by category (folder) - check both folder and categoryId
+      const cardFolder = card.folder || card.categoryId;
       const matchesCategory = selectedCategoryFilter === 'all' || 
-        card.folder === selectedCategoryFilter;
+        cardFolder === selectedCategoryFilter;
       
       // Filter by type (word or phrase)
       const matchesType = selectedTypeFilter === 'all' || 

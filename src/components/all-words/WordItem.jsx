@@ -54,15 +54,15 @@ const WordItem = ({ card, isFlashed, onEdit, index, isCompact = false, userPlan 
           {!isCompact && (card.created_at || card.first_flashed_at) && (
             <div className="text-xs text-slate-600 mt-2 space-y-1 bg-slate-50/50 rounded-md px-2 py-1.5 border border-slate-100">
               {card.created_at && (
-                <div className="flex items-center gap-1.5">
-                  <span className="font-semibold text-slate-700">Added to deck:</span>
+                <div className="flex flex-wrap items-center gap-1">
+                  <span className="font-semibold text-slate-700">Added:</span>
                   <span className="text-slate-600">
                     {new Date(card.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                 </div>
               )}
               {card.first_flashed_at && (
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1">
                   <span className="font-semibold text-emerald-700">First tracked:</span>
                   <span className="text-emerald-600">
                     {new Date(card.first_flashed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}

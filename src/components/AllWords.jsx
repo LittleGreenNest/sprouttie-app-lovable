@@ -236,43 +236,43 @@ const AllWords = () => {
           </p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Import Button */}
           <button
             onClick={() => setShowImportModal(true)}
-            className="px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition-all flex items-center gap-2"
+            className="px-3 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition-all flex items-center gap-1.5"
           >
             <Upload className="w-4 h-4" />
-            Import
+            <span className="hidden sm:inline">Import</span>
           </button>
           
-          {/* Export Button - CSV only for simplicity */}
+          {/* Export Button */}
           <button
             onClick={() => {
               const flashcardsToExport = dataSource === 'db' ? dbFlashcardsRaw : localFlashcards;
               const csvContent = generateCSVExport(flashcardsToExport);
               downloadCSVFile(csvContent);
             }}
-            className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-all flex items-center gap-2"
+            className="px-3 py-2 text-sm font-medium text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-all flex items-center gap-1.5"
           >
             <FileSpreadsheet className="w-4 h-4" />
-            Export CSV
+            <span className="hidden sm:inline">Export</span>
           </button>
           
           <button
             onClick={uiState.isCompact ? uiState.expandAll : uiState.collapseAll}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all"
+            className="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-1"
           >
-            {uiState.isCompact ? <ChevronDown className="w-4 h-4 inline mr-1" /> : <ChevronUp className="w-4 h-4 inline mr-1" />}
-            {uiState.expandedCategories.size > 0 ? 'Collapse All' : 'Expand All'}
+            {uiState.expandedCategories.size > 0 ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <span className="hidden sm:inline">{uiState.expandedCategories.size > 0 ? 'Collapse' : 'Expand'}</span>
           </button>
           
           <button
             onClick={() => uiState.setIsCompact(!uiState.isCompact)}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2"
+            className="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-1.5"
           >
             {uiState.isCompact ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
-            {uiState.isCompact ? 'Full View' : 'Compact View'}
+            <span className="hidden sm:inline">{uiState.isCompact ? 'Full' : 'Compact'}</span>
           </button>
         </div>
       </div>
