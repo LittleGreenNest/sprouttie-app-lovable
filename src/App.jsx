@@ -207,20 +207,20 @@ const AppContent = () => {
 
   return (
     <div className="App max-w-4xl mx-auto p-4 bg-gray-50 min-h-screen">
-      {/* Header with Sprouttie Mascot - improved spacing */}
-      <div className="flex items-center mb-10">
+      {/* Header with Sprouttie Mascot - responsive spacing */}
+      <div className="flex items-center mb-6 sm:mb-10">
         <img 
           src="/images/sprouttie-mascot.png" 
           alt="Sprouttie Mascot" 
-          className="h-24 mr-6"
+          className="h-16 sm:h-24 mr-3 sm:mr-6"
           loading="lazy"
           onError={(e) => {
             e.target.style.display = 'none';
           }}
         />
         <div>
-          <h1 className="text-3xl font-bold text-green-800 mb-2">Sprouttie</h1>
-          <h2 className="text-xl text-green-700">Sprouttie Flashcard System</h2>
+          <h1 className="text-2xl sm:text-3xl font-bold text-green-800 mb-1 sm:mb-2">Sprouttie</h1>
+          <h2 className="text-base sm:text-xl text-green-700">Sprouttie Flashcard System</h2>
         </div>
       </div>
       
