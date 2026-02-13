@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useFlashcards } from '../context/FlashcardContext';
 import { jsPDF } from 'jspdf';
 import { usePlanAccess, UpgradePrompt } from '../hooks/usePlanAccess';
+import { supabase } from '@/integrations/supabase/client';
 
 // CJK range + Latin Extended/combining marks (covers ā á ǎ à, etc.)
 const needsNotoCJK = (s='') => /[\u4E00-\u9FFF]/.test(s);
@@ -37,6 +38,8 @@ let NOTO_SC_B64 = null;     // Noto Sans SC – for Chinese
 let NOTO_LAT_B64 = null;    // Noto Sans – for pinyin with tone marks
 
 
+const FREE_MONTHLY_PRINT_LIMIT = 3;
+
 function PrintFlashcards({ onClose }) {
 const { 
 categories,
@@ -45,7 +48,7 @@ sets,
 getFlashcardsForSet
 } = useFlashcards();
 
-  const { hasFeature, loading: planLoading } = usePlanAccess();
+  const { hasFeature, userPlan, loading: planLoading } = usePlanAccess();
 
   // State for selection
   const [selectedFlashcards, setSelectedFlashcards] = useState([]);
@@ -54,6 +57,10 @@ getFlashcardsForSet
   const [previewFlashcards, setPreviewFlashcards] = useState([]);
   const [message, setMessage] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  
+  // Free print tracking
+  const [freePrintsUsed, setFreePrintsUsed] = useState(0);
+  const [freePrintsLoading, setFreePrintsLoading] = useState(true);
 
 // NEW: back-side printing & preview toggle
 const [includeBack, setIncludeBack] = useState(false);   // whether to add back pages
@@ -86,6 +93,40 @@ useEffect(() => {
     }
   })();
   return () => { cancelled = true; };
+}, []);
+
+// Load free print usage for current month
+useEffect(() => {
+  const loadFreePrintCount = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setFreePrintsLoading(false);
+        return;
+      }
+      
+      // Get first day of current month
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      
+      const { data, error } = await supabase
+        .from('activity_logs')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('activity_type', 'print_flashcards')
+        .gte('created_at', monthStart);
+      
+      if (!error) {
+        setFreePrintsUsed(data?.length || 0);
+      }
+    } catch (err) {
+      console.error('Error loading print count:', err);
+    } finally {
+      setFreePrintsLoading(false);
+    }
+  };
+  
+  loadFreePrintCount();
 }, []);
 
   // Effect to clear selections when changing selection mode
@@ -377,6 +418,11 @@ if (cardIndex === 0 && page.length > 1) {
         );
       });
       
+      // Update free print counter
+      if (userPlan === 'free') {
+        setFreePrintsUsed(prev => prev + 1);
+      }
+      
       setMessage('PDF generated successfully! Check your downloads folder.');
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
@@ -386,8 +432,12 @@ if (cardIndex === 0 && page.length > 1) {
     }
   };
 
+  // Determine if user can print: paid plan OR free with prints remaining
+  const canPrint = hasFeature('pdfExport') || (userPlan === 'free' && freePrintsUsed < FREE_MONTHLY_PRINT_LIMIT);
+  const freePrintsRemaining = FREE_MONTHLY_PRINT_LIMIT - freePrintsUsed;
+
   // Check if user has access to print feature
-  if (planLoading) {
+  if (planLoading || freePrintsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
@@ -395,14 +445,14 @@ if (cardIndex === 0 && page.length > 1) {
     );
   }
 
-  if (!hasFeature('pdfExport')) {
+  if (!canPrint) {
     return (
       <div className="max-w-2xl mx-auto p-4">
         <UpgradePrompt
           feature="Print Flashcards"
           requiredPlan="print"
-          title="Print Flashcards - Premium Feature"
-          description="Create beautiful printable PDF flashcards for your child. Upgrade to the Print Plan to access this feature!"
+          title="Monthly Free Prints Used"
+          description={`You've used all ${FREE_MONTHLY_PRINT_LIMIT} free prints this month. Upgrade to the Print Plan for unlimited printing!`}
         />
       </div>
     );
@@ -411,6 +461,13 @@ if (cardIndex === 0 && page.length > 1) {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-md p-6">
+        {/* Free prints remaining banner */}
+        {userPlan === 'free' && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+            🖨️ <strong>{freePrintsRemaining}</strong> of {FREE_MONTHLY_PRINT_LIMIT} free prints remaining this month.{' '}
+            <a href="/plans" className="underline font-medium text-amber-900 hover:text-amber-700">Upgrade for unlimited</a>
+          </div>
+        )}
         <h3 className="font-medium mb-4">Print Flashcards</h3>
         
         {/* Selection Mode Tabs */}

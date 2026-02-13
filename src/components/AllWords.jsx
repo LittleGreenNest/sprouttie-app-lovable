@@ -31,11 +31,23 @@ const AllWords = () => {
   // Initialize UI state management (must be before any conditional returns)
   const uiState = useAllWordsUIState(flashcardsByCategory, allCategories);
 
+  // Refetch on mount AND when dependencies change (ensures fresh tracking data on navigation)
   useEffect(() => {
     if (!flashcardsLoading) {
       fetchFlashcardsAndTracking();
     }
   }, [currentUser, localFlashcards, categories, flashcardsLoading]);
+
+  // Also refetch when window regains focus (e.g., coming back from Session Log tab)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (!flashcardsLoading && currentUser) {
+        fetchFlashcardsAndTracking();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [currentUser, flashcardsLoading]);
 
   const fetchFlashcardsAndTracking = async () => {
     setLoading(true);
