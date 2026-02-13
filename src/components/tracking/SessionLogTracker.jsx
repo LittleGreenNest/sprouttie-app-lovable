@@ -341,21 +341,23 @@ const SessionLogTracker = () => {
     });
   };
 
-  // Get flashcards for each set with oldest marker
+  // Get flashcards for each set with oldest/newest markers
   const getSetWordsWithMeta = (setId) => {
     const setFlashcards = getFlashcardsForSet(setId);
     if (setFlashcards.length === 0) return [];
     
-    // Sort by date_introduced or created_at
+    // Sort by date_introduced (primary), then created_at (fallback), ascending
     const sorted = [...setFlashcards].sort((a, b) => {
       const aDate = a.date_introduced || a.created_at || '9999-12-31';
       const bDate = b.date_introduced || b.created_at || '9999-12-31';
       return new Date(aDate) - new Date(bDate);
     });
     
+    const lastIndex = sorted.length - 1;
     return sorted.map((card, index) => ({
       ...card,
-      isOldest: index === 0,
+      isOldest: sorted.length > 1 && index === 0,
+      isNewest: sorted.length > 1 && index === lastIndex,
       dayCount: card.active_day_count || 1
     }));
   };
@@ -601,6 +603,11 @@ const SessionLogTracker = () => {
                       {word.isOldest && (
                         <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">
                           Oldest
+                        </span>
+                      )}
+                      {word.isNewest && (
+                        <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded">
+                          ✨ New
                         </span>
                       )}
                       {word.back && word.back !== (word.front || word.word) && (
