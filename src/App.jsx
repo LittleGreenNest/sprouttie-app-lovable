@@ -19,6 +19,9 @@ import ForgotPassword from './components/auth/ForgotPassword';
 import ResetPassword from './components/auth/ResetPassword';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
+// Landing Page
+import LandingPage from './pages/LandingPage';
+
 // PWA Components
 import InstallPrompt from './components/pwa/InstallPrompt';
 
@@ -289,8 +292,8 @@ function App() {
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
               {/* Public routes - NO FlashcardProvider needed */}
-              <Route path="/" element={<Login />} />
-              <Route path="/login" element={<Navigate to="/" replace />} />
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />

@@ -17,6 +17,9 @@ const Login = () => {
     }
   }, [currentUser, navigate]);
 
+  // Redirect to login if user hits "/" which is now the landing page
+  // This component is now at /login
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
