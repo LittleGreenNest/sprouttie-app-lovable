@@ -1,6 +1,6 @@
 // App.js - Main Application File with Lazy Loading for Performance
-import React, { useState, Suspense, lazy, useRef, useEffect as useReactEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -59,21 +59,6 @@ const LoadingSpinner = () => (
   </div>
 );
 
-// Navigation tab configuration
-const PRIMARY_TABS = [
-  { id: 'dashboard', label: 'Dashboard' },
-  { id: 'daily-tracking', label: 'Session Log' },
-  { id: 'manage-flashcards', label: 'Flashcards' },
-  { id: 'book-recommendations', label: '📚 Books' },
-];
-
-const MORE_TABS = [
-  { id: 'flashed-history', label: 'Flashed History' },
-  { id: 'all-words', label: 'All Words' },
-  { id: 'spoken-words', label: 'Words He Says' },
-  { id: 'pronunciation', label: '🎧 Pronunciation' },
-  { id: 'word-planner', label: '📅 Word Planner' },
-];
 
 export const fetchUserPlan = async (userEmail) => {
   const { data, error } = await supabase
@@ -90,125 +75,11 @@ export const fetchUserPlan = async (userEmail) => {
   return data?.plan || 'free';
 };
 
-// Navigation Tabs Component with "More" dropdown
-const NavigationTabs = ({ activeTab, onTabChange }) => {
-  const [moreOpen, setMoreOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  // Close dropdown when clicking outside
-  useReactEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setMoreOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, []);
-
-  const isMoreTabActive = MORE_TABS.some(tab => tab.id === activeTab);
-  const activeMoreLabel = MORE_TABS.find(tab => tab.id === activeTab)?.label;
-
-  return (
-    <div className="flex mb-6 border-b items-center overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent -mx-4 px-4 sm:mx-0 sm:px-0">
-      {/* Primary tabs */}
-      {PRIMARY_TABS.map(tab => (
-        <button
-          key={tab.id}
-          className={`px-3 sm:px-4 py-2 whitespace-nowrap text-sm sm:text-base flex-shrink-0 ${
-            activeTab === tab.id 
-              ? 'bg-green-100 border-b-2 border-green-500 font-medium' 
-              : 'hover:bg-gray-100'
-          }`}
-          onClick={() => onTabChange(tab.id)}
-        >
-          {tab.label}
-        </button>
-      ))}
-
-      {/* More dropdown - flex-shrink-0 prevents it from shrinking */}
-      <div className="relative flex-shrink-0" ref={dropdownRef}>
-        <button
-          className={`px-3 sm:px-4 py-2 whitespace-nowrap text-sm sm:text-base flex items-center gap-1 ${
-            isMoreTabActive 
-              ? 'bg-green-100 border-b-2 border-green-500 font-medium' 
-              : 'hover:bg-gray-100'
-          }`}
-          onClick={(e) => {
-            e.stopPropagation();
-            setMoreOpen(!moreOpen);
-          }}
-        >
-          {isMoreTabActive ? activeMoreLabel : 'More'}
-          <svg 
-            className={`w-3 h-3 transition-transform ${moreOpen ? 'rotate-180' : ''}`} 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-
-        {/* Dropdown menu */}
-        {moreOpen && (
-          <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-            {MORE_TABS.map(tab => (
-              <button
-                key={tab.id}
-                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                  activeTab === tab.id ? 'bg-green-50 text-green-700 font-medium' : 'text-gray-700'
-                }`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  onTabChange(tab.id);
-                  setMoreOpen(false);
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+// BottomTabBar handles navigation now
+import BottomTabBar from './components/layout/BottomTabBar';
 const AppContent = () => {
-  const { currentUser, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { loading } = useAuth();
 
-  // Map paths to tab names
-  React.useEffect(() => {
-    // Set active tab based on current path
-    const path = location.pathname;
-    if (path.includes('/dashboard')) setActiveTab('dashboard');
-    else if (path.includes('/daily-tracking')) setActiveTab('daily-tracking');
-    else if (path.includes('/flashed-history')) setActiveTab('flashed-history');
-    else if (path.includes('/all-words')) setActiveTab('all-words');
-    else if (path.includes('/spoken-words')) setActiveTab('spoken-words');
-    else if (path.includes('/pronunciation')) setActiveTab('pronunciation');
-    else if (path.includes('/book-recommendations')) setActiveTab('book-recommendations');
-    else if (path.includes('/bingo-generator')) setActiveTab('bingo-generator');
-    else if (path.includes('/manage-flashcards')) setActiveTab('manage-flashcards');
-    else if (path.includes('/activity-history')) setActiveTab('activity-history');
-    else if (path.includes('/word-planner')) setActiveTab('word-planner');
-  }, [location]);
-
-  // Handle tab changes
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    navigate(`/${tab}`);
-  };
-
-  // Loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -218,26 +89,24 @@ const AppContent = () => {
   }
 
   return (
-    <div className="App max-w-4xl mx-auto p-4 bg-gray-50 min-h-screen">
-      {/* Header with Sprouttie Mascot - responsive spacing */}
+    <div className="App max-w-4xl mx-auto p-4 pb-24 bg-gray-50 min-h-screen">
+      {/* Header with Sprouttie Mascot */}
       <div className="flex items-center mb-6 sm:mb-10">
         <img 
           src="/images/sprouttie-mascot.png" 
           alt="Sprouttie Mascot" 
           className="h-16 sm:h-24 mr-3 sm:mr-6"
           loading="lazy"
-          onError={(e) => {
-            e.target.style.display = 'none';
-          }}
+          onError={(e) => { e.target.style.display = 'none'; }}
         />
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-green-800 mb-1 sm:mb-2">Sprouttie</h1>
           <h2 className="text-base sm:text-xl text-green-700">Sprouttie Flashcard System</h2>
         </div>
       </div>
-      
-      {/* Navigation Tabs - with dropdown for secondary tabs */}
-      <NavigationTabs activeTab={activeTab} onTabChange={handleTabChange} />
+
+      {/* Bottom Tab Bar */}
+      <BottomTabBar />
 
       {/* Active Tab Content with Suspense for lazy loading */}
       <Suspense fallback={<LoadingSpinner />}>
