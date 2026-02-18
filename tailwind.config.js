@@ -7,24 +7,29 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        display: ['DM Serif Display', 'Georgia', 'serif'],
+        body: ['DM Sans', 'system-ui', 'sans-serif'],
+      },
       colors: {
         sprouttie: {
           green: {
-            DEFAULT: 'hsl(145, 35%, 48%)',
-            light: 'hsl(145, 30%, 78%)',
-            dark: 'hsl(145, 40%, 32%)',
+            DEFAULT: 'hsl(152, 38%, 42%)',
+            light: 'hsl(150, 32%, 82%)',
+            dark: 'hsl(152, 42%, 28%)',
           },
           beige: {
-            DEFAULT: 'hsl(40, 40%, 92%)',
-            dark: 'hsl(40, 40%, 85%)',
+            DEFAULT: 'hsl(38, 45%, 92%)',
+            dark: 'hsl(38, 40%, 82%)',
           },
           coral: {
-            DEFAULT: 'hsl(15, 85%, 75%)',
-            light: 'hsl(15, 85%, 85%)',
-            dark: 'hsl(15, 85%, 65%)',
+            DEFAULT: 'hsl(12, 80%, 68%)',
+            light: 'hsl(12, 75%, 88%)',
+            dark: 'hsl(12, 72%, 52%)',
           },
-          cream: 'hsl(45, 60%, 97%)',
-          mint: 'hsl(145, 25%, 93%)',
+          cream: 'hsl(42, 55%, 97%)',
+          mint: 'hsl(150, 22%, 94%)',
+          ink: 'hsl(200, 18%, 18%)',
         },
         green: {
           50: '#ecfdf5',
