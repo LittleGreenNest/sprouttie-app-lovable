@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -70,24 +72,27 @@
 
 @layer base {
   :root {
-    /* Sprouttie Color Palette - Sage Green, Beige, Pastel Coral */
-    --sprouttie-green: 145 35% 48%;
-    --sprouttie-green-light: 145 30% 78%;
-    --sprouttie-green-dark: 145 40% 32%;
+    /* Sprouttie Color Palette — Playful Editorial */
+    --sprouttie-green: 152 38% 42%;
+    --sprouttie-green-light: 150 32% 82%;
+    --sprouttie-green-dark: 152 42% 28%;
     
-    --sprouttie-beige: 40 40% 92%;
-    --sprouttie-beige-dark: 40 40% 85%;
+    --sprouttie-beige: 38 45% 92%;
+    --sprouttie-beige-dark: 38 40% 82%;
     
-    --sprouttie-coral: 15 85% 75%;
-    --sprouttie-coral-light: 15 85% 85%;
-    --sprouttie-coral-dark: 15 85% 65%;
+    --sprouttie-coral: 12 80% 68%;
+    --sprouttie-coral-light: 12 75% 88%;
+    --sprouttie-coral-dark: 12 72% 52%;
     
-    --sprouttie-cream: 45 60% 97%;
-    --sprouttie-mint: 145 25% 93%;
+    --sprouttie-cream: 42 55% 97%;
+    --sprouttie-mint: 150 22% 94%;
+    
+    --sprouttie-ink: 200 18% 18%;
+    --sprouttie-warm-gray: 30 8% 55%;
     
     /* Semantic Colors */
     --background: var(--sprouttie-cream);
-    --foreground: 168 20% 25%;
+    --foreground: var(--sprouttie-ink);
     --primary: var(--sprouttie-green);
     --secondary: var(--sprouttie-coral);
     --accent: var(--sprouttie-beige);
@@ -96,120 +101,75 @@
     --error: 0 70% 60%;
     
     /* UI State Colors */
-    --muted: 145 15% 92%;
-    --muted-foreground: 145 10% 45%;
-    --border: 145 15% 85%;
-    --input: 145 15% 85%;
+    --muted: 150 12% 93%;
+    --muted-foreground: var(--sprouttie-warm-gray);
+    --border: 150 12% 86%;
+    --input: 150 12% 86%;
     --ring: var(--sprouttie-green);
     
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--sprouttie-green-light)), hsl(var(--sprouttie-coral-light)));
-    --gradient-calm: linear-gradient(to right, hsl(var(--sprouttie-mint)), hsl(var(--sprouttie-beige)));
+    /* Typography */
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
     
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(168 20% 25% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(168 20% 25% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(168 20% 25% / 0.1);
-    --shadow-glow: 0 0 20px hsl(var(--sprouttie-green) / 0.3);
+    --shadow-sm: 0 1px 3px 0 hsl(200 18% 18% / 0.04);
+    --shadow-md: 0 4px 12px -2px hsl(200 18% 18% / 0.08);
+    --shadow-lg: 0 12px 32px -8px hsl(200 18% 18% / 0.12);
+    --shadow-editorial: 0 20px 60px -15px hsl(200 18% 18% / 0.15);
     
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   body {
-    @apply bg-gradient-to-br from-[hsl(168,60%,95%)] via-[hsl(45,60%,97%)] to-[hsl(40,40%,92%)] min-h-screen;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    @apply bg-[hsl(var(--background))] min-h-screen text-[hsl(var(--foreground))];
+    font-family: var(--font-body);
+  }
+  
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
   }
 }
 
 @layer utilities {
   /* Animations */
   @keyframes bounce-leaf {
-    0%, 100% {
-      transform: translateY(0) rotate(0deg);
-    }
-    50% {
-      transform: translateY(-10px) rotate(5deg);
-    }
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(5deg); }
   }
   
   @keyframes wave {
-    0%, 100% {
-      transform: rotate(0deg);
-    }
-    25% {
-      transform: rotate(15deg);
-    }
-    75% {
-      transform: rotate(-15deg);
-    }
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(15deg); }
+    75% { transform: rotate(-15deg); }
   }
   
   @keyframes grow-sprout {
-    0% {
-      transform: scale(0.8) translateY(10px);
-      opacity: 0;
-    }
-    100% {
-      transform: scale(1) translateY(0);
-      opacity: 1;
-    }
+    0% { transform: scale(0.8) translateY(10px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
   }
   
   @keyframes slide-in {
-    0% {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    100% {
-      transform: translateX(0);
-      opacity: 1;
-    }
+    0% { transform: translateX(100%); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
   }
   
   @keyframes fade-in {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   
   @keyframes pulse-glow {
-    0%, 100% {
-      box-shadow: 0 0 20px rgba(168, 217, 197, 0.5);
-    }
-    50% {
-      box-shadow: 0 0 40px rgba(168, 217, 197, 0.8);
-    }
+    0%, 100% { box-shadow: 0 0 20px rgba(168, 217, 197, 0.5); }
+    50% { box-shadow: 0 0 40px rgba(168, 217, 197, 0.8); }
   }
   
-  .animate-bounce-leaf {
-    animation: bounce-leaf 2s ease-in-out infinite;
-  }
-  
-  .animate-wave {
-    animation: wave 1.5s ease-in-out infinite;
-  }
-  
-  .animate-grow-sprout {
-    animation: grow-sprout 0.6s ease-out forwards;
-  }
-  
-  .animate-slide-in {
-    animation: slide-in 0.5s ease-out;
-  }
-  
-  .animate-fade-in {
-    animation: fade-in 0.5s ease-out;
-  }
-  
-  .animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
+  .animate-bounce-leaf { animation: bounce-leaf 2s ease-in-out infinite; }
+  .animate-wave { animation: wave 1.5s ease-in-out infinite; }
+  .animate-grow-sprout { animation: grow-sprout 0.6s ease-out forwards; }
+  .animate-slide-in { animation: slide-in 0.5s ease-out; }
+  .animate-fade-in { animation: fade-in 0.5s ease-out; }
+  .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
   
   /* Hover Effects */
   .hover-lift {
@@ -219,7 +179,6 @@
   .hover-glow {
     @apply transition-shadow duration-300;
   }
-  
   .hover-glow:hover {
     box-shadow: 0 10px 40px -10px rgba(168, 217, 197, 0.6);
   }
@@ -229,29 +188,19 @@
     @apply bg-white/60 backdrop-blur-sm;
   }
   
-  /* Gradient Backgrounds */
-  .bg-gradient-sprouttie {
-    background: var(--gradient-primary);
+  /* Editorial utilities */
+  .font-display {
+    font-family: var(--font-display);
   }
-  
-  .bg-gradient-calm {
-    background: var(--gradient-calm);
+  .font-body {
+    font-family: var(--font-body);
   }
   
   /* Chip Styles */
   .chip {
     @apply inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200;
   }
-  
-  .chip-seed {
-    @apply bg-amber-100 text-amber-800 hover:bg-amber-200;
-  }
-  
-  .chip-leaf {
-    @apply bg-green-100 text-green-800 hover:bg-green-200;
-  }
-  
-  .chip-bloom {
-    @apply bg-pink-100 text-pink-800 hover:bg-pink-200;
-  }
+  .chip-seed { @apply bg-amber-100 text-amber-800 hover:bg-amber-200; }
+  .chip-leaf { @apply bg-green-100 text-green-800 hover:bg-green-200; }
+  .chip-bloom { @apply bg-pink-100 text-pink-800 hover:bg-pink-200; }
 }
