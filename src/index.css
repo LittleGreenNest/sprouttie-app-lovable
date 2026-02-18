@@ -72,7 +72,7 @@
 
 @layer base {
   :root {
-    /* Sprouttie Color Palette — Playful Editorial */
+    /* Sprouttie Color Palette — Polished Playful */
     --sprouttie-green: 152 38% 42%;
     --sprouttie-green-light: 150 32% 82%;
     --sprouttie-green-dark: 152 42% 28%;
@@ -111,19 +111,28 @@
     --font-display: 'DM Serif Display', Georgia, serif;
     --font-body: 'DM Sans', system-ui, sans-serif;
     
-    /* Shadows */
-    --shadow-sm: 0 1px 3px 0 hsl(200 18% 18% / 0.04);
-    --shadow-md: 0 4px 12px -2px hsl(200 18% 18% / 0.08);
-    --shadow-lg: 0 12px 32px -8px hsl(200 18% 18% / 0.12);
-    --shadow-editorial: 0 20px 60px -15px hsl(200 18% 18% / 0.15);
+    /* Premium Shadows */
+    --shadow-xs: 0 1px 2px 0 hsl(200 18% 18% / 0.03);
+    --shadow-sm: 0 1px 3px 0 hsl(200 18% 18% / 0.04), 0 1px 2px -1px hsl(200 18% 18% / 0.03);
+    --shadow-md: 0 4px 6px -1px hsl(200 18% 18% / 0.06), 0 2px 4px -2px hsl(200 18% 18% / 0.04);
+    --shadow-lg: 0 10px 15px -3px hsl(200 18% 18% / 0.08), 0 4px 6px -4px hsl(200 18% 18% / 0.04);
+    --shadow-xl: 0 20px 25px -5px hsl(200 18% 18% / 0.08), 0 8px 10px -6px hsl(200 18% 18% / 0.03);
+    --shadow-editorial: 0 25px 50px -12px hsl(200 18% 18% / 0.15);
+    
+    /* Glass */
+    --glass-bg: hsl(0 0% 100% / 0.65);
+    --glass-border: hsl(0 0% 100% / 0.35);
+    --glass-blur: 12px;
     
     /* Transitions */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   body {
     @apply bg-[hsl(var(--background))] min-h-screen text-[hsl(var(--foreground))];
     font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   h1, h2, h3, h4 {
@@ -183,9 +192,12 @@
     box-shadow: 0 10px 40px -10px rgba(168, 217, 197, 0.6);
   }
   
-  /* Glass Effect */
+  /* Glass Effect — Premium */
   .glass {
-    @apply bg-white/60 backdrop-blur-sm;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
   }
   
   /* Editorial utilities */

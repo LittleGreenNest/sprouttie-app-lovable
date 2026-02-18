@@ -3,17 +3,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 40 },
+const fade = {
+  hidden: { opacity: 0, y: 20 },
   visible: (i = 0) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.12, duration: 0.7, ease: [0.22, 1, 0.36, 1] },
+    transition: { delay: i * 0.1, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] },
   }),
 };
 
 const stagger = {
-  visible: { transition: { staggerChildren: 0.08 } },
+  visible: { transition: { staggerChildren: 0.06 } },
 };
 
 const FEATURES = [
@@ -30,7 +30,7 @@ const FEATURES = [
   {
     icon: '🌱',
     title: 'Learning Garden',
-    desc: 'Watch your child\'s vocabulary grow in a pressure-free visual garden — no scores, no ranks.',
+    desc: "Watch your child's vocabulary grow in a pressure-free visual garden — no scores, no ranks.",
   },
   {
     icon: '🎧',
@@ -45,7 +45,7 @@ const FEATURES = [
   {
     icon: '📚',
     title: 'Book Recommendations',
-    desc: 'AI-powered book suggestions matched to your child\'s current vocabulary level.',
+    desc: "AI-powered book suggestions matched to your child's current vocabulary level.",
   },
 ];
 
@@ -78,124 +78,92 @@ const LandingPage = () => {
   }, [currentUser, navigate]);
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--background))]">
-      {/* Hero — Asymmetric Editorial */}
-      <section className="relative overflow-hidden px-4 pt-16 pb-24 sm:pt-24 sm:pb-36">
-        {/* Decorative background shape */}
-        <div className="absolute top-0 right-0 w-[60%] h-[80%] bg-sprouttie-mint rounded-bl-[120px] -z-10 opacity-60" />
-        
-        <div className="max-w-6xl mx-auto grid sm:grid-cols-[1.2fr_0.8fr] gap-12 items-center">
-          {/* Left — Copy */}
+    <div className="min-h-screen bg-gradient-to-b from-[hsl(var(--sprouttie-cream))] via-white to-[hsl(var(--sprouttie-mint))]">
+      {/* Hero */}
+      <section className="relative overflow-hidden px-5 pt-14 pb-20 sm:pt-20 sm:pb-28">
+        {/* Soft gradient orb */}
+        <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-[hsl(var(--sprouttie-green-light)/0.4)] blur-[100px] -z-10" />
+        <div className="absolute bottom-0 left-[-10%] w-[400px] h-[400px] rounded-full bg-[hsl(var(--sprouttie-coral-light)/0.3)] blur-[100px] -z-10" />
+
+        <div className="max-w-5xl mx-auto grid sm:grid-cols-[1.1fr_0.9fr] gap-10 items-center">
           <div>
-            <motion.div
-              variants={fadeUp}
-              initial="hidden"
-              animate="visible"
-              custom={0}
-              className="inline-block mb-6"
-            >
-              <span className="font-body text-sm font-semibold tracking-widest uppercase text-sprouttie-coral-dark bg-sprouttie-coral-light px-4 py-1.5 rounded-full">
+            <motion.div variants={fade} initial="hidden" animate="visible" custom={0} className="inline-block mb-5">
+              <span className="font-body text-xs font-semibold tracking-widest uppercase text-[hsl(var(--sprouttie-coral-dark))] bg-[hsl(var(--sprouttie-coral-light)/0.5)] px-3.5 py-1.5 rounded-full backdrop-blur-sm border border-[hsl(var(--sprouttie-coral-light))]">
                 For parents who flash
               </span>
             </motion.div>
 
             <motion.h1
-              variants={fadeUp}
+              variants={fade}
               initial="hidden"
               animate="visible"
               custom={1}
-              className="font-display text-5xl sm:text-7xl leading-[1.05] text-sprouttie-ink mb-6"
+              className="font-display text-4xl sm:text-6xl leading-[1.08] text-[hsl(var(--sprouttie-ink))] mb-5"
             >
               Teach your child Mandarin
-              <span className="block text-sprouttie-coral-dark italic">
-                without the pressure.
-              </span>
+              <span className="block text-[hsl(var(--sprouttie-coral-dark))] italic">without the pressure.</span>
             </motion.h1>
 
             <motion.p
-              variants={fadeUp}
+              variants={fade}
               initial="hidden"
               animate="visible"
               custom={2}
-              className="font-body text-lg sm:text-xl text-[hsl(var(--muted-foreground))] max-w-lg mb-10 leading-relaxed"
+              className="font-body text-base sm:text-lg text-[hsl(var(--muted-foreground))] max-w-md mb-8 leading-relaxed"
             >
-              A flashcard tracking system for parents using the Glenn Doman method. 
+              A flashcard tracking system for parents using the Glenn Doman method.
               Log sessions, plan weekly words, and watch vocabulary grow — at their own pace.
             </motion.p>
 
-            <motion.div
-              variants={fadeUp}
-              initial="hidden"
-              animate="visible"
-              custom={3}
-              className="flex flex-col sm:flex-row gap-4"
-            >
+            <motion.div variants={fade} initial="hidden" animate="visible" custom={3} className="flex flex-col sm:flex-row gap-3">
               <Link
                 to="/signup"
-                className="font-body inline-flex items-center justify-center px-8 py-4 rounded-xl text-white font-semibold text-lg bg-sprouttie-green hover:bg-sprouttie-green-dark transition-all duration-300 shadow-[var(--shadow-lg)] hover:shadow-[var(--shadow-editorial)] hover:-translate-y-0.5"
+                className="font-body inline-flex items-center justify-center px-7 py-3.5 rounded-xl text-white font-semibold bg-[hsl(var(--sprouttie-green))] hover:bg-[hsl(var(--sprouttie-green-dark))] transition-all duration-250 shadow-[var(--shadow-lg)] hover:shadow-[var(--shadow-xl)] hover:-translate-y-px"
               >
                 Start Free — No Card Required
               </Link>
               <Link
                 to="/login"
-                className="font-body inline-flex items-center justify-center px-8 py-4 rounded-xl font-semibold text-lg border-2 border-sprouttie-green text-sprouttie-green-dark hover:bg-sprouttie-mint transition-all duration-300"
+                className="font-body inline-flex items-center justify-center px-7 py-3.5 rounded-xl font-semibold border border-[hsl(var(--border))] text-[hsl(var(--sprouttie-green-dark))] glass hover:bg-white/80 transition-all duration-250"
               >
                 Sign In
               </Link>
             </motion.div>
 
             <motion.p
-              variants={fadeUp}
+              variants={fade}
               initial="hidden"
               animate="visible"
               custom={4}
-              className="mt-6 font-body text-sm text-[hsl(var(--muted-foreground))]"
+              className="mt-5 font-body text-xs text-[hsl(var(--muted-foreground))]"
             >
               Used by 100+ parents teaching Mandarin at home
             </motion.p>
           </div>
 
-          {/* Right — Mascot */}
-          <motion.div
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            custom={2}
-            className="flex justify-center sm:justify-end"
-          >
+          <motion.div variants={fade} initial="hidden" animate="visible" custom={2} className="flex justify-center sm:justify-end">
             <img
               src="/images/sprouttie-mascot.png"
               alt="Sprouttie mascot"
-              className="h-48 sm:h-64 animate-bounce-leaf drop-shadow-xl"
+              className="h-44 sm:h-56 drop-shadow-lg"
             />
           </motion.div>
         </div>
       </section>
 
-      {/* How It Works — Magazine strip */}
-      <section className="py-20 sm:py-28 px-4 border-t border-b border-[hsl(var(--border))]">
-        <div className="max-w-6xl mx-auto">
-          <motion.p
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="font-body text-sm font-semibold tracking-widest uppercase text-sprouttie-coral-dark mb-3"
-          >
+      {/* How It Works */}
+      <section className="py-16 sm:py-24 px-5">
+        <div className="max-w-5xl mx-auto">
+          <motion.p variants={fade} initial="hidden" whileInView="visible" viewport={{ once: true }}
+            className="font-body text-xs font-semibold tracking-widest uppercase text-[hsl(var(--sprouttie-coral-dark))] mb-2">
             How it works
           </motion.p>
-          <motion.h2
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={1}
-            className="font-display text-4xl sm:text-5xl text-sprouttie-ink mb-16"
-          >
-            Three steps to a <span className="italic text-sprouttie-green">joyful</span> bilingual routine
+          <motion.h2 variants={fade} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={1}
+            className="font-display text-3xl sm:text-4xl text-[hsl(var(--sprouttie-ink))] mb-12">
+            Three steps to a <span className="italic text-[hsl(var(--sprouttie-green))]">joyful</span> bilingual routine
           </motion.h2>
 
-          <div className="grid sm:grid-cols-3 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-[hsl(var(--border))]">
+          <div className="grid sm:grid-cols-3 gap-4">
             {[
               { step: '01', title: 'Add Flashcards', desc: 'Create or import your word sets — English, Mandarin, or both.' },
               { step: '02', title: 'Flash & Log', desc: 'Show cards to your child and log each session with one tap.' },
@@ -203,44 +171,33 @@ const LandingPage = () => {
             ].map((item, i) => (
               <motion.div
                 key={item.step}
-                variants={fadeUp}
+                variants={fade}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
                 custom={i}
-                className="py-8 sm:py-0 sm:px-8 first:sm:pl-0 last:sm:pr-0"
+                className="glass rounded-2xl p-6 hover:shadow-[var(--shadow-lg)] transition-all duration-250"
               >
-                <span className="font-display text-6xl text-sprouttie-green-light">{item.step}</span>
-                <h3 className="font-display text-xl text-sprouttie-ink mt-4 mb-2">{item.title}</h3>
-                <p className="font-body text-[hsl(var(--muted-foreground))] leading-relaxed">{item.desc}</p>
+                <span className="font-display text-4xl text-[hsl(var(--sprouttie-green-light))]">{item.step}</span>
+                <h3 className="font-display text-lg text-[hsl(var(--sprouttie-ink))] mt-3 mb-1.5">{item.title}</h3>
+                <p className="font-body text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">{item.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Features — Editorial grid with alternating accent */}
-      <section className="py-20 sm:py-28 px-4">
-        <div className="max-w-6xl mx-auto">
-          <motion.p
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="font-body text-sm font-semibold tracking-widest uppercase text-sprouttie-coral-dark mb-3"
-          >
+      {/* Features */}
+      <section className="py-16 sm:py-24 px-5">
+        <div className="max-w-5xl mx-auto">
+          <motion.p variants={fade} initial="hidden" whileInView="visible" viewport={{ once: true }}
+            className="font-body text-xs font-semibold tracking-widest uppercase text-[hsl(var(--sprouttie-coral-dark))] mb-2">
             Features
           </motion.p>
-          <motion.h2
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={1}
-            className="font-display text-4xl sm:text-5xl text-sprouttie-ink mb-16"
-          >
+          <motion.h2 variants={fade} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={1}
+            className="font-display text-3xl sm:text-4xl text-[hsl(var(--sprouttie-ink))] mb-12">
             Everything you need, <br className="hidden sm:block" />
-            <span className="italic text-sprouttie-coral-dark">nothing you don't.</span>
+            <span className="italic text-[hsl(var(--sprouttie-coral-dark))]">nothing you don't.</span>
           </motion.h2>
 
           <motion.div
@@ -248,22 +205,16 @@ const LandingPage = () => {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"
           >
-            {FEATURES.map((f, i) => (
+            {FEATURES.map((f) => (
               <motion.div
                 key={f.title}
-                variants={fadeUp}
-                className={`rounded-2xl p-7 border transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-lg)] ${
-                  i % 3 === 0
-                    ? 'bg-sprouttie-mint border-sprouttie-green-light'
-                    : i % 3 === 1
-                    ? 'bg-white border-[hsl(var(--border))]'
-                    : 'bg-sprouttie-coral-light/30 border-sprouttie-coral-light'
-                }`}
+                variants={fade}
+                className="glass rounded-2xl p-6 hover:shadow-[var(--shadow-lg)] hover:-translate-y-px transition-all duration-250"
               >
-                <div className="text-3xl mb-4">{f.icon}</div>
-                <h3 className="font-display text-lg text-sprouttie-ink mb-2">{f.title}</h3>
+                <div className="w-10 h-10 rounded-xl bg-[hsl(var(--sprouttie-mint))] flex items-center justify-center text-xl mb-4">{f.icon}</div>
+                <h3 className="font-display text-base text-[hsl(var(--sprouttie-ink))] mb-1.5">{f.title}</h3>
                 <p className="font-body text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">{f.desc}</p>
               </motion.div>
             ))}
@@ -271,44 +222,34 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Testimonials — Editorial pull-quote style */}
-      <section className="py-20 sm:py-28 px-4 bg-sprouttie-ink">
-        <div className="max-w-6xl mx-auto">
-          <motion.p
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="font-body text-sm font-semibold tracking-widest uppercase text-sprouttie-coral mb-3"
-          >
+      {/* Testimonials — Dark section */}
+      <section className="py-16 sm:py-24 px-5 bg-[hsl(var(--sprouttie-ink))] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full bg-[hsl(var(--sprouttie-green)/0.08)] blur-[80px]" />
+        <div className="max-w-5xl mx-auto relative">
+          <motion.p variants={fade} initial="hidden" whileInView="visible" viewport={{ once: true }}
+            className="font-body text-xs font-semibold tracking-widest uppercase text-[hsl(var(--sprouttie-coral))] mb-2">
             From our community
           </motion.p>
-          <motion.h2
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={1}
-            className="font-display text-4xl sm:text-5xl text-white mb-16"
-          >
+          <motion.h2 variants={fade} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={1}
+            className="font-display text-3xl sm:text-4xl text-white mb-12">
             What parents say
           </motion.h2>
 
-          <div className="grid sm:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-3 gap-4">
             {TESTIMONIALS.map((t, i) => (
               <motion.blockquote
                 key={i}
-                variants={fadeUp}
+                variants={fade}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
                 custom={i}
-                className="border-l-4 border-sprouttie-coral pl-6"
+                className="rounded-2xl p-6 bg-white/[0.06] backdrop-blur-sm border border-white/[0.08]"
               >
-                <p className="font-body text-white/80 leading-relaxed mb-6">"{t.quote}"</p>
+                <p className="font-body text-sm text-white/75 leading-relaxed mb-5">"{t.quote}"</p>
                 <footer>
                   <div className="font-body font-semibold text-white text-sm">{t.author}</div>
-                  <div className="font-body text-xs text-white/50">{t.role}</div>
+                  <div className="font-body text-xs text-white/40">{t.role}</div>
                 </footer>
               </motion.blockquote>
             ))}
@@ -316,43 +257,37 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Final CTA — Bold editorial */}
-      <section className="py-24 sm:py-32 px-4 text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-sprouttie-mint via-sprouttie-cream to-sprouttie-coral-light/20 -z-10" />
+      {/* Final CTA */}
+      <section className="py-20 sm:py-28 px-5 text-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--sprouttie-mint))] via-white to-[hsl(var(--sprouttie-coral-light)/0.15)] -z-10" />
         
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="max-w-3xl mx-auto"
-        >
-          <h2 className="font-display text-4xl sm:text-6xl text-sprouttie-ink mb-6 leading-tight">
+        <motion.div variants={fade} initial="hidden" whileInView="visible" viewport={{ once: true }} className="max-w-2xl mx-auto">
+          <h2 className="font-display text-3xl sm:text-5xl text-[hsl(var(--sprouttie-ink))] mb-5 leading-tight">
             Ready to grow their{' '}
-            <span className="italic text-sprouttie-green">vocabulary?</span>
+            <span className="italic text-[hsl(var(--sprouttie-green))]">vocabulary?</span>
           </h2>
-          <p className="font-body text-lg text-[hsl(var(--muted-foreground))] mb-10 max-w-lg mx-auto">
+          <p className="font-body text-base text-[hsl(var(--muted-foreground))] mb-8 max-w-md mx-auto">
             Join hundreds of parents building a bilingual future — one card at a time.
           </p>
           <Link
             to="/signup"
-            className="font-body inline-block px-10 py-4 rounded-xl text-white font-semibold text-lg bg-sprouttie-green hover:bg-sprouttie-green-dark transition-all duration-300 shadow-[var(--shadow-lg)] hover:shadow-[var(--shadow-editorial)] hover:-translate-y-0.5"
+            className="font-body inline-block px-8 py-3.5 rounded-xl text-white font-semibold bg-[hsl(var(--sprouttie-green))] hover:bg-[hsl(var(--sprouttie-green-dark))] transition-all duration-250 shadow-[var(--shadow-lg)] hover:shadow-[var(--shadow-xl)] hover:-translate-y-px"
           >
             Get Started Free
           </Link>
         </motion.div>
       </section>
 
-      {/* Footer — Clean editorial */}
-      <footer className="border-t border-[hsl(var(--border))] py-10 px-4">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="font-body text-sm text-[hsl(var(--muted-foreground))]">
+      {/* Footer */}
+      <footer className="border-t border-[hsl(var(--border))] py-8 px-5">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="font-body text-xs text-[hsl(var(--muted-foreground))]">
             © {new Date().getFullYear()} Sprouttie. All rights reserved.
           </span>
-          <div className="flex gap-8">
-            <Link to="/terms" className="font-body text-sm text-[hsl(var(--muted-foreground))] hover:text-sprouttie-ink transition-colors">Terms</Link>
-            <Link to="/privacy" className="font-body text-sm text-[hsl(var(--muted-foreground))] hover:text-sprouttie-ink transition-colors">Privacy</Link>
-            <Link to="/support" className="font-body text-sm text-[hsl(var(--muted-foreground))] hover:text-sprouttie-ink transition-colors">Support</Link>
+          <div className="flex gap-6">
+            <Link to="/terms" className="font-body text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--sprouttie-ink))] transition-colors">Terms</Link>
+            <Link to="/privacy" className="font-body text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--sprouttie-ink))] transition-colors">Privacy</Link>
+            <Link to="/support" className="font-body text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--sprouttie-ink))] transition-colors">Support</Link>
           </div>
         </div>
       </footer>
