@@ -103,7 +103,11 @@ const NavigationTabs = ({ activeTab, onTabChange }) => {
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   const isMoreTabActive = MORE_TABS.some(tab => tab.id === activeTab);
@@ -134,7 +138,10 @@ const NavigationTabs = ({ activeTab, onTabChange }) => {
               ? 'bg-green-100 border-b-2 border-green-500 font-medium' 
               : 'hover:bg-gray-100'
           }`}
-          onClick={() => setMoreOpen(!moreOpen)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setMoreOpen(!moreOpen);
+          }}
         >
           {isMoreTabActive ? activeMoreLabel : 'More'}
           <svg 
@@ -156,7 +163,9 @@ const NavigationTabs = ({ activeTab, onTabChange }) => {
                 className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
                   activeTab === tab.id ? 'bg-green-50 text-green-700 font-medium' : 'text-gray-700'
                 }`}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
                   onTabChange(tab.id);
                   setMoreOpen(false);
                 }}
