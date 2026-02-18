@@ -515,8 +515,8 @@ one,yī,一,Numbers`;
         </div>
       </motion.div>
       
-      {/* Mobile Sticky Button */}
-      <div className="md:hidden fixed bottom-4 left-4 right-4 z-50">
+      {/* Mobile Sticky Button - above bottom tab bar */}
+      <div className="md:hidden fixed bottom-20 left-4 right-4 z-20">
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
