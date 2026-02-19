@@ -8,6 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 
 const AuthContext = createContext(null);
 
@@ -300,15 +301,13 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError("");
 
-      const { data, error: oauthErr } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-        },
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
       });
-      if (oauthErr) throw oauthErr;
 
-      return data;
+      if (result?.error) throw result.error;
+
+      return result;
     } catch (err) {
       const msg = err?.message || "Failed to sign in with Google";
       setError(msg);
