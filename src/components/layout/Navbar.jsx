@@ -1,8 +1,8 @@
 // src/components/layout/Navbar.js
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import sprouttielogo from '../../assets/sprouttie-logo.png';
 import { useAuth } from '../../context/AuthContext';
+import sprouttielogo from '../../assets/sprouttie-logo.png';
 
 const Navbar = () => {
   const { currentUser, logout } = useAuth();

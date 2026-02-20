@@ -317,12 +317,12 @@ one,yī,一,Numbers`;
         animate={{ opacity: 1, y: 0 }}
         className="glass rounded-3xl shadow-xl p-8 mb-6 border border-white/50"
       >
-        <div className="flex items-center gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-sprouttie-green-dark mb-2">
+        <div className="flex items-start gap-4 mb-6 text-left w-full">
+          <div className="w-full">
+            <h1 className="text-3xl md:text-4xl font-bold text-sprouttie-green-dark mb-2 text-left">
               Hi {firstName} 👋
             </h1>
-            <p className="text-lg text-gray-600">Ready to continue growing your kid's language?</p>
+            <p className="text-lg text-gray-600 text-left">Ready to continue growing your kid's language?</p>
           </div>
         </div>
         
