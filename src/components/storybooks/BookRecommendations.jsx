@@ -1,46 +1,234 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
 import { useFlashcards } from '../../context/FlashcardContext';
-import { Book, Sparkles, RefreshCw, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { Book, Sparkles, RefreshCw, ChevronDown, ChevronUp, ExternalLink, Globe } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Detect languages from flashcard words and spoken words
+const detectLanguages = (flashcards, spokenWords) => {
+  const languages = new Set(['english']); // always baseline
+
+  const allText = [
+    ...flashcards.map(fc => `${fc.front || ''} ${fc.back || ''}`),
+    ...spokenWords,
+  ].join(' ');
+
+  // CJK unified ideographs range – covers Mandarin, Cantonese, traditional/simplified
+  const hasCJK = /[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/.test(allText);
+  if (hasCJK) {
+    languages.add('mandarin');
+    languages.add('chinese');
+  }
+
+  // Bopomofo – Taiwanese Mandarin phonetics
+  const hasBopomofo = /[\u3100-\u312f]/.test(allText);
+  if (hasBopomofo) languages.add('mandarin');
+
+  // Hokkien / Taiwanese POJ romanization markers (tone diacritics like á, â, à, ā, ǎ)
+  // Combined with common Hokkien words in folders
+  const hasHokkienDiacritics = /[āáǎàāéêèěẽōóǒòōḿńňǹ]/i.test(allText);
+  const hasHokkienFolder = flashcards.some(fc =>
+    fc.folder && /hokkien|taiwanese|台語|閩南/i.test(fc.folder)
+  );
+  if (hasHokkienDiacritics || hasHokkienFolder) languages.add('hokkien');
+
+  // Japanese kana
+  const hasJapanese = /[\u3040-\u309f\u30a0-\u30ff]/.test(allText);
+  if (hasJapanese) languages.add('japanese');
+
+  // Korean hangul
+  const hasKorean = /[\uac00-\ud7af]/.test(allText);
+  if (hasKorean) languages.add('korean');
+
+  return Array.from(languages);
+};
+
+const STORAGE_KEY = 'sprouttie_recommended_books';
+const MAX_HISTORY = 30;
+
+const getBookHistory = () => {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  } catch {
+    return [];
+  }
+};
+
+const saveBookHistory = (books) => {
+  try {
+    const existing = getBookHistory();
+    const newTitles = books.map(b => b.title);
+    const combined = [...new Set([...existing, ...newTitles])];
+    // Keep only last MAX_HISTORY to avoid growing forever
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(combined.slice(-MAX_HISTORY)));
+  } catch {}
+};
+
+const colorClasses = {
+  blue: 'bg-blue-100 border-blue-300 text-blue-800',
+  green: 'bg-emerald-100 border-emerald-300 text-emerald-800',
+  purple: 'bg-purple-100 border-purple-300 text-purple-800',
+  orange: 'bg-orange-100 border-orange-300 text-orange-800',
+  pink: 'bg-pink-100 border-pink-300 text-pink-800',
+  amber: 'bg-amber-100 border-amber-300 text-amber-800',
+};
+
+const languageLabels = {
+  english: '🇬🇧 English',
+  mandarin: '🇨🇳 Mandarin',
+  chinese: '🇨🇳 Chinese',
+  cantonese: '🇭🇰 Cantonese',
+  hokkien: '🎋 Hokkien',
+  japanese: '🇯🇵 Japanese',
+  korean: '🇰🇷 Korean',
+};
+
+// --- Sub-components ---
+
+const WordSourcePanel = ({ flashedWords, spokenWords, detectedLanguages }) => (
+  <div className="bg-secondary/30 rounded-lg p-4 mb-4 space-y-3">
+    {detectedLanguages.length > 1 && (
+      <div>
+        <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+          <Globe className="w-3 h-3" /> Detected Languages:
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {detectedLanguages.map(lang => (
+            <span key={lang} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full font-medium">
+              {languageLabels[lang] || lang}
+            </span>
+          ))}
+        </div>
+      </div>
+    )}
+    {flashedWords.length > 0 && (
+      <div>
+        <p className="text-xs font-medium text-muted-foreground mb-2">From Flashcards:</p>
+        <div className="flex flex-wrap gap-1.5">
+          {flashedWords.slice(0, 30).map((word, i) => (
+            <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
+              {word}
+            </span>
+          ))}
+          {flashedWords.length > 30 && (
+            <span className="text-xs text-muted-foreground">+{flashedWords.length - 30} more</span>
+          )}
+        </div>
+      </div>
+    )}
+    {spokenWords.length > 0 && (
+      <div>
+        <p className="text-xs font-medium text-muted-foreground mb-2">Words They Say:</p>
+        <div className="flex flex-wrap gap-1.5">
+          {spokenWords.slice(0, 30).map((word, i) => (
+            <span key={i} className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full">
+              {word}
+            </span>
+          ))}
+          {spokenWords.length > 30 && (
+            <span className="text-xs text-muted-foreground">+{spokenWords.length - 30} more</span>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
+);
+
+const BookCard = ({ book, index }) => (
+  <motion.a
+    href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&i=stripbooks`}
+    target="_blank"
+    rel="noopener noreferrer"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: index * 0.08 }}
+    className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-md transition-shadow block cursor-pointer group"
+  >
+    {/* Color Bar */}
+    <div className={`h-2 ${colorClasses[book.coverColor]?.split(' ')[0] || 'bg-primary'}`} />
+
+    <div className="p-4 space-y-3">
+      <div>
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+            {book.title}
+          </h3>
+          <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />
+        </div>
+        <p className="text-sm text-muted-foreground">by {book.author}</p>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs px-2 py-1 bg-secondary rounded-full text-muted-foreground">
+          {book.ageRange}
+        </span>
+        {book.language && book.language !== 'English' && (
+          <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full font-medium">
+            {book.language}
+          </span>
+        )}
+      </div>
+
+      <p className="text-sm text-foreground/80">{book.description}</p>
+
+      {book.matchingWords?.length > 0 && (
+        <div>
+          <p className="text-xs text-muted-foreground mb-1.5">Matching vocabulary:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {book.matchingWords.map((word, i) => (
+              <span
+                key={i}
+                className={`px-2 py-0.5 text-xs rounded-full border ${colorClasses[book.coverColor] || 'bg-primary/10 text-primary border-primary/20'}`}
+              >
+                {word}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  </motion.a>
+);
+
+// --- Main Component ---
 
 const BookRecommendations = () => {
   const { currentUser } = useAuth();
   const { flashcards } = useFlashcards();
-  
+
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [spokenWords, setSpokenWords] = useState([]);
   const [showWordSource, setShowWordSource] = useState(false);
   const [lastGenerated, setLastGenerated] = useState(null);
+  const [generateCount, setGenerateCount] = useState(0);
 
   // Fetch spoken words
   useEffect(() => {
     const fetchSpokenWords = async () => {
       if (!currentUser) return;
-      
       const { data, error } = await supabase
         .from('spoken_words')
         .select('word')
         .eq('user_id', currentUser.id);
-      
-      if (!error && data) {
-        setSpokenWords(data.map(sw => sw.word));
-      }
+      if (!error && data) setSpokenWords(data.map(sw => sw.word));
     };
-    
     fetchSpokenWords();
   }, [currentUser]);
 
   // Get unique words from flashcards
   const flashedWords = [...new Set(flashcards.map(fc => fc.front || fc.word).filter(Boolean))];
-  
+
   // Combine both sources
   const allWords = [...new Set([...flashedWords, ...spokenWords])];
 
-  const generateRecommendations = async () => {
+  // Detect languages from content
+  const detectedLanguages = detectLanguages(flashcards, spokenWords);
+  const isMultilingual = detectedLanguages.length > 1 || detectedLanguages.some(l => l !== 'english');
+
+  const generateRecommendations = useCallback(async () => {
     if (allWords.length === 0) {
       toast.error('Add some flashcards or spoken words first!');
       return;
@@ -48,38 +236,42 @@ const BookRecommendations = () => {
 
     setLoading(true);
     try {
+      const excludeBooks = getBookHistory();
+      const varietySeed = generateCount;
+
       const { data, error } = await supabase.functions.invoke('recommend-books', {
-        body: { 
+        body: {
           words: allWords,
-          childAge: null // Could be enhanced to pull from profile
+          childAge: null,
+          detectedLanguages,
+          excludeBooks,
+          varietySeed,
         }
       });
 
       if (error) throw error;
-      
       if (data.error) {
         toast.error(data.error);
         return;
       }
 
-      setRecommendations(data.books || []);
+      const books = data.books || [];
+      setRecommendations(books);
       setLastGenerated(new Date());
-      toast.success('Book recommendations generated!');
+      setGenerateCount(c => c + 1);
+      saveBookHistory(books);
+      toast.success(
+        isMultilingual
+          ? '📚 Books recommended in your languages!'
+          : 'Book recommendations generated!'
+      );
     } catch (error) {
       console.error('Error getting recommendations:', error);
       toast.error('Failed to get recommendations. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const colorClasses = {
-    blue: 'bg-blue-100 border-blue-300 text-blue-800',
-    green: 'bg-emerald-100 border-emerald-300 text-emerald-800',
-    purple: 'bg-purple-100 border-purple-300 text-purple-800',
-    orange: 'bg-orange-100 border-orange-300 text-orange-800',
-    pink: 'bg-pink-100 border-pink-300 text-pink-800',
-  };
+  }, [allWords, detectedLanguages, generateCount, isMultilingual]);
 
   return (
     <div className="space-y-6">
@@ -94,6 +286,9 @@ const BookRecommendations = () => {
               <h2 className="text-xl font-semibold text-foreground">AI Book Recommendations</h2>
               <p className="text-sm text-muted-foreground">
                 Based on {flashedWords.length} flashcard words and {spokenWords.length} spoken words
+                {isMultilingual && (
+                  <span className="ml-1 text-primary font-medium">· Multilingual 🌏</span>
+                )}
               </p>
             </div>
           </div>
@@ -116,39 +311,11 @@ const BookRecommendations = () => {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <div className="bg-secondary/30 rounded-lg p-4 mb-4 space-y-3">
-                {flashedWords.length > 0 && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-2">From Flashcards:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {flashedWords.slice(0, 30).map((word, i) => (
-                        <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
-                          {word}
-                        </span>
-                      ))}
-                      {flashedWords.length > 30 && (
-                        <span className="text-xs text-muted-foreground">+{flashedWords.length - 30} more</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-                
-                {spokenWords.length > 0 && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-2">Words He Says:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {spokenWords.slice(0, 30).map((word, i) => (
-                        <span key={i} className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full">
-                          {word}
-                        </span>
-                      ))}
-                      {spokenWords.length > 30 && (
-                        <span className="text-xs text-muted-foreground">+{spokenWords.length - 30} more</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <WordSourcePanel
+                flashedWords={flashedWords}
+                spokenWords={spokenWords}
+                detectedLanguages={detectedLanguages}
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -167,7 +334,7 @@ const BookRecommendations = () => {
           ) : (
             <>
               <Sparkles className="w-5 h-5" />
-              Get Book Recommendations
+              {recommendations.length > 0 ? 'Get New Recommendations' : 'Get Book Recommendations'}
             </>
           )}
         </button>
@@ -180,7 +347,7 @@ const BookRecommendations = () => {
 
         {lastGenerated && (
           <p className="text-center text-xs text-muted-foreground mt-2">
-            Last generated: {lastGenerated.toLocaleTimeString()}
+            Last generated: {lastGenerated.toLocaleTimeString()} · Each refresh picks different books
           </p>
         )}
       </div>
@@ -189,53 +356,7 @@ const BookRecommendations = () => {
       {recommendations.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2">
           {recommendations.map((book, index) => (
-            <motion.a
-              key={index}
-              href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&i=stripbooks`}
-              target="_blank"
-              rel="noopener noreferrer"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-md transition-shadow block cursor-pointer group"
-            >
-              {/* Color Bar */}
-              <div className={`h-2 ${colorClasses[book.coverColor]?.split(' ')[0] || 'bg-primary'}`} />
-              
-              <div className="p-4 space-y-3">
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{book.title}</h3>
-                    <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">by {book.author}</p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-xs px-2 py-1 bg-secondary rounded-full text-muted-foreground">
-                    {book.ageRange}
-                  </span>
-                </div>
-
-                <p className="text-sm text-foreground/80">{book.description}</p>
-
-                {book.matchingWords?.length > 0 && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1.5">Matching vocabulary:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {book.matchingWords.map((word, i) => (
-                        <span
-                          key={i}
-                          className={`px-2 py-0.5 text-xs rounded-full border ${colorClasses[book.coverColor] || 'bg-primary/10 text-primary'}`}
-                        >
-                          {word}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </motion.a>
+            <BookCard key={`${book.title}-${index}`} book={book} index={index} />
           ))}
         </div>
       )}
@@ -247,6 +368,7 @@ const BookRecommendations = () => {
           <h3 className="font-medium text-foreground mb-2">No recommendations yet</h3>
           <p className="text-sm text-muted-foreground">
             Click the button above to get AI-powered book suggestions
+            {isMultilingual && ' — including bilingual books for your household!'}
           </p>
         </div>
       )}
