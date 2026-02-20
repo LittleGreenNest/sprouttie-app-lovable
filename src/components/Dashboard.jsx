@@ -318,18 +318,11 @@ one,yī,一,Numbers`;
         className="glass rounded-3xl shadow-xl p-8 mb-6 border border-white/50"
       >
         <div className="flex items-center gap-4 mb-6">
-          <motion.div
-            animate={{ rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-            className="text-6xl"
-          >
-            🌱
-          </motion.div>
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-sprouttie-green-dark mb-2">
               Hi {firstName} 👋
             </h1>
-            <p className="text-lg text-gray-600">Ready to grow today's words?</p>
+            <p className="text-lg text-gray-600">Ready to continue growing your kid's language?</p>
           </div>
         </div>
         
