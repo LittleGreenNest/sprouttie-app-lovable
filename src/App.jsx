@@ -90,21 +90,6 @@ const AppContent = () => {
 
   return (
     <div className="App max-w-4xl mx-auto p-4 pb-24 bg-[hsl(var(--background))] min-h-screen font-body">
-      {/* Header with Sprouttie Mascot */}
-      <div className="flex items-center mb-6 sm:mb-10">
-        <img 
-          src="/images/sprouttie-mascot.png" 
-          alt="Sprouttie Mascot" 
-          className="h-16 sm:h-24 mr-3 sm:mr-6"
-          loading="lazy"
-          onError={(e) => { e.target.style.display = 'none'; }}
-        />
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold text-sprouttie-green-dark mb-1 sm:mb-2">Sprouttie</h1>
-          <h2 className="text-base sm:text-xl text-sprouttie-green">Sprouttie Flashcard System</h2>
-        </div>
-      </div>
-
       {/* Bottom Tab Bar */}
       <BottomTabBar />
 

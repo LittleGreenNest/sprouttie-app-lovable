@@ -1,6 +1,7 @@
 // src/components/layout/Navbar.js
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import sprouttielogo from '../../assets/sprouttie-logo.png';
 import { useAuth } from '../../context/AuthContext';
 
 const Navbar = () => {
@@ -24,7 +25,8 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link to="/" className="text-xl font-display font-bold text-sprouttie-green-dark">
+              <Link to="/" className="flex items-center gap-2 text-xl font-display font-bold text-sprouttie-green-dark">
+                <img src={sprouttielogo} alt="Sprouttie" className="h-8 w-8 object-contain" />
                 Sprouttie
               </Link>
             </div>
