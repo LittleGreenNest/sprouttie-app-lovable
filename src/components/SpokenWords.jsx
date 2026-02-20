@@ -3,6 +3,7 @@ import { supabase } from '../integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Trash2, Calendar, Video, Square, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 
 // Stage config — single source of truth for emoji, labels, copy, sort order
 const STAGES = {
@@ -35,15 +36,23 @@ const STAGES = {
 const STAGE_ORDER = ['growing', 'new', 'owned'];
 
 // ── Word Card ────────────────────────────────────────────────────────────────
+const SWIPE_THRESHOLD = 68;
+
 const WordCard = ({ word, onStageChange, onDelete }) => {
   const [expanded, setExpanded] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
   const [playingVideo, setPlayingVideo] = useState(false);
-  const mediaRecorderRef = useRef(null);
-  const videoPreviewRef = useRef(null);
-  const chunksRef = useRef([]);
 
+  const x = useMotionValue(0);
   const stage = STAGES[word.word_stage] || STAGES.new;
+  const stageIndex = STAGE_ORDER.indexOf(word.word_stage);
+  const nextStage = stageIndex < STAGE_ORDER.length - 1 ? STAGE_ORDER[stageIndex + 1] : null;
+  const prevStage = stageIndex > 0 ? STAGE_ORDER[stageIndex - 1] : null;
+
+  // Reveal layers animate in as user drags
+  const rightOpacity = useTransform(x, [0, SWIPE_THRESHOLD], [0, 1]);
+  const leftOpacity  = useTransform(x, [-SWIPE_THRESHOLD, 0], [1, 0]);
+  const rightScale   = useTransform(x, [0, SWIPE_THRESHOLD], [0.6, 1]);
+  const leftScale    = useTransform(x, [-SWIPE_THRESHOLD, 0], [1, 0.6]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -57,106 +66,133 @@ const WordCard = ({ word, onStageChange, onDelete }) => {
     return date.toLocaleDateString();
   };
 
+  const snapBack = () => animate(x, 0, { type: 'spring', stiffness: 500, damping: 38 });
+
+  const handleDragEnd = (_, info) => {
+    const offset = info.offset.x;
+    if (offset > SWIPE_THRESHOLD && nextStage) {
+      onStageChange(word.id, nextStage);
+      snapBack();
+    } else if (offset < -SWIPE_THRESHOLD && prevStage) {
+      onStageChange(word.id, prevStage);
+      snapBack();
+    } else {
+      snapBack();
+    }
+  };
+
   return (
-    <div className="bg-card rounded-xl border border-border overflow-hidden transition-all duration-200 hover:border-primary/30">
-      {/* Card header — always visible */}
-      <button
-        className="w-full text-left px-4 py-3.5 flex items-center justify-between gap-3"
-        onClick={() => setExpanded(e => !e)}
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="text-xl leading-none">{stage.emoji}</span>
-          <span className="font-semibold text-foreground truncate text-base">{word.word}</span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xs text-muted-foreground hidden sm:flex items-center gap-1">
-            <Calendar size={11} />
-            {formatDate(word.started_saying_at)}
-          </span>
-          {expanded ? (
-            <ChevronUp size={16} className="text-muted-foreground" />
-          ) : (
-            <ChevronDown size={16} className="text-muted-foreground" />
-          )}
-        </div>
-      </button>
-
-      {/* Expanded panel */}
-      {expanded && (
-        <div className="border-t border-border px-4 py-3 space-y-3 bg-background/40">
-          {/* Stage selector */}
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-2">Stage</p>
-            <div className="flex gap-2">
-              {STAGE_ORDER.map(stageKey => {
-                const s = STAGES[stageKey];
-                const isSelected = word.word_stage === stageKey;
-                return (
-                  <button
-                    key={stageKey}
-                    onClick={() => onStageChange(word.id, stageKey)}
-                    className={`
-                      flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
-                      transition-all duration-150
-                      ${isSelected
-                        ? 'bg-primary text-primary-foreground shadow-sm scale-105'
-                        : 'bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary'
-                      }
-                    `}
-                  >
-                    <span>{s.emoji}</span>
-                    <span>{s.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Notes */}
-          {word.notes && (
-            <p className="text-sm text-muted-foreground italic">"{word.notes}"</p>
-          )}
-
-          {/* Date on mobile */}
-          <p className="text-xs text-muted-foreground flex items-center gap-1 sm:hidden">
-            <Calendar size={11} />
-            Started saying {formatDate(word.started_saying_at)}
-          </p>
-
-          {/* Video */}
-          {word.video_url && (
-            <div>
-              {playingVideo ? (
-                <video
-                  src={word.video_url}
-                  controls
-                  autoPlay
-                  className="w-full max-w-xs rounded-lg"
-                  onEnded={() => setPlayingVideo(false)}
-                />
-              ) : (
-                <button
-                  onClick={() => setPlayingVideo(true)}
-                  className="text-sm text-primary hover:text-primary/80 underline underline-offset-2"
-                >
-                  Watch video clip
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Delete */}
-          <div className="flex justify-end pt-1">
-            <button
-              onClick={() => onDelete(word.id)}
-              className="flex items-center gap-1.5 text-xs text-destructive hover:text-destructive/80 transition-colors"
-            >
-              <Trash2 size={13} />
-              Remove
-            </button>
-          </div>
-        </div>
+    <div className="relative rounded-xl overflow-hidden">
+      {/* ── Reveal: right side (advance) ── */}
+      {nextStage && (
+        <motion.div
+          style={{ opacity: rightOpacity }}
+          className="absolute inset-0 flex items-center justify-end pr-5 bg-primary/15 rounded-xl"
+        >
+          <motion.div style={{ scale: rightScale }} className="flex flex-col items-center gap-0.5">
+            <span className="text-2xl">{STAGES[nextStage].emoji}</span>
+            <span className="text-xs font-bold text-primary">{STAGES[nextStage].label}</span>
+          </motion.div>
+        </motion.div>
       )}
+
+      {/* ── Reveal: left side (go back) ── */}
+      {prevStage && (
+        <motion.div
+          style={{ opacity: leftOpacity }}
+          className="absolute inset-0 flex items-center pl-5 bg-muted/70 rounded-xl"
+        >
+          <motion.div style={{ scale: leftScale }} className="flex flex-col items-center gap-0.5">
+            <span className="text-2xl">{STAGES[prevStage].emoji}</span>
+            <span className="text-xs font-bold text-muted-foreground">{STAGES[prevStage].label}</span>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* ── Draggable card ── */}
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.12}
+        dragMomentum={false}
+        style={{ x }}
+        onDragEnd={handleDragEnd}
+        className="relative bg-card rounded-xl border border-border overflow-hidden cursor-grab active:cursor-grabbing select-none touch-pan-y"
+      >
+        {/* Header — always visible */}
+        <button
+          className="w-full text-left px-4 py-3.5 flex items-center justify-between gap-3"
+          onClick={() => setExpanded(e => !e)}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-xl leading-none">{stage.emoji}</span>
+            <span className="font-semibold text-foreground truncate text-base">{word.word}</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs text-muted-foreground hidden sm:flex items-center gap-1">
+              <Calendar size={11} />
+              {formatDate(word.started_saying_at)}
+            </span>
+            {expanded
+              ? <ChevronUp size={16} className="text-muted-foreground" />
+              : <ChevronDown size={16} className="text-muted-foreground" />}
+          </div>
+        </button>
+
+        {/* Expanded panel */}
+        {expanded && (
+          <div className="border-t border-border px-4 py-3 space-y-3 bg-background/40">
+            {/* Swipe hint */}
+            <p className="text-xs text-center text-muted-foreground/60 tracking-wide">
+              ← swipe to change stage →
+            </p>
+
+            {/* Notes */}
+            {word.notes && (
+              <p className="text-sm text-muted-foreground italic">"{word.notes}"</p>
+            )}
+
+            {/* Date on mobile */}
+            <p className="text-xs text-muted-foreground flex items-center gap-1 sm:hidden">
+              <Calendar size={11} />
+              Started saying {formatDate(word.started_saying_at)}
+            </p>
+
+            {/* Video */}
+            {word.video_url && (
+              <div>
+                {playingVideo ? (
+                  <video
+                    src={word.video_url}
+                    controls
+                    autoPlay
+                    className="w-full max-w-xs rounded-lg"
+                    onEnded={() => setPlayingVideo(false)}
+                  />
+                ) : (
+                  <button
+                    onClick={() => setPlayingVideo(true)}
+                    className="text-sm text-primary hover:text-primary/80 underline underline-offset-2"
+                  >
+                    Watch video clip
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Delete */}
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={() => onDelete(word.id)}
+                className="flex items-center gap-1.5 text-xs text-destructive hover:text-destructive/80 transition-colors"
+              >
+                <Trash2 size={13} />
+                Remove
+              </button>
+            </div>
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 };
