@@ -81,19 +81,27 @@ const SessionLogTracker = () => {
       let loadedPeakTime = null;
       
       (trackingData || []).forEach(record => {
-        if (record.status === 'flashed' && record.notes) {
-          try {
-            const metadata = JSON.parse(record.notes);
-            if (metadata.setId !== undefined && metadata.round) {
-              // Mark set-round as complete
-              tracking[`${metadata.setId}-${metadata.round}`] = true;
+        if (record.status === 'flashed') {
+          // Primary: use flashed_by field "setId:round" (new format)
+          if (record.flashed_by && record.flashed_by.includes(':')) {
+            const [recSetId, recRound] = record.flashed_by.split(':');
+            const roundNum = parseInt(recRound, 10);
+            if (recSetId && !isNaN(roundNum)) {
+              tracking[`${recSetId}-${roundNum}`] = true;
             }
-          } catch (e) {
-            // Not JSON
+          } else if (record.notes) {
+            // Fallback: parse legacy JSON notes format
+            try {
+              const metadata = JSON.parse(record.notes);
+              if (metadata.setId !== undefined && metadata.round) {
+                tracking[`${metadata.setId}-${metadata.round}`] = true;
+              }
+            } catch (e) {
+              // Not JSON, skip
+            }
           }
         }
         
-        // Load engagement data
         if (record.engagement && !loadedEngagement) {
           loadedEngagement = record.engagement;
         }
@@ -170,67 +178,52 @@ const SessionLogTracker = () => {
     const isCurrentlyChecked = roundTracking[key];
     const setFlashcards = getFlashcardsForSet(setId);
     
+    // Optimistic update immediately for snappy UX
+    setRoundTracking(prev => ({ ...prev, [key]: !isCurrentlyChecked }));
+    
     try {
       if (isCurrentlyChecked) {
         // Uncheck - delete all tracking records for this set-round
-        setRoundTracking(prev => ({ ...prev, [key]: false }));
-        
+        // flashed_by stores "setId:round" so we can precisely target the right rows
         await supabase
           .from('daily_tracking')
           .delete()
           .eq('user_id', currentUser.id)
           .eq('date', dateString)
-          .like('notes', `%"setId":${setId}%`)
-          .like('notes', `%"round":${round}%`);
+          .eq('flashed_by', `${setId}:${round}`);
       } else {
-        // Check - create tracking records for ALL words in the set
-        setRoundTracking(prev => ({ ...prev, [key]: true }));
-        
-        // Auto-trigger rotation on first tracking
+        // Auto-trigger rotation on first tracking of the day
         if (!sessionOccurred) {
           await recordSessionOccurred();
         }
         
-        // Upsert a record for each flashcard in the set (avoid duplicate key error)
-        for (const card of setFlashcards) {
-          await supabase
+        if (setFlashcards.length > 0) {
+          // Insert a separate tracking record per card per round
+          // We use INSERT (not upsert) so each round creates its own row
+          // flashed_by = "setId:round" lets us find & delete by round later
+          const inserts = setFlashcards.map(card => ({
+            user_id: currentUser.id,
+            flashcard_id: card.id,
+            date: dateString,
+            status: 'flashed',
+            flashed_at: new Date().toISOString(),
+            flashed_by: `${setId}:${round}`,
+            notes: JSON.stringify({ setId, round })
+          }));
+          
+          const { error } = await supabase
             .from('daily_tracking')
-            .upsert({
-              user_id: currentUser.id,
-              flashcard_id: card.id,
-              date: dateString,
-              status: 'flashed',
-              flashed_at: new Date().toISOString(),
-              notes: JSON.stringify({ setId, round })
-            }, { 
-              onConflict: 'user_id,flashcard_id,date',
-              ignoreDuplicates: false 
-            });
+            .insert(inserts);
+          
+          if (error) throw error;
         }
         
-        // If no flashcards, upsert a placeholder
-        if (setFlashcards.length === 0) {
-          await supabase
-            .from('daily_tracking')
-            .upsert({
-              user_id: currentUser.id,
-              flashcard_id: `set-${setId}`,
-              date: dateString,
-              status: 'flashed',
-              flashed_at: new Date().toISOString(),
-              notes: JSON.stringify({ setId, round })
-            }, { 
-              onConflict: 'user_id,flashcard_id,date',
-              ignoreDuplicates: false 
-            });
-        }
-        
-        toast.success(`Set ${setId} - Round ${round} complete!`);
+        toast.success(`Round ${round} ✓`, { autoClose: 1500 });
       }
     } catch (error) {
       console.error('Error toggling round:', error);
-      toast.error('Failed to update tracking');
-      // Revert on error
+      toast.error('Failed to update — please try again');
+      // Revert optimistic update on error
       setRoundTracking(prev => ({ ...prev, [key]: isCurrentlyChecked }));
     }
   };
