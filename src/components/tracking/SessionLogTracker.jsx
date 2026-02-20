@@ -82,22 +82,23 @@ const SessionLogTracker = () => {
       
       (trackingData || []).forEach(record => {
         if (record.status === 'flashed') {
-          // Primary: use flashed_by field "setId:round" (new format)
+          // Primary: parse notes JSON (most reliable — flashed_by column may be null)
+          if (record.notes) {
+            try {
+              const metadata = JSON.parse(record.notes);
+              if (metadata.setId !== undefined && metadata.round !== undefined) {
+                tracking[`${metadata.setId}-${metadata.round}`] = true;
+              }
+            } catch (e) {
+              // Not JSON, skip
+            }
+          }
+          // Fallback: use flashed_by field "setId:round" if notes not parseable
           if (record.flashed_by && record.flashed_by.includes(':')) {
             const [recSetId, recRound] = record.flashed_by.split(':');
             const roundNum = parseInt(recRound, 10);
             if (recSetId && !isNaN(roundNum)) {
               tracking[`${recSetId}-${roundNum}`] = true;
-            }
-          } else if (record.notes) {
-            // Fallback: parse legacy JSON notes format
-            try {
-              const metadata = JSON.parse(record.notes);
-              if (metadata.setId !== undefined && metadata.round) {
-                tracking[`${metadata.setId}-${metadata.round}`] = true;
-              }
-            } catch (e) {
-              // Not JSON, skip
             }
           }
         }
@@ -183,8 +184,31 @@ const SessionLogTracker = () => {
     
     try {
       if (isCurrentlyChecked) {
-        // Uncheck - delete all tracking records for this set-round
-        // flashed_by stores "setId:round" so we can precisely target the right rows
+        // Uncheck — delete all tracking records for this set+round combo
+        // The notes column reliably stores {"setId":X,"round":Y} — use it to filter
+        const notesPattern = JSON.stringify({ setId, round });
+        
+        // Fetch IDs of matching rows first, then delete (Supabase JS doesn't support JSON filter in delete directly)
+        const { data: toDelete, error: fetchErr } = await supabase
+          .from('daily_tracking')
+          .select('id')
+          .eq('user_id', currentUser.id)
+          .eq('date', dateString)
+          .eq('status', 'flashed')
+          .eq('notes', notesPattern);
+        
+        if (fetchErr) throw fetchErr;
+        
+        if (toDelete && toDelete.length > 0) {
+          const idsToDelete = toDelete.map(r => r.id);
+          const { error: deleteErr } = await supabase
+            .from('daily_tracking')
+            .delete()
+            .in('id', idsToDelete);
+          if (deleteErr) throw deleteErr;
+        }
+
+        // Also delete any rows tracked via flashed_by (old format)
         await supabase
           .from('daily_tracking')
           .delete()
@@ -197,28 +221,26 @@ const SessionLogTracker = () => {
           await recordSessionOccurred();
         }
         
-        if (setFlashcards.length > 0) {
-          // Insert a separate tracking record per card per round
-          // We use INSERT (not upsert) so each round creates its own row
-          // flashed_by = "setId:round" lets us find & delete by round later
-          const inserts = setFlashcards.map(card => ({
-            user_id: currentUser.id,
-            flashcard_id: card.id,
-            date: dateString,
-            status: 'flashed',
-            flashed_at: new Date().toISOString(),
-            flashed_by: `${setId}:${round}`,
-            notes: JSON.stringify({ setId, round })
-          }));
-          
-          const { error } = await supabase
-            .from('daily_tracking')
-            .insert(inserts);
-          
-          if (error) throw error;
-        }
+        // Always insert at least one sentinel record so the round is persisted,
+        // even if the set has no cards assigned yet
+        const cardsToInsert = setFlashcards.length > 0 ? setFlashcards : [{ id: `set-${setId}-sentinel` }];
         
-        toast.success(`Round ${round} ✓`, { autoClose: 1500 });
+        const inserts = cardsToInsert.map(card => ({
+          user_id: currentUser.id,
+          flashcard_id: card.id,
+          date: dateString,
+          status: 'flashed',
+          flashed_at: new Date().toISOString(),
+          notes: JSON.stringify({ setId, round })
+        }));
+        
+        const { error } = await supabase
+          .from('daily_tracking')
+          .insert(inserts);
+        
+        if (error) throw error;
+        
+        toast.success(`Set ${setId} · Round ${round} ✓`, { autoClose: 1500 });
       }
     } catch (error) {
       console.error('Error toggling round:', error);
