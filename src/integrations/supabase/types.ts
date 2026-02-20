@@ -369,28 +369,34 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          stage_updated_at: string
           started_saying_at: string
           user_id: string
           video_url: string | null
           word: string
+          word_stage: Database["public"]["Enums"]["word_stage"]
         }
         Insert: {
           created_at?: string
           id?: string
           notes?: string | null
+          stage_updated_at?: string
           started_saying_at?: string
           user_id: string
           video_url?: string | null
           word: string
+          word_stage?: Database["public"]["Enums"]["word_stage"]
         }
         Update: {
           created_at?: string
           id?: string
           notes?: string | null
+          stage_updated_at?: string
           started_saying_at?: string
           user_id?: string
           video_url?: string | null
           word?: string
+          word_stage?: Database["public"]["Enums"]["word_stage"]
         }
         Relationships: []
       }
@@ -486,7 +492,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      word_stage: "new" | "growing" | "owned"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -613,6 +619,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      word_stage: ["new", "growing", "owned"],
+    },
   },
 } as const
