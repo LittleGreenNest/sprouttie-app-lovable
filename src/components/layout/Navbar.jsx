@@ -26,7 +26,7 @@ const Navbar = () => {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <Link to="/" className="flex items-center gap-2 text-xl font-display font-bold text-sprouttie-green-dark">
-                <img src={sprouttielogo} alt="Sprouttie" className="h-8 w-8 object-contain" />
+                <img src={sprouttielogo} alt="Sprouttie" className="h-8 w-8 object-contain -scale-x-100" />
                 Sprouttie
               </Link>
             </div>
