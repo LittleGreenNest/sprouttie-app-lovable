@@ -349,7 +349,7 @@ const AddWordForm = ({ currentUser, onWordAdded }) => {
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
         >
           <Plus size={18} />
-          Add a word he said
+          Add a word your child said
         </button>
       </form>
     </div>
@@ -463,7 +463,7 @@ const SpokenWords = () => {
 
         {/* Header */}
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-foreground">Words He's Saying</h1>
+          <h1 className="text-2xl font-bold text-foreground">Words Your Child Is Saying</h1>
           <p className="text-sm text-muted-foreground">
             A gentle record of what you notice — not a test, just observations.
           </p>
