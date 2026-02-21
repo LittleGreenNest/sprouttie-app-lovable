@@ -15,7 +15,7 @@ const MORE_TABS = [
   { id: 'all-words', label: 'All Words', icon: ListChecks },
   { id: 'spoken-words', label: 'Words He Says', icon: MessageCircle },
   
-  { id: 'word-planner', label: 'Word Planner', icon: CalendarDays },
+  
 ];
 
 const TabButton = ({ icon: Icon, label, active, onClick }) => (
