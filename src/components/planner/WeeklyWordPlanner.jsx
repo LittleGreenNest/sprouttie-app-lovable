@@ -2,56 +2,40 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-toastify';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Plus, 
-  Trash2, 
-  GripVertical,
-  Calendar,
-  List,
-  Tag,
-  Sparkles,
-  Settings,
-  Check,
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  X,
   Loader2,
-  Lightbulb
+  Sparkles,
+  Check,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
-const TEACHING_METHODS = {
-  whole_word_flash: {
-    name: 'Whole Word Flash Method',
-    description: 'Start with familiar nouns, brief sessions, structured progression'
+const MAX_ACTIVATION_WORDS = 5;
+
+const PARENT_PROMPTS = {
+  default: {
+    ask: '这是什么？',
+    tip: 'If child replies in English, gently model the Mandarin response.',
   },
-  right_brain_speed: {
-    name: 'Right-Brain Speed Flash',
-    description: 'Rapid flashing, category-based, visual imagery focus'
-  },
-  balanced: {
-    name: 'Balanced Approach',
-    description: 'Combines structured progression with thematic grouping'
-  }
 };
 
 const WeeklyWordPlanner = () => {
   const { currentUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [wordPlans, setWordPlans] = useState([]);
-  const [themes, setThemes] = useState([]);
   const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(new Date()));
-  const [viewMode, setViewMode] = useState('calendar'); // 'calendar' or 'list'
-  const [newWord, setNewWord] = useState({ word: '', pinyin: '', theme: '', notes: '' });
+  const [newWord, setNewWord] = useState({ word: '', pinyin: '', theme: '' });
   const [showAddForm, setShowAddForm] = useState(false);
-  const [draggedWord, setDraggedWord] = useState(null);
-  
-  // AI Suggestions state
-  const [showMethodSettings, setShowMethodSettings] = useState(false);
-  const [teachingMethod, setTeachingMethod] = useState('balanced');
+  const [expandedWordId, setExpandedWordId] = useState(null);
+  const [trackingData, setTrackingData] = useState({});
+  const [spokenWords, setSpokenWords] = useState([]);
   const [generatingSuggestions, setGeneratingSuggestions] = useState(false);
-  const [suggestions, setSuggestions] = useState(null);
-  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // Get Monday of the current week
   function getWeekStart(date) {
     const d = new Date(date);
     const day = d.getDay();
@@ -59,36 +43,23 @@ const WeeklyWordPlanner = () => {
     return new Date(d.setDate(diff));
   }
 
-  // Format date as YYYY-MM-DD
-  const formatDate = (date) => {
-    return date.toISOString().split('T')[0];
+  const formatDate = (date) => date.toISOString().split('T')[0];
+
+  const getWeekRangeString = () => {
+    const end = new Date(currentWeekStart);
+    end.setDate(end.getDate() + 6);
+    const opts = { month: 'short', day: 'numeric' };
+    return `${currentWeekStart.toLocaleDateString('en-US', opts)} – ${end.toLocaleDateString('en-US', opts)}`;
   };
 
-  // Get day name
-  const getDayName = (date) => {
-    return date.toLocaleDateString('en-US', { weekday: 'short' });
+  const isCurrentWeek = () => {
+    const today = getWeekStart(new Date());
+    return formatDate(today) === formatDate(currentWeekStart);
   };
 
-  // Get formatted date
-  const getFormattedDate = (date) => {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
-
-  // Generate week days array
-  const getWeekDays = () => {
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(currentWeekStart);
-      day.setDate(day.getDate() + i);
-      days.push(day);
-    }
-    return days;
-  };
-
-  // Load word plans for current week
+  // Load word plans
   const loadWordPlans = useCallback(async () => {
     if (!currentUser) return;
-    
     setLoading(true);
     try {
       const weekEnd = new Date(currentWeekStart);
@@ -103,39 +74,135 @@ const WeeklyWordPlanner = () => {
         .order('display_order', { ascending: true });
 
       if (error) throw error;
-      
       setWordPlans(data || []);
-      
-      // Extract unique themes
-      const uniqueThemes = [...new Set((data || []).map(w => w.theme).filter(Boolean))];
-      setThemes(uniqueThemes);
     } catch (error) {
       console.error('Error loading word plans:', error);
-      toast.error('Failed to load word plans');
+      toast.error('Failed to load activation words');
     } finally {
       setLoading(false);
     }
   }, [currentUser, currentWeekStart]);
 
+  // Load tracking & spoken words for summary
+  const loadTrackingData = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      const startDate = formatDate(currentWeekStart);
+      const endDate = new Date(currentWeekStart);
+      endDate.setDate(endDate.getDate() + 6);
+
+      const [trackingRes, spokenRes] = await Promise.all([
+        supabase
+          .from('daily_tracking')
+          .select('flashcard_id, date, status')
+          .eq('user_id', currentUser.id)
+          .gte('date', startDate)
+          .lte('date', formatDate(endDate)),
+        supabase
+          .from('spoken_words')
+          .select('word, word_stage')
+          .eq('user_id', currentUser.id),
+      ]);
+
+      // Build round tracking per flashcard_id
+      const rounds = {};
+      if (trackingRes.data) {
+        trackingRes.data.forEach((r) => {
+          if (r.status === 'flashed') {
+            if (!rounds[r.flashcard_id]) rounds[r.flashcard_id] = new Set();
+            rounds[r.flashcard_id].add(r.date);
+          }
+        });
+      }
+      setTrackingData(rounds);
+      setSpokenWords(spokenRes.data || []);
+    } catch (err) {
+      console.error('Error loading tracking data:', err);
+    }
+  }, [currentUser, currentWeekStart]);
+
   useEffect(() => {
     loadWordPlans();
-  }, [loadWordPlans]);
+    loadTrackingData();
+  }, [loadWordPlans, loadTrackingData]);
 
-  // Load user's teaching method preference
-  useEffect(() => {
-    const loadTeachingMethod = async () => {
-      if (!currentUser) return;
-      const { data } = await supabase
-        .from('profiles')
-        .select('teaching_method')
-        .eq('id', currentUser.id)
-        .single();
-      if (data?.teaching_method) {
-        setTeachingMethod(data.teaching_method);
-      }
-    };
-    loadTeachingMethod();
-  }, [currentUser]);
+  // Get activation stage for a word
+  const getWordStage = (wordText) => {
+    const spoken = spokenWords.find(
+      (sw) => sw.word.toLowerCase() === wordText.toLowerCase()
+    );
+    if (!spoken) return { icon: '🌱', label: 'New' };
+    if (spoken.word_stage === 'owned') return { icon: '🌳', label: 'Owned' };
+    if (spoken.word_stage === 'growing') return { icon: '🌿', label: 'Growing' };
+    return { icon: '🌱', label: 'New' };
+  };
+
+  // Get round completion for a word (approximate: days flashed)
+  const getWordRounds = (wordPlan) => {
+    // Try to find matching flashcard by word text
+    const daysFlashed = Object.entries(trackingData).reduce((count, [fcId, dates]) => {
+      // We approximate: if the word was tracked at all this week, count rounds
+      return count;
+    }, 0);
+
+    // For now, check if word has matching flashcard tracking
+    // We'll use a simpler approach: check if any flashcard with matching word was tracked
+    let roundCount = 0;
+    // This is a simplified approach - in production you'd match by flashcard_id
+    return { r1: roundCount >= 1, r2: roundCount >= 2, r3: roundCount >= 3 };
+  };
+
+  const allRoundsComplete = (wordPlan) => {
+    const rounds = getWordRounds(wordPlan);
+    return rounds.r1 && rounds.r2 && rounds.r3;
+  };
+
+  // Add word
+  const handleAddWord = async () => {
+    if (!newWord.word.trim()) {
+      toast.error('Please enter a word');
+      return;
+    }
+
+    if (wordPlans.length >= MAX_ACTIVATION_WORDS) {
+      toast.info('Fewer words = stronger speaking activation.');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('word_plans').insert({
+        user_id: currentUser.id,
+        word: newWord.word.trim(),
+        pinyin: newWord.pinyin.trim() || null,
+        theme: newWord.theme.trim() || null,
+        planned_week_start: formatDate(currentWeekStart),
+        planned_date: null,
+        display_order: wordPlans.length,
+      });
+
+      if (error) throw error;
+      toast.success('Word added to activation cycle');
+      setNewWord({ word: '', pinyin: '', theme: '' });
+      setShowAddForm(false);
+      loadWordPlans();
+    } catch (error) {
+      console.error('Error adding word:', error);
+      toast.error('Failed to add word');
+    }
+  };
+
+  // Delete word
+  const handleDeleteWord = async (id) => {
+    try {
+      const { error } = await supabase.from('word_plans').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Word removed');
+      loadWordPlans();
+    } catch (error) {
+      console.error('Error deleting word:', error);
+      toast.error('Failed to remove word');
+    }
+  };
 
   // Navigate weeks
   const goToPreviousWeek = () => {
@@ -154,44 +221,41 @@ const WeeklyWordPlanner = () => {
     setCurrentWeekStart(getWeekStart(new Date()));
   };
 
-  // Save teaching method preference
-  const saveTeachingMethod = async (method) => {
-    setTeachingMethod(method);
-    try {
-      await supabase
-        .from('profiles')
-        .update({ teaching_method: method })
-        .eq('id', currentUser.id);
-      toast.success(`Teaching method updated to ${TEACHING_METHODS[method].name}`);
-    } catch (error) {
-      console.error('Error saving teaching method:', error);
-    }
-    setShowMethodSettings(false);
-  };
-
-  // Generate AI suggestions
+  // AI Suggestions
   const generateSuggestions = async () => {
     setGeneratingSuggestions(true);
-    setSuggestions(null);
-    
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast.error('Please log in to use AI suggestions');
+        toast.error('Please log in to use suggestions');
         return;
       }
 
       const response = await supabase.functions.invoke('suggest-words', {
-        body: { weekStart: formatDate(currentWeekStart) }
+        body: { weekStart: formatDate(currentWeekStart) },
       });
 
-      if (response.error) {
-        throw new Error(response.error.message || 'Failed to generate suggestions');
+      if (response.error) throw new Error(response.error.message);
+
+      // Auto-add suggestions up to limit
+      const suggestions = response.data?.suggestions || [];
+      const slotsAvailable = MAX_ACTIVATION_WORDS - wordPlans.length;
+      const toAdd = suggestions.slice(0, slotsAvailable);
+
+      for (const suggestion of toAdd) {
+        await supabase.from('word_plans').insert({
+          user_id: currentUser.id,
+          word: suggestion.word,
+          pinyin: suggestion.pinyin || null,
+          theme: suggestion.theme || null,
+          planned_week_start: formatDate(currentWeekStart),
+          planned_date: null,
+          display_order: wordPlans.length + toAdd.indexOf(suggestion),
+        });
       }
 
-      setSuggestions(response.data);
-      setShowSuggestions(true);
-      toast.success(`Generated ${response.data.suggestions.length} word suggestions!`);
+      toast.success(`Added ${toAdd.length} activation words`);
+      loadWordPlans();
     } catch (error) {
       console.error('Error generating suggestions:', error);
       toast.error(error.message || 'Failed to generate suggestions');
@@ -200,602 +264,376 @@ const WeeklyWordPlanner = () => {
     }
   };
 
-  // Add suggested word to plan
-  const addSuggestedWord = async (suggestion) => {
-    try {
-      const { error } = await supabase
-        .from('word_plans')
-        .insert({
-          user_id: currentUser.id,
-          word: suggestion.word,
-          pinyin: suggestion.pinyin || null,
-          theme: suggestion.theme || null,
-          planned_week_start: formatDate(currentWeekStart),
-          planned_date: null,
-          notes: suggestion.reasoning || null,
-          display_order: wordPlans.length
-        });
+  // Summary stats
+  const wordsActivated = wordPlans.filter((wp) => {
+    const rounds = getWordRounds(wp);
+    return rounds.r1 || rounds.r2 || rounds.r3;
+  }).length;
 
-      if (error) throw error;
-
-      toast.success(`Added "${suggestion.word}" to your plan!`);
-      loadWordPlans();
-      
-      // Remove from suggestions
-      setSuggestions(prev => ({
-        ...prev,
-        suggestions: prev.suggestions.filter(s => s.word !== suggestion.word)
-      }));
-    } catch (error) {
-      console.error('Error adding suggested word:', error);
-      toast.error('Failed to add word');
-    }
-  };
-
-  // Add new word
-  const handleAddWord = async (targetDate = null) => {
-    if (!newWord.word.trim()) {
-      toast.error('Please enter a word');
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('word_plans')
-        .insert({
-          user_id: currentUser.id,
-          word: newWord.word.trim(),
-          pinyin: newWord.pinyin.trim() || null,
-          theme: newWord.theme.trim() || null,
-          planned_week_start: formatDate(currentWeekStart),
-          planned_date: targetDate,
-          notes: newWord.notes.trim() || null,
-          display_order: wordPlans.length
-        });
-
-      if (error) throw error;
-
-      toast.success('Word added to plan!');
-      setNewWord({ word: '', pinyin: '', theme: '', notes: '' });
-      setShowAddForm(false);
-      loadWordPlans();
-    } catch (error) {
-      console.error('Error adding word:', error);
-      toast.error('Failed to add word');
-    }
-  };
-
-  // Delete word
-  const handleDeleteWord = async (id) => {
-    try {
-      const { error } = await supabase
-        .from('word_plans')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      
-      toast.success('Word removed from plan');
-      loadWordPlans();
-    } catch (error) {
-      console.error('Error deleting word:', error);
-      toast.error('Failed to delete word');
-    }
-  };
-
-  // Drag and drop handlers
-  const handleDragStart = (e, word) => {
-    setDraggedWord(word);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDrop = async (e, targetDate) => {
-    e.preventDefault();
-    if (!draggedWord) return;
-
-    try {
-      const { error } = await supabase
-        .from('word_plans')
-        .update({ planned_date: targetDate })
-        .eq('id', draggedWord.id);
-
-      if (error) throw error;
-      
-      loadWordPlans();
-    } catch (error) {
-      console.error('Error moving word:', error);
-      toast.error('Failed to move word');
-    }
-    
-    setDraggedWord(null);
-  };
-
-  // Get words for a specific date
-  const getWordsForDate = (date) => {
-    const dateStr = formatDate(date);
-    return wordPlans.filter(w => w.planned_date === dateStr);
-  };
-
-  // Get unscheduled words
-  const getUnscheduledWords = () => {
-    return wordPlans.filter(w => !w.planned_date);
-  };
-
-  // Get week range string
-  const getWeekRangeString = () => {
-    const weekEnd = new Date(currentWeekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    return `${getFormattedDate(currentWeekStart)} - ${getFormattedDate(weekEnd)}`;
-  };
-
-  // Check if current week
-  const isCurrentWeek = () => {
-    const today = getWeekStart(new Date());
-    return formatDate(today) === formatDate(currentWeekStart);
-  };
+  const wordsGrowing = spokenWords.filter((sw) => sw.word_stage === 'growing').length;
+  const wordsOwned = spokenWords.filter((sw) => sw.word_stage === 'owned').length;
 
   if (loading && wordPlans.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--sprouttie-green))]" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Weekly Word Planner</h1>
-          <p className="text-muted-foreground">Plan your flashcard words by theme and week</p>
-        </div>
-        
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* AI Suggestions Button */}
-          <button
-            onClick={generateSuggestions}
-            disabled={generatingSuggestions}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-lg hover:from-violet-600 hover:to-purple-600 transition-all disabled:opacity-50"
-          >
-            {generatingSuggestions ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
-            )}
-            {generatingSuggestions ? 'Generating...' : 'AI Suggest'}
-          </button>
-
-          {/* Method Settings Button */}
-          <div className="relative">
-            <button
-              onClick={() => setShowMethodSettings(!showMethodSettings)}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
-              title="Teaching Method Settings"
-            >
-              <Settings className="w-5 h-5 text-muted-foreground" />
-            </button>
-            
-            {showMethodSettings && (
-              <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-xl shadow-lg z-50 p-4">
-                <h4 className="font-semibold mb-3">Teaching Method</h4>
-                <div className="space-y-2">
-                  {Object.entries(TEACHING_METHODS).map(([key, method]) => (
-                    <button
-                      key={key}
-                      onClick={() => saveTeachingMethod(key)}
-                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                        teachingMethod === key
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border hover:bg-muted'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{method.name}</span>
-                        {teachingMethod === key && <Check className="w-4 h-4 text-primary" />}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">{method.description}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* View Toggle */}
-          <div className="flex bg-muted rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={`p-2 rounded-md transition-colors ${
-                viewMode === 'calendar' 
-                  ? 'bg-background text-foreground shadow-sm' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Calendar className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-md transition-colors ${
-                viewMode === 'list' 
-                  ? 'bg-background text-foreground shadow-sm' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
-
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Word
-          </button>
-        </div>
-      </div>
+    <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
+      {/* Page Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center"
+      >
+        <h1 className="text-2xl font-display font-bold text-[hsl(var(--foreground))]">
+          This Week's Speaking Activation
+        </h1>
+        <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+          Choose up to 5 target words to activate speaking this week.
+        </p>
+      </motion.div>
 
       {/* Week Navigation */}
-      <div className="flex items-center justify-between bg-card border border-border rounded-xl p-4">
+      <div className="flex items-center justify-between">
         <button
           onClick={goToPreviousWeek}
-          className="p-2 hover:bg-muted rounded-lg transition-colors"
+          className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
         </button>
-
-        <div className="flex items-center gap-4">
-          <span className="text-lg font-semibold">{getWeekRangeString()}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+            {getWeekRangeString()}
+          </span>
           {!isCurrentWeek() && (
             <button
               onClick={goToCurrentWeek}
-              className="text-sm text-primary hover:underline"
+              className="text-xs text-[hsl(var(--sprouttie-green))] hover:underline"
             >
               Today
             </button>
           )}
         </div>
-
         <button
           onClick={goToNextWeek}
-          className="p-2 hover:bg-muted rounded-lg transition-colors"
+          className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
         </button>
       </div>
 
-      {/* Add Word Form */}
-      {showAddForm && (
-        <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-          <h3 className="font-semibold text-foreground">Add New Word</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <input
-              type="text"
-              placeholder="Word (Chinese)"
-              value={newWord.word}
-              onChange={(e) => setNewWord({ ...newWord, word: e.target.value })}
-              className="px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            <input
-              type="text"
-              placeholder="Pinyin (optional)"
-              value={newWord.pinyin}
-              onChange={(e) => setNewWord({ ...newWord, pinyin: e.target.value })}
-              className="px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            <input
-              type="text"
-              placeholder="Theme (e.g., Animals, Colors)"
-              value={newWord.theme}
-              onChange={(e) => setNewWord({ ...newWord, theme: e.target.value })}
-              className="px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              list="themes-list"
-            />
-            <datalist id="themes-list">
-              {themes.map(theme => (
-                <option key={theme} value={theme} />
-              ))}
-            </datalist>
-            <input
-              type="text"
-              placeholder="Notes (optional)"
-              value={newWord.notes}
-              onChange={(e) => setNewWord({ ...newWord, notes: e.target.value })}
-              className="px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleAddWord(null)}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              Add to Backlog
-            </button>
-            <button
-              onClick={() => setShowAddForm(false)}
-              className="px-4 py-2 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition-colors"
-            >
-              Cancel
-            </button>
+      {/* Activation Goal Box */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl p-5 space-y-4"
+      >
+        <div className="flex items-start gap-3">
+          <span className="text-2xl">🔹</span>
+          <div className="flex-1">
+            <h2 className="font-display font-semibold text-[hsl(var(--foreground))] text-lg">
+              This Week's Goal
+            </h2>
+            <p className="text-sm text-[hsl(var(--muted-foreground))] mt-0.5">
+              Help your child reply in Mandarin using these words.
+            </p>
           </div>
         </div>
-      )}
 
-      {/* AI Suggestions Panel */}
-      {showSuggestions && suggestions && (
-        <div className="bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-300/30 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-violet-500" />
-              <h3 className="font-semibold text-foreground">AI Suggestions</h3>
-              <span className="text-sm text-muted-foreground">
-                ({suggestions.suggestions.length} words • {suggestions.method})
-              </span>
-            </div>
-            <button
-              onClick={() => setShowSuggestions(false)}
-              className="text-sm text-muted-foreground hover:text-foreground"
-            >
-              Hide
-            </button>
+        {/* Progress */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-[hsl(var(--muted-foreground))]">Target words</span>
+            <span className="font-medium text-[hsl(var(--foreground))]">
+              {wordPlans.length} / {MAX_ACTIVATION_WORDS}
+            </span>
           </div>
-          
-          {suggestions.principles && (
-            <div className="mb-4 p-3 bg-background/50 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Lightbulb className="w-4 h-4 text-amber-500" />
-                <span className="text-sm font-medium">Method Principles:</span>
-              </div>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                {suggestions.principles.slice(0, 3).map((p, i) => (
-                  <li key={i}>• {p}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {suggestions.suggestions.map((suggestion, index) => (
-              <div
-                key={index}
-                className="bg-background border border-border rounded-lg p-3 hover:shadow-md transition-shadow"
+          <div className="w-full h-2 bg-[hsl(var(--muted))] rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-[hsl(var(--sprouttie-green))] rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${(wordPlans.length / MAX_ACTIVATION_WORDS) * 100}%` }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+            />
+          </div>
+        </div>
+
+        {/* CTA */}
+        {wordPlans.length > 0 && (
+          <button
+            className="w-full py-3 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold text-sm shadow-md hover:shadow-lg transition-all"
+          >
+            Start Activation Rounds
+          </button>
+        )}
+      </motion.div>
+
+      {/* Word Cards */}
+      <div className="space-y-3">
+        <AnimatePresence>
+          {wordPlans.map((wp, index) => {
+            const stage = getWordStage(wp.word);
+            const rounds = getWordRounds(wp);
+            const isExpanded = expandedWordId === wp.id;
+            const isComplete = rounds.r1 && rounds.r2 && rounds.r3;
+
+            return (
+              <motion.div
+                key={wp.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ delay: index * 0.05 }}
+                className={`bg-[hsl(var(--card))] border rounded-2xl overflow-hidden transition-all ${
+                  isComplete
+                    ? 'border-[hsl(var(--sprouttie-green))] shadow-[0_0_12px_-3px_hsl(var(--sprouttie-green)/0.3)]'
+                    : 'border-[hsl(var(--border))]'
+                }`}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
+                {/* Word header */}
+                <button
+                  onClick={() => setExpandedWordId(isExpanded ? null : wp.id)}
+                  className="w-full px-5 py-4 flex items-center gap-3 text-left"
+                >
+                  <span className="text-xl">{stage.icon}</span>
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-foreground">{suggestion.word}</span>
-                      {suggestion.pinyin && (
-                        <span className="text-sm text-muted-foreground">({suggestion.pinyin})</span>
+                      <span className="font-semibold text-[hsl(var(--foreground))] text-base">
+                        {wp.word}
+                      </span>
+                      {wp.pinyin && (
+                        <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                          {wp.pinyin}
+                        </span>
                       )}
                     </div>
-                    {suggestion.theme && (
-                      <span className="inline-block mt-1 px-2 py-0.5 bg-accent/20 text-accent-foreground rounded text-xs">
-                        {suggestion.theme}
+                    <div className="flex items-center gap-2 mt-1">
+                      {wp.theme && (
+                        <span className="text-xs text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))] px-2 py-0.5 rounded-full">
+                          {wp.theme}
+                        </span>
+                      )}
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        stage.label === 'Owned'
+                          ? 'bg-[hsl(var(--sprouttie-green-light))] text-[hsl(var(--sprouttie-green-dark))]'
+                          : stage.label === 'Growing'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]'
+                      }`}>
+                        {stage.label}
                       </span>
-                    )}
-                    {suggestion.reasoning && (
-                      <p className="mt-2 text-xs text-muted-foreground">{suggestion.reasoning}</p>
-                    )}
+                    </div>
                   </div>
-                  <button
-                    onClick={() => addSuggestedWord(suggestion)}
-                    className="p-1.5 bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
-                    title="Add to plan"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          {suggestions.suggestions.length === 0 && (
-            <p className="text-center text-muted-foreground py-4">
-              All suggestions have been added to your plan!
-            </p>
-          )}
-        </div>
-      )}
 
-      {/* Theme Tags */}
-      {themes.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {themes.map(theme => (
-            <span
-              key={theme}
-              className="flex items-center gap-1 px-3 py-1 bg-accent/20 text-accent-foreground rounded-full text-sm"
-            >
-              <Tag className="w-3 h-3" />
-              {theme}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Calendar View */}
-      {viewMode === 'calendar' && (
-        <div className="grid grid-cols-7 gap-2">
-          {/* Day Headers */}
-          {getWeekDays().map((day) => (
-            <div
-              key={formatDate(day)}
-              className="text-center py-2 font-medium text-muted-foreground"
-            >
-              <div className="text-xs">{getDayName(day)}</div>
-              <div className="text-lg">{day.getDate()}</div>
-            </div>
-          ))}
-
-          {/* Day Columns */}
-          {getWeekDays().map((day) => {
-            const dayWords = getWordsForDate(day);
-            const isToday = formatDate(day) === formatDate(new Date());
-            
-            return (
-              <div
-                key={`col-${formatDate(day)}`}
-                className={`min-h-[200px] bg-card border rounded-xl p-2 transition-colors ${
-                  isToday ? 'border-primary bg-primary/5' : 'border-border'
-                } ${draggedWord ? 'hover:bg-accent/10' : ''}`}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, formatDate(day))}
-              >
-                <div className="space-y-2">
-                  {dayWords.map((word) => (
-                    <WordCard
-                      key={word.id}
-                      word={word}
-                      onDelete={handleDeleteWord}
-                      onDragStart={handleDragStart}
-                    />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* List View */}
-      {viewMode === 'list' && (
-        <div className="space-y-4">
-          {getWeekDays().map((day) => {
-            const dayWords = getWordsForDate(day);
-            const isToday = formatDate(day) === formatDate(new Date());
-            
-            return (
-              <div
-                key={formatDate(day)}
-                className={`bg-card border rounded-xl p-4 ${
-                  isToday ? 'border-primary' : 'border-border'
-                }`}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, formatDate(day))}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold">
-                    {getDayName(day)}, {getFormattedDate(day)}
-                    {isToday && <span className="ml-2 text-primary text-sm">(Today)</span>}
-                  </h3>
-                  <span className="text-sm text-muted-foreground">
-                    {dayWords.length} word{dayWords.length !== 1 ? 's' : ''}
-                  </span>
-                </div>
-                
-                {dayWords.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {dayWords.map((word) => (
-                      <WordCard
-                        key={word.id}
-                        word={word}
-                        onDelete={handleDeleteWord}
-                        onDragStart={handleDragStart}
-                        compact
-                      />
+                  {/* Round indicators */}
+                  <div className="flex items-center gap-1.5 mr-1">
+                    {[rounds.r1, rounds.r2, rounds.r3].map((done, i) => (
+                      <div
+                        key={i}
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center text-[10px] font-bold transition-colors ${
+                          done
+                            ? 'bg-[hsl(var(--sprouttie-green))] border-[hsl(var(--sprouttie-green))] text-white'
+                            : 'border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]'
+                        }`}
+                      >
+                        {done ? <Check className="w-3 h-3" /> : `R${i + 1}`}
+                      </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground italic">No words planned</p>
-                )}
-              </div>
+
+                  {isExpanded ? (
+                    <ChevronUp className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                  )}
+                </button>
+
+                {/* Expanded: Behaviour prompt */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-5 pb-4 space-y-3 border-t border-[hsl(var(--border))]">
+                        <div className="pt-3">
+                          <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wide mb-2">
+                            Suggested Parent Prompt
+                          </p>
+                          <div className="bg-[hsl(var(--muted))] rounded-xl p-3 space-y-1.5">
+                            <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                              Ask: <span className="text-[hsl(var(--sprouttie-green-dark))]">{PARENT_PROMPTS.default.ask}</span>
+                            </p>
+                            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                              {PARENT_PROMPTS.default.tip}
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteWord(wp.id);
+                          }}
+                          className="flex items-center gap-1.5 text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                          Remove from this cycle
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
             );
           })}
-        </div>
-      )}
+        </AnimatePresence>
 
-      {/* Unscheduled Words (Backlog) */}
-      {getUnscheduledWords().length > 0 && (
-        <div className="bg-card border border-dashed border-border rounded-xl p-4">
-          <h3 className="font-semibold mb-3 text-foreground">
-            📋 Backlog ({getUnscheduledWords().length} words)
-          </h3>
-          <p className="text-sm text-muted-foreground mb-3">
-            Drag words to schedule them for specific days
+        {/* Limit message */}
+        {wordPlans.length >= MAX_ACTIVATION_WORDS && !showAddForm && (
+          <p className="text-center text-xs text-[hsl(var(--muted-foreground))] py-2">
+            Fewer words = stronger speaking activation.
           </p>
-          <div className="flex flex-wrap gap-2">
-            {getUnscheduledWords().map((word) => (
-              <WordCard
-                key={word.id}
-                word={word}
-                onDelete={handleDeleteWord}
-                onDragStart={handleDragStart}
-                compact
+        )}
+      </div>
+
+      {/* Add Word */}
+      {wordPlans.length < MAX_ACTIVATION_WORDS && (
+        <>
+          {showAddForm ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl p-5 space-y-3"
+            >
+              <h3 className="font-semibold text-sm text-[hsl(var(--foreground))]">
+                Add to This Activation Cycle
+              </h3>
+              <input
+                type="text"
+                placeholder="Word (Chinese)"
+                value={newWord.word}
+                onChange={(e) => setNewWord({ ...newWord, word: e.target.value })}
+                className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--sprouttie-green))]"
+                autoFocus
               />
-            ))}
-          </div>
-        </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  placeholder="Pinyin (optional)"
+                  value={newWord.pinyin}
+                  onChange={(e) => setNewWord({ ...newWord, pinyin: e.target.value })}
+                  className="px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--sprouttie-green))]"
+                />
+                <input
+                  type="text"
+                  placeholder="Theme (optional)"
+                  value={newWord.theme}
+                  onChange={(e) => setNewWord({ ...newWord, theme: e.target.value })}
+                  className="px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--sprouttie-green))]"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAddWord}
+                  className="flex-1 py-2.5 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
+                >
+                  Add Word
+                </button>
+                <button
+                  onClick={() => setShowAddForm(false)}
+                  className="px-4 py-2.5 bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded-xl text-sm hover:opacity-80 transition-opacity"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-dashed border-[hsl(var(--border))] rounded-2xl text-sm text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--sprouttie-green))] hover:text-[hsl(var(--sprouttie-green))] transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add Word
+              </button>
+              <button
+                onClick={generateSuggestions}
+                disabled={generatingSuggestions}
+                className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-[hsl(var(--border))] rounded-2xl text-sm text-[hsl(var(--muted-foreground))] hover:border-violet-400 hover:text-violet-500 transition-colors disabled:opacity-50"
+              >
+                {generatingSuggestions ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4" />
+                )}
+                Suggest
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Empty State */}
-      {wordPlans.length === 0 && !loading && (
-        <div className="text-center py-12 bg-card border border-border rounded-xl">
-          <Calendar className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">No words planned for this week</h3>
-          <p className="text-muted-foreground mb-4">
-            Start planning your flashcard words by clicking "Add Word"
+      {wordPlans.length === 0 && !loading && !showAddForm && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-8"
+        >
+          <p className="text-4xl mb-3">🌱</p>
+          <h3 className="font-display font-semibold text-[hsl(var(--foreground))] mb-1">
+            No activation words yet
+          </h3>
+          <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+            Add up to 5 words to begin this week's speaking cycle.
           </p>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            Add Your First Word
-          </button>
-        </div>
+        </motion.div>
+      )}
+
+      {/* Weekly Summary Footer */}
+      {wordPlans.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl p-5"
+        >
+          <h3 className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wide mb-3">
+            This Week's Activation Summary
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <SummaryItem label="Words Activated" value={wordsActivated} icon="🎯" />
+            <SummaryItem label="Words Growing" value={wordsGrowing} icon="🌿" />
+            <SummaryItem label="Words Owned" value={wordsOwned} icon="🌳" />
+            <SummaryItem
+              label="Words in Cycle"
+              value={wordPlans.length}
+              icon="🔄"
+            />
+          </div>
+        </motion.div>
       )}
     </div>
   );
 };
 
-// Word Card Component
-const WordCard = ({ word, onDelete, onDragStart, compact = false }) => {
-  return (
-    <div
-      draggable
-      onDragStart={(e) => onDragStart(e, word)}
-      className={`group bg-background border border-border rounded-lg cursor-grab active:cursor-grabbing transition-all hover:shadow-md ${
-        compact ? 'px-3 py-2' : 'p-3'
-      }`}
-    >
-      <div className="flex items-start gap-2">
-        <GripVertical className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" />
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-foreground">{word.word}</span>
-            {word.pinyin && (
-              <span className="text-sm text-muted-foreground">({word.pinyin})</span>
-            )}
-          </div>
-          
-          {!compact && word.theme && (
-            <span className="inline-block mt-1 px-2 py-0.5 bg-accent/20 text-accent-foreground rounded text-xs">
-              {word.theme}
-            </span>
-          )}
-          
-          {!compact && word.notes && (
-            <p className="mt-1 text-xs text-muted-foreground truncate">{word.notes}</p>
-          )}
-        </div>
-
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(word.id);
-          }}
-          className="p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-        >
-          <Trash2 className="w-3 h-3" />
-        </button>
-      </div>
+const SummaryItem = ({ label, value, icon }) => (
+  <div className="flex items-center gap-2.5 py-1.5">
+    <span className="text-lg">{icon}</span>
+    <div>
+      <p className="text-lg font-semibold text-[hsl(var(--foreground))] leading-tight">{value}</p>
+      <p className="text-xs text-[hsl(var(--muted-foreground))]">{label}</p>
     </div>
-  );
-};
+  </div>
+);
 
 export default WeeklyWordPlanner;
