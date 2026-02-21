@@ -441,6 +441,17 @@ const SpokenWords = () => {
     return acc;
   }, {});
 
+  // Count words moved to Owned this month
+  const movedToOwnedThisMonth = (() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    return spokenWords.filter(w =>
+      w.word_stage === 'owned' &&
+      w.stage_updated_at &&
+      new Date(w.stage_updated_at) >= monthStart
+    ).length;
+  })();
+
   // Group by stage for section labels
   const grouped = STAGE_ORDER.map(stageKey => ({
     stageKey,
@@ -490,6 +501,13 @@ const SpokenWords = () => {
               );
             })}
           </div>
+        )}
+
+        {/* Monthly movement */}
+        {totalWords > 0 && movedToOwnedThisMonth > 0 && (
+          <p className="text-sm text-muted-foreground">
+            {movedToOwnedThisMonth} {movedToOwnedThisMonth === 1 ? 'word' : 'words'} moved to 🌳 Owned this month.
+          </p>
         )}
 
         {/* Add word form */}
