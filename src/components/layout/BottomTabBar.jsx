@@ -14,7 +14,7 @@ const MORE_TABS = [
   { id: 'flashed-history', label: 'Flashed History', icon: History },
   { id: 'all-words', label: 'All Words', icon: ListChecks },
   { id: 'spoken-words', label: 'Words He Says', icon: MessageCircle },
-  { id: 'pronunciation', label: 'Pronunciation', icon: Headphones },
+  
   { id: 'word-planner', label: 'Word Planner', icon: CalendarDays },
 ];
 
