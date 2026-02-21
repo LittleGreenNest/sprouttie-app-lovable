@@ -268,46 +268,64 @@ export type Database = {
       }
       profiles: {
         Row: {
+          child_age_band: string | null
           created_at: string | null
           current_streak: number | null
+          daily_time_commitment: string | null
           email: string
           id: string
           last_activity_date: string | null
           longest_streak: number | null
+          onboarding_completed: boolean
           plan: string
+          reply_pattern: string | null
+          speech_level: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           subscription_status: string | null
+          target_language: string | null
           teaching_method: string | null
           timezone: string | null
           updated_at: string | null
         }
         Insert: {
+          child_age_band?: string | null
           created_at?: string | null
           current_streak?: number | null
+          daily_time_commitment?: string | null
           email: string
           id: string
           last_activity_date?: string | null
           longest_streak?: number | null
+          onboarding_completed?: boolean
           plan?: string
+          reply_pattern?: string | null
+          speech_level?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_status?: string | null
+          target_language?: string | null
           teaching_method?: string | null
           timezone?: string | null
           updated_at?: string | null
         }
         Update: {
+          child_age_band?: string | null
           created_at?: string | null
           current_streak?: number | null
+          daily_time_commitment?: string | null
           email?: string
           id?: string
           last_activity_date?: string | null
           longest_streak?: number | null
+          onboarding_completed?: boolean
           plan?: string
+          reply_pattern?: string | null
+          speech_level?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_status?: string | null
+          target_language?: string | null
           teaching_method?: string | null
           timezone?: string | null
           updated_at?: string | null
