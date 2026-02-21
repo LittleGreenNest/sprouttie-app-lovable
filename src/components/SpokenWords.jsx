@@ -142,10 +142,6 @@ const WordCard = ({ word, onStageChange, onDelete }) => {
         {/* Expanded panel */}
         {expanded && (
           <div className="border-t border-border px-4 py-3 space-y-3 bg-background/40">
-            {/* Swipe hint */}
-            <p className="text-xs text-center text-muted-foreground/60 tracking-wide">
-              ← swipe to change stage →
-            </p>
 
             {/* Notes */}
             {word.notes && (
@@ -470,6 +466,9 @@ const SpokenWords = () => {
           <h1 className="text-2xl font-bold text-foreground">Words He's Saying</h1>
           <p className="text-sm text-muted-foreground">
             A gentle record of what you notice — not a test, just observations.
+          </p>
+          <p className="text-xs text-muted-foreground/60 tracking-wide mt-1">
+            ← swipe cards to change stage →
           </p>
         </div>
 
