@@ -357,3 +357,6 @@ verify_jwt = true
 
 [functions.suggest-words]
 verify_jwt = true
+
+[functions.translate-word]
+verify_jwt = false
