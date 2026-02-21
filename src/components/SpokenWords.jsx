@@ -7,33 +7,33 @@ import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 
 // Stage config — single source of truth for emoji, labels, copy, sort order
 const STAGES = {
-  growing: {
-    key: 'growing',
-    emoji: '🌿',
-    label: 'Growing',
-    sectionLabel: '🌿 Growing — update these',
-    toastLabel: 'Moved to 🌿 Growing!',
-    sortOrder: 0,
-  },
   new: {
     key: 'new',
     emoji: '🌱',
     label: 'New',
     sectionLabel: '🌱 New — just sprouting',
     toastLabel: 'Moved to 🌱 New!',
+    sortOrder: 0,
+  },
+  growing: {
+    key: 'growing',
+    emoji: '🌿',
+    label: 'Growing',
+    sectionLabel: '🌿 Growing — update these',
+    toastLabel: 'Moved to 🌿 Growing!',
     sortOrder: 1,
   },
   owned: {
     key: 'owned',
     emoji: '🌳',
     label: 'Owned',
-    sectionLabel: '🌳 Owned — he\'s got these',
+    sectionLabel: '🌳 Owned — your child\'s got these',
     toastLabel: 'Moved to 🌳 Owned!',
     sortOrder: 2,
   },
 };
 
-const STAGE_ORDER = ['growing', 'new', 'owned'];
+const STAGE_ORDER = ['new', 'growing', 'owned'];
 
 // ── Word Card ────────────────────────────────────────────────────────────────
 const SWIPE_THRESHOLD = 68;
