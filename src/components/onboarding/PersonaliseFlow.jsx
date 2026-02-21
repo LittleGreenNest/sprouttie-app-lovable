@@ -20,9 +20,11 @@ const STEPS = [
   },
   {
     key: 'target_language',
-    title: "What language are you strengthening?",
-    subtitle: "We'll tailor word suggestions to this language.",
+    title: "What language(s) are you strengthening?",
+    subtitle: "Select all that apply. Tap again to deselect.",
+    multi: true,
     options: [
+      { value: 'english', label: 'English', emoji: '🇬🇧' },
       { value: 'mandarin', label: 'Mandarin', emoji: '🇨🇳' },
       { value: 'cantonese', label: 'Cantonese', emoji: '🇭🇰' },
       { value: 'malay', label: 'Malay', emoji: '🇲🇾' },
@@ -45,10 +47,12 @@ const STEPS = [
     key: 'reply_pattern',
     titleFn: (answers) => {
       const langLabel = {
-        mandarin: 'Mandarin', cantonese: 'Cantonese', malay: 'Malay',
+        english: 'English', mandarin: 'Mandarin', cantonese: 'Cantonese', malay: 'Malay',
         tamil: 'Tamil', other: 'the target language',
       };
-      const lang = langLabel[answers.target_language] || 'the target language';
+      const langs = Array.isArray(answers.target_language) ? answers.target_language : [answers.target_language];
+      const names = langs.map(l => langLabel[l] || l).filter(Boolean);
+      const lang = names.length > 1 ? names.slice(0, -1).join(', ') + ' or ' + names[names.length - 1] : (names[0] || 'the target language');
       return `When you speak in ${lang}, your child usually:`;
     },
     subtitle: "This helps us prioritise the right approach.",
@@ -85,6 +89,14 @@ const PersonaliseFlow = ({ onComplete }) => {
   const totalSteps = STEPS.length;
 
   const handleSelect = async (value) => {
+    // Multi-select: toggle values in an array
+    if (current.multi) {
+      const prev = answers[current.key] || [];
+      const next = prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value];
+      setAnswers({ ...answers, [current.key]: next });
+      return;
+    }
+
     const updated = { ...answers, [current.key]: value };
     setAnswers(updated);
 
@@ -92,29 +104,48 @@ const PersonaliseFlow = ({ onComplete }) => {
       setDirection(1);
       setTimeout(() => setStep(step + 1), 200);
     } else {
-      // Final step — save to database, then show plan
-      setSaving(true);
-      try {
-        const { error } = await supabase
-          .from('profiles')
-          .update({
-            child_age_band: updated.child_age_band,
-            target_language: updated.target_language,
-            speech_level: updated.speech_level,
-            reply_pattern: updated.reply_pattern,
-            daily_time_commitment: updated.daily_time_commitment,
-            onboarding_completed: true,
-          })
-          .eq('id', currentUser.id);
+      await saveAndFinish(updated);
+    }
+  };
 
-        if (error) throw error;
-        await refreshProfile(currentUser);
-        // Transition to plan view
-        setShowPlan(true);
-      } catch (err) {
-        console.error('Failed to save onboarding:', err);
-        setSaving(false);
-      }
+  const handleMultiNext = async () => {
+    const selected = answers[current.key] || [];
+    if (selected.length === 0) return;
+
+    if (step < totalSteps - 1) {
+      setDirection(1);
+      setStep(step + 1);
+    } else {
+      await saveAndFinish(answers);
+    }
+  };
+
+  const saveAndFinish = async (finalAnswers) => {
+    setSaving(true);
+    try {
+      // For multi-select, join as comma-separated string for DB storage
+      const targetLang = Array.isArray(finalAnswers.target_language)
+        ? finalAnswers.target_language.join(',')
+        : finalAnswers.target_language;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          child_age_band: finalAnswers.child_age_band,
+          target_language: targetLang,
+          speech_level: finalAnswers.speech_level,
+          reply_pattern: finalAnswers.reply_pattern,
+          daily_time_commitment: finalAnswers.daily_time_commitment,
+          onboarding_completed: true,
+        })
+        .eq('id', currentUser.id);
+
+      if (error) throw error;
+      await refreshProfile(currentUser);
+      setShowPlan(true);
+    } catch (err) {
+      console.error('Failed to save onboarding:', err);
+      setSaving(false);
     }
   };
 
@@ -224,7 +255,9 @@ const PersonaliseFlow = ({ onComplete }) => {
 
             <div className="space-y-3">
               {current.options.map((option) => {
-                const isSelected = answers[current.key] === option.value;
+                const isSelected = current.multi
+                  ? (answers[current.key] || []).includes(option.value)
+                  : answers[current.key] === option.value;
                 return (
                   <motion.button
                     key={option.value}
@@ -246,10 +279,26 @@ const PersonaliseFlow = ({ onComplete }) => {
                     }`}>
                       {option.label}
                     </span>
+                    {current.multi && isSelected && (
+                      <span className="ml-auto text-[hsl(var(--sprouttie-green))]">✓</span>
+                    )}
                   </motion.button>
                 );
               })}
             </div>
+
+            {/* Next button for multi-select steps */}
+            {current.multi && (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: (answers[current.key] || []).length > 0 ? 1 : 0.4 }}
+                onClick={handleMultiNext}
+                disabled={(answers[current.key] || []).length === 0}
+                className="w-full mt-5 py-3 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold transition-all disabled:opacity-40"
+              >
+                Next
+              </motion.button>
+            )}
           </motion.div>
         </AnimatePresence>
 
