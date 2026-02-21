@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
+import GeneratedPlanView from '../planner/GeneratedPlanView';
+import { useNavigate } from 'react-router-dom';
 import sprouttielogo from '@/assets/sprouttie-logo.png';
 
 const STEPS = [
@@ -71,13 +73,15 @@ const STEPS = [
 
 const PersonaliseFlow = ({ onComplete }) => {
   const { currentUser, refreshProfile } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
   const [saving, setSaving] = useState(false);
+  const [showPlan, setShowPlan] = useState(false);
   const [direction, setDirection] = useState(1);
 
   const current = STEPS[step];
-  const title = current.titleFn ? current.titleFn(answers) : current.title;
+  const title = current?.titleFn ? current.titleFn(answers) : current?.title;
   const totalSteps = STEPS.length;
 
   const handleSelect = async (value) => {
@@ -88,7 +92,7 @@ const PersonaliseFlow = ({ onComplete }) => {
       setDirection(1);
       setTimeout(() => setStep(step + 1), 200);
     } else {
-      // Final step — save to database
+      // Final step — save to database, then show plan
       setSaving(true);
       try {
         const { error } = await supabase
@@ -105,7 +109,8 @@ const PersonaliseFlow = ({ onComplete }) => {
 
         if (error) throw error;
         await refreshProfile(currentUser);
-        onComplete?.();
+        // Transition to plan view
+        setShowPlan(true);
       } catch (err) {
         console.error('Failed to save onboarding:', err);
         setSaving(false);
@@ -120,12 +125,28 @@ const PersonaliseFlow = ({ onComplete }) => {
     }
   };
 
+  const handleStartWeek = () => {
+    onComplete?.();
+    navigate('/daily-tracking');
+  };
+
   const variants = {
     enter: (dir) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
     center: { x: 0, opacity: 1 },
     exit: (dir) => ({ x: dir > 0 ? -80 : 80, opacity: 0 }),
   };
 
+  // Show generated plan after onboarding
+  if (showPlan) {
+    return (
+      <GeneratedPlanView
+        isFirstPlan={true}
+        onStartWeek={handleStartWeek}
+      />
+    );
+  }
+
+  // Saving / transition state
   if (saving) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[hsl(var(--background))] px-6">
@@ -140,7 +161,7 @@ const PersonaliseFlow = ({ onComplete }) => {
             Your structured plan is ready.
           </h2>
           <p className="text-[hsl(var(--muted-foreground))] text-sm">
-            Setting things up for you…
+            Building your first week…
           </p>
           <div className="mt-6 animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[hsl(var(--sprouttie-green))] mx-auto"></div>
         </motion.div>
