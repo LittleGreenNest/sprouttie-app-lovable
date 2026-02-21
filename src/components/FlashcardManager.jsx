@@ -1,6 +1,7 @@
 // components/FlashcardManager.js
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useFlashcards } from '../context/FlashcardContext';
+import { supabase } from '@/integrations/supabase/client';
 import CSVImport from './CSVImport';
 import PrintFlashcards from './PrintFlashcards';
 
@@ -40,7 +41,10 @@ const FlashcardManager = () => {
   const [editCardType, setEditCardType] = useState('word');
   const [editPhraseGroup, setEditPhraseGroup] = useState('');
 
-  
+  // AI auto-fill state
+  const [aiLoading, setAiLoading] = useState(false);
+  const aiTimeoutRef = useRef(null);
+
   // Message state
   const [message, setMessage] = useState({ text: '', type: '' });
   
@@ -49,6 +53,43 @@ const FlashcardManager = () => {
     setMessage({ text, type });
     setTimeout(() => setMessage({ text: '', type: '' }), 3000);
   };
+
+  // AI auto-fill: debounce Chinese word input
+  const handleWordChange = (value) => {
+    setNewFlashcardWord(value);
+    
+    // Clear previous timeout
+    if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+    
+    // Check if input looks like Chinese characters
+    const hasChinese = /[\u4e00-\u9fff]/.test(value.trim());
+    if (!hasChinese || value.trim().length === 0) return;
+    
+    setAiLoading(true);
+    aiTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('translate-word', {
+          body: { word: value.trim() },
+        });
+        
+        if (error) throw error;
+        
+        if (data?.english) setNewFlashcardEnglish(data.english);
+        if (data?.pinyin) setNewFlashcardPinyin(data.pinyin);
+      } catch (err) {
+        console.error('AI auto-fill error:', err);
+      } finally {
+        setAiLoading(false);
+      }
+    }, 800);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+    };
+  }, []);
   
   // Toggle CSV import modal
   const toggleCSVImport = () => {
@@ -485,14 +526,21 @@ const FlashcardManager = () => {
               <label className="block text-sm font-medium mb-1">
                   {newCardType === 'word' ? 'Word' : 'Phrase'}
                 </label>
-                <input
-                  type="text"
-                  placeholder={newCardType === 'word' ? '狗' : '喝水, 坐下, 我们走走'}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  value={newFlashcardWord}
-                  onChange={(e) => setNewFlashcardWord(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder={newCardType === 'word' ? '狗' : '喝水, 坐下, 我们走走'}
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    value={newFlashcardWord}
+                    onChange={(e) => handleWordChange(e.target.value)}
+                    required
+                  />
+                  {aiLoading && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-600 animate-pulse">
+                      ✨ AI filling...
+                    </span>
+                  )}
+                </div>
                 {newCardType === 'phrase' && (
                   <p className="text-xs text-slate-500 mt-1">
                     Short toddler phrases like "喝水", "坐下", "我们走走"
