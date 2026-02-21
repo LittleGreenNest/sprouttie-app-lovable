@@ -47,16 +47,33 @@ const FlashedHistory = () => {
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0); // Last day of month
       
-      const { data: trackingData, error: trackingError } = await supabase
-        .from('daily_tracking')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .eq('status', 'flashed')
-        .gte('date', startDate.toISOString().split('T')[0])
-        .lte('date', endDate.toISOString().split('T')[0])
-        .order('date', { ascending: false });
+      // Fetch all tracking data for the month (handle >1000 rows with pagination)
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+      let allTrackingRows = [];
+      let from = 0;
+      const PAGE_SIZE = 1000;
+      
+      while (true) {
+        const { data: page, error: pageError } = await supabase
+          .from('daily_tracking')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .eq('status', 'flashed')
+          .gte('date', startDateStr)
+          .lte('date', endDateStr)
+          .order('date', { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+        
+        if (pageError) throw pageError;
+        allTrackingRows = allTrackingRows.concat(page || []);
+        if (!page || page.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+      
+      const trackingData = allTrackingRows;
 
-      if (trackingError) throw trackingError;
+      // trackingError handled above per-page
       
       setAllTrackingData(trackingData || []);
 
@@ -85,7 +102,21 @@ const FlashedHistory = () => {
           };
         }
         
-        // Get set from flashcard
+        // Primary: extract setId from notes JSON metadata (how SessionLogTracker stores it)
+        let isMetadataNote = false;
+        if (record.notes) {
+          try {
+            const metadata = JSON.parse(record.notes);
+            if (metadata && typeof metadata === 'object' && metadata.setId !== undefined) {
+              sessionsByDate[date].setsUsed.add(metadata.setId);
+              isMetadataNote = true; // Don't display this as a user note
+            }
+          } catch {
+            // Not JSON metadata
+          }
+        }
+        
+        // Fallback: get set from flashcard's set_number
         const card = flashcardMap[record.flashcard_id];
         if (card?.set_number) {
           sessionsByDate[date].setsUsed.add(card.set_number);
@@ -96,20 +127,18 @@ const FlashedHistory = () => {
         if (record.engagement) {
           sessionsByDate[date].engagements.push(record.engagement);
         }
-        if (record.notes) {
-          // Parse notes - they may be JSON strings or plain text
+        // Only add non-metadata notes to display
+        if (record.notes && !isMetadataNote) {
           try {
             const parsed = JSON.parse(record.notes);
-            // If it's an object with a text field, extract the text
             if (parsed && typeof parsed === 'object' && parsed.text) {
               sessionsByDate[date].notes.push(parsed.text);
             } else if (typeof parsed === 'string') {
               sessionsByDate[date].notes.push(parsed);
             } else {
-              sessionsByDate[date].notes.push(record.notes);
+              // Skip objects without text (likely metadata)
             }
           } catch {
-            // If not valid JSON, use as plain text
             sessionsByDate[date].notes.push(record.notes);
           }
         }
