@@ -29,6 +29,7 @@ import InstallPrompt from './components/pwa/InstallPrompt';
 import { supabase } from '@/integrations/supabase/client';
 
 // Lazy-loaded components for better initial load
+const PersonaliseFlow = lazy(() => import('./components/onboarding/PersonaliseFlow'));
 const PDFSuccess = lazy(() => import('./pdf-success'));
 const UpgradeSuccess = lazy(() => import('./components/subscription/UpgradeSuccess'));
 const Profile = lazy(() => import('./components/user/Profile'));
@@ -78,13 +79,22 @@ export const fetchUserPlan = async (userEmail) => {
 // BottomTabBar handles navigation now
 import BottomTabBar from './components/layout/BottomTabBar';
 const AppContent = () => {
-  const { loading } = useAuth();
+  const { loading, currentUser, profile, profileLoading, refreshProfile } = useAuth();
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sprouttie-green"></div>
       </div>
+    );
+  }
+
+  // Show onboarding if user hasn't completed it yet
+  if (currentUser && profile && !profile.onboarding_completed) {
+    return (
+      <Suspense fallback={<LoadingSpinner />}>
+        <PersonaliseFlow onComplete={() => refreshProfile(currentUser)} />
+      </Suspense>
     );
   }
 
