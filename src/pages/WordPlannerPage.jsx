@@ -61,23 +61,7 @@ const SpokenChip = ({ text }) => (
   }}>{text}</span>
 );
 
-/* ─── Sub-components ─── */
-
-const StickyNav = () => (
-  <div style={{
-    position: 'sticky', top: 0, zIndex: 100,
-    background: C.white, borderBottom: `1px solid ${C.stone}`,
-    height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '0 24px',
-  }}>
-    <span style={{ fontFamily: F.body, fontSize: 17, fontWeight: 600, color: C.sage }}>🌱 Sprouttie</span>
-    <div style={{
-      width: 32, height: 32, borderRadius: '50%', background: C.sagePale,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: F.body, fontSize: 13, fontWeight: 600, color: C.sage,
-    }}>C</div>
-  </div>
-);
+/* StickyNav removed — app-level Navbar and BottomTabBar handle navigation */
 
 const TodayLaunchpad = ({ todaySessions, dayLabel, dayInWeek, totalSets, totalActive }) => {
   const sessionLabels = [1, 2, 3].map(n => {
@@ -484,8 +468,7 @@ const WordPlannerPage = () => {
 
   if (loading) {
     return (
-      <div style={{ background: C.cream, minHeight: '100vh', WebkitFontSmoothing: 'antialiased' }}>
-        <StickyNav />
+      <div style={{ WebkitFontSmoothing: 'antialiased' }}>
         <LoadingState />
       </div>
     );
@@ -495,11 +478,8 @@ const WordPlannerPage = () => {
 
   return (
     <div style={{
-      background: C.cream, minHeight: '100vh',
       WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale',
     }}>
-      <StickyNav />
-
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '20px 24px 120px' }}>
         {hasActiveData ? (
           <>
