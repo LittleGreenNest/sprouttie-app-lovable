@@ -271,7 +271,7 @@ const QueuedWordRow = ({ rank, word, tags, ai, isLast }) => {
 };
 
 /* ─── AI Recommendation per Set ─── */
-const AISetRecommendation = ({ setNumber, suggestions, loading, onRequest }) => {
+const AISetRecommendation = ({ setNumber, suggestions, contextSentence, loading, error, onRequest }) => {
   if (loading) {
     return (
       <div style={{
@@ -284,18 +284,45 @@ const AISetRecommendation = ({ setNumber, suggestions, loading, onRequest }) => 
     );
   }
 
+  if (error) {
+    return (
+      <div style={{
+        background: '#FEF2F2', borderTop: `1px solid ${C.stone}`, borderBottom: `1px solid ${C.stone}`,
+        padding: '11px 20px', display: 'flex', gap: 9, alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <span style={{ fontFamily: F.body, fontSize: 12, color: '#991B1B' }}>
+          {error.includes('Rate limit') ? '⏳ Rate limited — try again shortly' : `⚠ ${error}`}
+        </span>
+        <button onClick={onRequest} style={{
+          background: 'none', border: `1px solid ${C.stoneMid}`, borderRadius: 6,
+          padding: '4px 12px', fontFamily: F.body, fontSize: 11, fontWeight: 600,
+          color: C.muted, cursor: 'pointer',
+        }}>Retry</button>
+      </div>
+    );
+  }
+
   if (suggestions && suggestions.length > 0) {
     return (
       <div style={{
         background: C.sageMist, borderTop: `1px solid ${C.stone}`, borderBottom: `1px solid ${C.stone}`,
         padding: '12px 20px',
       }}>
-        <div style={{ display: 'flex', gap: 7, alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 7, alignItems: 'center', marginBottom: contextSentence ? 6 : 8 }}>
           <span style={{ fontSize: 13 }}>🤖</span>
           <span style={{ fontFamily: F.body, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: C.sage }}>
             AI Picks for Set {setNumber}
           </span>
         </div>
+        {contextSentence && (
+          <p style={{
+            fontFamily: F.body, fontSize: 12, color: C.sageMid, fontStyle: 'italic',
+            lineHeight: 1.5, margin: '0 0 10px 0', padding: '0 0 8px 0',
+            borderBottom: `1px solid ${C.stone}`,
+          }}>
+            {contextSentence}
+          </p>
+        )}
         {suggestions.map((s, i) => (
           <div key={i} style={{
             display: 'flex', gap: 10, alignItems: 'flex-start', padding: '6px 0',
@@ -304,9 +331,10 @@ const AISetRecommendation = ({ setNumber, suggestions, loading, onRequest }) => 
             <span style={{ fontFamily: F.body, fontSize: 13, fontWeight: 600, color: C.charcoal, minWidth: 60 }}>
               {s.word}
             </span>
-            {s.theme && (
-              <Tag text={s.theme} bg={C.sagePale} color={C.sage} />
-            )}
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+              {s.theme && <Tag text={s.theme} bg={C.sagePale} color={C.sage} />}
+              {s.score && <Tag text={`★${s.score}`} bg={C.amberBg} color={C.amberText} />}
+            </div>
             <span style={{ fontFamily: F.body, fontSize: 11, color: C.muted, lineHeight: 1.5, flex: 1 }}>
               {s.reasoning}
             </span>
@@ -350,7 +378,7 @@ const SubLabel = ({ text }) => (
 );
 
 /* ─── Set Cards ─── */
-const ThisWeekSetCard = ({ set, aiSuggestions, aiLoading, onRequestAI }) => (
+const ThisWeekSetCard = ({ set, aiSuggestions, aiContextSentence, aiLoading, aiError, onRequestAI }) => (
   <div style={{ background: C.white, border: `1px solid ${C.stone}`, borderRadius: 16, overflow: 'hidden', marginBottom: 10, boxShadow: shadow.card }}>
     <div style={{
       padding: '13px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -380,7 +408,9 @@ const ThisWeekSetCard = ({ set, aiSuggestions, aiLoading, onRequestAI }) => (
     <AISetRecommendation
       setNumber={set.setNumber}
       suggestions={aiSuggestions}
+      contextSentence={aiContextSentence}
       loading={aiLoading}
+      error={aiError}
       onRequest={onRequestAI}
     />
 
@@ -543,7 +573,7 @@ const WordPlannerPage = () => {
   const [aiState, setAiState] = useState({}); // { [setNumber]: { loading, suggestions, error } }
 
   const requestAISuggestions = useCallback(async (setNumber) => {
-    setAiState(prev => ({ ...prev, [setNumber]: { loading: true, suggestions: null, error: null } }));
+    setAiState(prev => ({ ...prev, [setNumber]: { loading: true, suggestions: null, contextSentence: null, error: null } }));
     try {
       const weekStart = getWeekStart();
       const { data: result, error: fnError } = await supabase.functions.invoke('suggest-words', {
@@ -551,12 +581,12 @@ const WordPlannerPage = () => {
       });
       if (fnError) throw fnError;
       if (result?.error) throw new Error(result.error);
-      // Take top 5 suggestions for this set
       const suggestions = (result?.suggestions || []).slice(0, 5);
-      setAiState(prev => ({ ...prev, [setNumber]: { loading: false, suggestions, error: null } }));
+      const contextSentence = result?.context_sentence || null;
+      setAiState(prev => ({ ...prev, [setNumber]: { loading: false, suggestions, contextSentence, error: null } }));
     } catch (err) {
       console.error('AI suggestion error:', err);
-      setAiState(prev => ({ ...prev, [setNumber]: { loading: false, suggestions: null, error: err.message } }));
+      setAiState(prev => ({ ...prev, [setNumber]: { loading: false, suggestions: null, contextSentence: null, error: err.message } }));
     }
   }, []);
 
@@ -601,7 +631,9 @@ const WordPlannerPage = () => {
                 key={i}
                 set={s}
                 aiSuggestions={aiState[s.setNumber]?.suggestions}
+                aiContextSentence={aiState[s.setNumber]?.contextSentence}
                 aiLoading={aiState[s.setNumber]?.loading}
+                aiError={aiState[s.setNumber]?.error}
                 onRequestAI={() => requestAISuggestions(s.setNumber)}
               />
             ))}
