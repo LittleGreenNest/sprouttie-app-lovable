@@ -6,43 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Teaching method principles (generic names to avoid copyright)
-const METHOD_PRINCIPLES = {
-  whole_word_flash: {
-    name: "Whole Word Flash Method",
-    principles: [
-      "Start with familiar, concrete nouns (body parts, family members, everyday objects)",
-      "Introduce 5 new words per set, show 3 times daily",
-      "Retire words after 10-15 days of exposure",
-      "Progress: single words → couplets (big dog) → phrases → sentences",
-      "Use large, clear text with enthusiasm",
-      "Keep sessions brief (under 30 seconds per set)"
-    ]
-  },
-  right_brain_speed: {
-    name: "Right-Brain Speed Flash",
-    principles: [
-      "Flash cards rapidly (0.5-1 second per card)",
-      "Group words by categories/themes for pattern recognition",
-      "Include sensory and emotional vocabulary",
-      "Use visual imagery and associations",
-      "Emphasize right-brain engagement through speed",
-      "Include both concrete and abstract concepts"
-    ]
-  },
-  balanced: {
-    name: "Balanced Approach",
-    principles: [
-      "Combine structured progression with thematic grouping",
-      "Adapt pacing to child's engagement level",
-      "Mix familiar words with new vocabulary",
-      "Balance concrete nouns with action words and descriptors",
-      "Follow child's interests for word selection",
-      "Use repetition but vary presentation"
-    ]
-  }
-};
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -52,8 +15,7 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'No authorization header' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
@@ -61,168 +23,217 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user from token
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
     if (userError || !user) {
-      console.error('Auth error:', userError);
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     const { weekStart, setNumber } = await req.json();
-    console.log(`Generating suggestions for user ${user.id}, week starting ${weekStart}, set ${setNumber || 'all'}`);
+    console.log(`suggest-words: user=${user.id}, week=${weekStart}, set=${setNumber || 'all'}`);
 
-    // Fetch user's teaching method preference
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('teaching_method, target_language, child_age_band, speech_level')
-      .eq('id', user.id)
-      .single();
+    // ── Fetch all data in parallel ──
+    const [profileRes, flashcardsRes, trackingRes, spokenRes, plansRes] = await Promise.all([
+      supabase.from('profiles')
+        .select('teaching_method, target_language, child_age_band, speech_level, reply_pattern, caregivers, pets_and_toys, daily_activities')
+        .eq('id', user.id).single(),
+      supabase.from('flashcards')
+        .select('id, front, back, folder, card_status, mastery_level, date_introduced, date_retired, set_number, active_day_count, card_type, phrase_group')
+        .eq('user_id', user.id),
+      supabase.from('daily_tracking')
+        .select('flashcard_id, status, engagement, date')
+        .eq('user_id', user.id)
+        .gte('date', new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]),
+      supabase.from('spoken_words')
+        .select('word, notes, started_saying_at, word_stage')
+        .eq('user_id', user.id),
+      supabase.from('word_plans')
+        .select('word')
+        .eq('user_id', user.id)
+        .eq('planned_week_start', weekStart),
+    ]);
 
-    const teachingMethod = profile?.teaching_method || 'balanced';
-    const methodInfo = METHOD_PRINCIPLES[teachingMethod as keyof typeof METHOD_PRINCIPLES];
-    console.log(`Using teaching method: ${methodInfo.name}`);
+    const profile = profileRes.data;
+    const allCards = flashcardsRes.data || [];
+    const trackingData = trackingRes.data || [];
+    const spokenWords = spokenRes.data || [];
+    const existingPlanWords = (plansRes.data || []).map(p => p.word);
 
-    // Fetch user's flashcards
-    const { data: flashcards } = await supabase
-      .from('flashcards')
-      .select('id, front, back, folder, card_status, mastery_level, date_introduced, date_retired, set_number, active_day_count')
-      .eq('user_id', user.id);
-
-    // Fetch recent tracking data (last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    const { data: trackingData } = await supabase
-      .from('daily_tracking')
-      .select('flashcard_id, status, engagement, date')
-      .eq('user_id', user.id)
-      .gte('date', thirtyDaysAgo.toISOString().split('T')[0]);
-
-    // Fetch spoken words
-    const { data: spokenWords } = await supabase
-      .from('spoken_words')
-      .select('word, notes, started_saying_at')
-      .eq('user_id', user.id);
-
-    // Fetch existing word plans for this week
-    const { data: existingPlans } = await supabase
-      .from('word_plans')
-      .select('word')
-      .eq('user_id', user.id)
-      .eq('planned_week_start', weekStart);
-
-    // Build set-specific context
-    const allCards = flashcards || [];
+    // ── Build set-specific context ──
     const setCards = setNumber ? allCards.filter(f => f.set_number === setNumber) : allCards;
     const otherSetCards = setNumber ? allCards.filter(f => f.set_number && f.set_number !== setNumber) : [];
 
-    // Set-specific breakdowns
     const setActive = setCards.filter(f => f.card_status === 'active');
     const setRetired = setCards.filter(f => f.card_status === 'retired' || f.date_retired);
     const setWaiting = setCards.filter(f => f.card_status === 'waiting' || !f.card_status);
     const setCategories = [...new Set(setCards.map(f => f.folder).filter(Boolean))];
-    
-    // Categories used across ALL sets (for variety awareness)
     const allCategories = [...new Set(allCards.map(f => f.folder).filter(Boolean))];
-    
-    // Words active in OTHER sets (to avoid cross-set duplication)
     const otherActiveWords = otherSetCards.filter(f => f.card_status === 'active').map(f => f.front);
 
-    const existingPlanWords = existingPlans?.map(p => p.word) || [];
+    // Recently graduated (last 14 days) — do not re-introduce
+    const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0];
+    const recentlyGraduated = allCards
+      .filter(f => f.date_retired && f.date_retired >= fourteenDaysAgo)
+      .map(f => f.front);
 
-    const recentEngagement = trackingData?.reduce((acc, t) => {
-      if (t.engagement) acc.push(t.engagement);
-      return acc;
-    }, [] as number[]) || [];
-
-    console.log('Context prepared:', {
-      setNumber,
-      setActiveCount: setActive.length,
-      setRetiredCount: setRetired.length,
-      setWaitingCount: setWaiting.length,
-      setCategories,
-      otherActiveCount: otherActiveWords.length,
-      spokenCount: spokenWords?.length || 0,
+    // Engagement analysis per category
+    const categoryEngagement: Record<string, number[]> = {};
+    trackingData.forEach(t => {
+      if (!t.engagement) return;
+      const card = allCards.find(c => c.id === t.flashcard_id);
+      if (card?.folder) {
+        if (!categoryEngagement[card.folder]) categoryEngagement[card.folder] = [];
+        categoryEngagement[card.folder].push(t.engagement);
+      }
     });
+    const categoryEngagementSummary = Object.entries(categoryEngagement)
+      .map(([cat, scores]) => `${cat}: ${(scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)}/5`)
+      .join(', ');
 
-    // Call Lovable AI
+    // Spoken word analysis — detect vocabulary bursts & phrase ratio
+    const spokenPhrases = spokenWords.filter(s => s.word.includes(' '));
+    const phraseRatio = spokenWords.length > 0 ? spokenPhrases.length / spokenWords.length : 0;
+    const isAdvancingStage = phraseRatio > 0.4;
+
+    // Category frequency in spoken words (burst detection)
+    const spokenRecent = spokenWords
+      .sort((a, b) => new Date(b.started_saying_at).getTime() - new Date(a.started_saying_at).getTime())
+      .slice(0, 20);
+
+    // Words with stages
+    const growingOrOwned = spokenWords
+      .filter(s => s.word_stage === 'growing' || s.word_stage === 'owned')
+      .map(s => s.word);
+
+    // ── Build the prompt ──
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
-    }
+    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
 
     const setLabel = setNumber ? `Set ${setNumber}` : 'all sets';
-    const systemPrompt = `You are an expert early childhood vocabulary development specialist. You help parents plan which words to teach their children using flashcards.
 
-You are using the "${methodInfo.name}" approach with these principles:
-${methodInfo.principles.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+    const systemPrompt = `You are Sprouttie's AI Word Planner — an expert early childhood vocabulary development specialist helping parents flash words to stabilise mother-tongue vocabulary that is already emerging in their child.
 
-You are suggesting words specifically for **${setLabel}**.${setNumber ? ` Each set is flashed independently 3x daily. Words in a set should be thematically coherent or developmentally sequenced.` : ''}
+YOUR CORE PHILOSOPHY:
+Every word you propose must be defensible against the question: "Why this word, for this child, this week?"
+You stabilise vocabulary that is already emerging. You do NOT teach new concepts the child has never encountered — unless the child is pre-speech or the parent's onboarding data suggests the word is part of daily life.
 
-Based on the child's learning history, spoken words, and what's already in this set, suggest 5-8 words that would be good additions to ${setLabel}'s queue.
+HARD CONSTRAINTS (never break):
+- Maximum 5 active words per set at any time
+- Maximum 15 active words across all sets
+- Each set operates independently — words do not move between sets
+- Exactly 1 new word enters each set per completed flash day
+- The same word must NEVER appear active in more than one set simultaneously
+- A word that graduated in the last 14 days must NOT be re-introduced
+- Never silently replace a word mid-cycle
+- Never propose more than 1 new word per completed flash day
 
-For each word, provide:
-- The word itself
-- Optional pinyin (if it's a Chinese word)
-- A theme/category
-- Brief reasoning (1 sentence) explaining why this word fits this set
+PHRASE RULES:
+${isAdvancingStage 
+  ? `This child is in advancing stage (${Math.round(phraseRatio * 100)}% of spoken words are phrases). The 1-phrase-per-set limit is LIFTED. Shift toward phrase-dominant sets.`
+  : `This child is in early stage. Limit to 1 phrase per set. Single-word exposure is the priority.`}
+- A phrase may be introduced when BOTH component words are 🌿 Growing or 🌳 Graduated — OR when the child is already spontaneously producing the phrase.
+- A phrase counts as one word slot.
 
-Consider:
-- **This set's history**: Words already mastered/retired in this set show the thematic pattern — continue it
-- **This set's categories**: Suggest words that fit the established themes of this set
-- Words the child is already saying (spoken words) — suggest related vocabulary
-- **Don't duplicate**: Avoid words active in other sets or already planned
-- Waiting words from their library — prioritize these when they fit the set's theme
-${profile?.target_language ? `- The family is teaching: ${profile.target_language}` : ''}
-${profile?.child_age_band ? `- Child's age band: ${profile.child_age_band}` : ''}
-${profile?.speech_level ? `- Child's speech level: ${profile.speech_level}` : ''}
+RANKING LOGIC (score each candidate):
+6 (highest) — Word is the target-language equivalent of something the child is currently saying in any language
+5 — Word completes a phrase pair where the other component is already 🌿 Growing or 🌳 Graduated
+4 — Word is in a category where the child is in a vocabulary burst (multiple recent spoken words from same domain)
+3 — Word is in a category with high engagement scores
+2 — Word is in a category currently underrepresented across all active sets
+1 (lowest) — Word is next in the developmental stage progression
 
-Return JSON array with this structure:
-[
-  {
-    "word": "apple",
-    "pinyin": null,
-    "theme": "Food",
-    "reasoning": "Builds on spoken word 'eat' and continues Set 1's food theme"
-  }
-]`;
+Tiebreakers: (1) more recent in spoken word log, (2) more likely encountered in daily life, (3) simpler phonetic structure in target language.
 
-    const userPrompt = `Here is the child's learning data for **${setLabel}**:
+LANGUAGE BRIDGE LOGIC:
+If the child says something in English or Cantonese, queue the Mandarin (or target language) equivalent as HIGH PRIORITY. A child saying "Big truck" in English → flash "卡车". A child saying "Chor" in Cantonese → flash "坐".
 
-**Words currently active in ${setLabel}:**
-${setActive.length > 0 ? setActive.map(f => `- ${f.front} (${f.folder || 'uncategorized'}, day ${f.active_day_count || 0}/5)`).join('\n') : 'None'}
+VOCABULARY BURST HANDLING:
+If the child is logging many words from one category, LEAN INTO IT — don't rotate away artificially. A burst is a neurological signal. But use different words from the domain in each set (no duplicates). After a burst plateaus (no new words in 2+ weeks), rotate toward underrepresented categories.
 
-**Words graduated/retired from ${setLabel}:**
+DEVELOPMENTAL STAGE FALLBACK (when spoken word data is sparse):
+Stage 1 — Family members → Body parts → Household objects → Animals → Vehicles → Food
+Stage 2 — Colours → Shapes → Clothing → Nature → Places
+Stage 3 — Core action verbs → Descriptors → Positional words
+Stage 4 — Simple phrases → Social phrases → Question forms
+Use the child's actual speech level and spoken words to determine stage, not just age.
+
+MUST NOT:
+- Introduce a word with no connection to the child's current life or vocabulary
+- Propose the same word in two sets simultaneously
+- Introduce a phrase before both components are 🌿/🌳 (unless the child already says the phrase)
+- Generate suggestions without surfacing reasoning
+- Use words: "algorithm", "data", "model", "system", "protocol", "input", "output"
+
+AI CONTEXT SENTENCE:
+You MUST generate exactly one warm, parent-facing sentence per set explaining the queue logic. Reference something specific the child said if available. Never sound robotic.
+Good: "Alexander is saying 'Big truck' and 'Yellow bus' — the next words build the Mandarin for vehicles he's already talking about in English."
+Bad: "Based on vocabulary data, the algorithm has ranked these words by category frequency score."
+
+RESPONSE FORMAT — Return JSON:
+{
+  "context_sentence": "One warm sentence explaining why these words were chosen for this set.",
+  "suggestions": [
+    {
+      "word": "apple",
+      "pinyin": null,
+      "theme": "Food",
+      "reasoning": "Builds on spoken word 'eat' and continues Set 1's food theme",
+      "score": 6
+    }
+  ]
+}
+
+Suggest 5–8 words for ${setLabel}. Rank by score descending.`;
+
+    const userPrompt = `CHILD PROFILE:
+${profile?.child_age_band ? `Age band: ${profile.child_age_band}` : 'Age: unknown'}
+${profile?.target_language ? `Target language(s): ${profile.target_language}` : ''}
+${profile?.speech_level ? `Speech level: ${profile.speech_level}` : ''}
+${profile?.reply_pattern ? `Reply pattern: ${profile.reply_pattern}` : ''}
+${profile?.caregivers ? `Primary caregivers: ${profile.caregivers}` : ''}
+${profile?.pets_and_toys ? `Pets & favourite toys: ${profile.pets_and_toys}` : ''}
+${profile?.daily_activities ? `Daily activities: ${profile.daily_activities}` : ''}
+${isAdvancingStage ? `⚡ Child is in ADVANCING STAGE — producing phrases spontaneously (${Math.round(phraseRatio * 100)}% of logged words are multi-word)` : ''}
+
+WORDS YOUR CHILD IS SAYING (Priority 1 — highest signal):
+${spokenWords.length > 0
+  ? spokenWords
+      .sort((a, b) => new Date(b.started_saying_at).getTime() - new Date(a.started_saying_at).getTime())
+      .map(s => `- "${s.word}" (${s.word_stage}) ${s.notes ? `— ${s.notes}` : ''} [logged ${s.started_saying_at.split('T')[0]}]`)
+      .join('\n')
+  : 'No spoken words recorded yet — use developmental stage defaults + onboarding data.'}
+
+Words at 🌿 Growing or 🌳 Owned (phrase-ready components):
+${growingOrOwned.length > 0 ? growingOrOwned.join(', ') : 'None yet'}
+
+CURRENT EXPOSURE STATE FOR ${setLabel.toUpperCase()} (Priority 2):
+Active words:
+${setActive.length > 0 ? setActive.map(f => `- ${f.front} (${f.folder || 'uncategorized'}, day ${f.active_day_count || 0}/5, type: ${f.card_type})`).join('\n') : 'None'}
+
+Graduated/retired from ${setLabel}:
 ${setRetired.length > 0 ? setRetired.map(f => `- ${f.front} (${f.folder || 'uncategorized'})`).join('\n') : 'None yet'}
 
-**Words waiting in ${setLabel}'s queue:**
+Waiting in ${setLabel}'s queue:
 ${setWaiting.length > 0 ? setWaiting.map(f => `- ${f.front} (${f.folder || 'uncategorized'})`).join('\n') : 'None'}
 
-**Categories used in ${setLabel}:** ${setCategories.length > 0 ? setCategories.join(', ') : 'None yet'}
+Categories in ${setLabel}: ${setCategories.length > 0 ? setCategories.join(', ') : 'None yet'}
 
-**Words active in OTHER sets (avoid duplicating):**
+CROSS-SET DEDUPLICATION — Words active in OTHER sets (AVOID):
 ${otherActiveWords.length > 0 ? otherActiveWords.join(', ') : 'None'}
 
-**All categories across sets:** ${allCategories.length > 0 ? allCategories.join(', ') : 'None'}
+Recently graduated (last 14 days — DO NOT re-introduce):
+${recentlyGraduated.length > 0 ? recentlyGraduated.join(', ') : 'None'}
 
-**Spoken Words (what the child is saying):**
-${spokenWords && spokenWords.length > 0 
-  ? spokenWords.map(s => `- "${s.word}"${s.notes ? ` (${s.notes})` : ''}`).join('\n')
-  : 'No spoken words recorded yet'}
+All categories across sets: ${allCategories.length > 0 ? allCategories.join(', ') : 'None'}
 
-**Already Planned This Week:**
-${existingPlanWords.length > 0 ? existingPlanWords.join(', ') : 'None'}
+ENGAGEMENT LOG (Priority 3):
+${categoryEngagementSummary || 'No engagement data yet'}
 
-**Average Engagement Score:** ${recentEngagement.length > 0 
-  ? (recentEngagement.reduce((a, b) => a + b, 0) / recentEngagement.length).toFixed(1) + '/5'
-  : 'No data'}
+Already planned this week: ${existingPlanWords.length > 0 ? existingPlanWords.join(', ') : 'None'}
 
-Please suggest 5-8 words for ${setLabel}, following the ${methodInfo.name} principles and building on this set's existing themes.`;
+Please suggest 5–8 words for ${setLabel}, following the ranking logic and principles above. Include the context_sentence.`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -242,17 +253,14 @@ Please suggest 5-8 words for ${setLabel}, following the ${methodInfo.name} princ
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error('AI gateway error:', aiResponse.status, errorText);
-      
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
       if (aiResponse.status === 402) {
         return new Response(JSON.stringify({ error: 'AI usage limit reached. Please try again later.' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
       throw new Error('AI gateway error');
@@ -260,31 +268,36 @@ Please suggest 5-8 words for ${setLabel}, following the ${methodInfo.name} princ
 
     const aiData = await aiResponse.json();
     const content = aiData.choices?.[0]?.message?.content;
-    
-    if (!content) {
-      throw new Error('No content in AI response');
-    }
+    if (!content) throw new Error('No content in AI response');
 
     // Parse JSON from response (handle markdown code blocks)
-    let suggestions;
+    let parsed;
     try {
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        suggestions = JSON.parse(jsonMatch[0]);
+        parsed = JSON.parse(jsonMatch[0]);
       } else {
-        throw new Error('No JSON array found in response');
+        // Fallback: try to find array
+        const arrayMatch = content.match(/\[[\s\S]*\]/);
+        if (arrayMatch) {
+          parsed = { suggestions: JSON.parse(arrayMatch[0]), context_sentence: null };
+        } else {
+          throw new Error('No JSON found in response');
+        }
       }
     } catch (parseError) {
       console.error('Failed to parse AI response:', content);
       throw new Error('Failed to parse AI suggestions');
     }
 
-    console.log(`Generated ${suggestions.length} suggestions`);
+    const suggestions = parsed.suggestions || parsed;
+    const contextSentence = parsed.context_sentence || null;
 
-    return new Response(JSON.stringify({ 
-      suggestions,
-      method: methodInfo.name,
-      principles: methodInfo.principles
+    console.log(`Generated ${Array.isArray(suggestions) ? suggestions.length : 0} suggestions`);
+
+    return new Response(JSON.stringify({
+      suggestions: Array.isArray(suggestions) ? suggestions : [],
+      context_sentence: contextSentence,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
@@ -293,8 +306,7 @@ Please suggest 5-8 words for ${setLabel}, following the ${methodInfo.name} princ
     console.error('Error in suggest-words:', error);
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return new Response(JSON.stringify({ error: errorMessage }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
