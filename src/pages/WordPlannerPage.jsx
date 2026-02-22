@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useWordPlannerData } from '@/hooks/useWordPlannerData';
+import { supabase } from '@/integrations/supabase/client';
+import { getWeekStart } from '@/utils/planningEngine';
 
 /* ─── colour tokens (spec values) ─── */
 const C = {
@@ -268,23 +270,73 @@ const QueuedWordRow = ({ rank, word, tags, ai, isLast }) => {
   );
 };
 
-/* ─── AI Context Banner ─── */
-const AIContextBanner = ({ spokenWords }) => {
-  if (!spokenWords || spokenWords.length === 0) return null;
+/* ─── AI Recommendation per Set ─── */
+const AISetRecommendation = ({ setNumber, suggestions, loading, onRequest }) => {
+  if (loading) {
+    return (
+      <div style={{
+        background: C.sageMist, borderTop: `1px solid ${C.stone}`, borderBottom: `1px solid ${C.stone}`,
+        padding: '14px 20px', display: 'flex', gap: 9, alignItems: 'center',
+      }}>
+        <span style={{ fontSize: 14, animation: 'spin 1s linear infinite' }}>🤖</span>
+        <span style={{ fontFamily: F.body, fontSize: 12, color: C.muted }}>Generating recommendations for Set {setNumber}…</span>
+      </div>
+    );
+  }
+
+  if (suggestions && suggestions.length > 0) {
+    return (
+      <div style={{
+        background: C.sageMist, borderTop: `1px solid ${C.stone}`, borderBottom: `1px solid ${C.stone}`,
+        padding: '12px 20px',
+      }}>
+        <div style={{ display: 'flex', gap: 7, alignItems: 'center', marginBottom: 8 }}>
+          <span style={{ fontSize: 13 }}>🤖</span>
+          <span style={{ fontFamily: F.body, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: C.sage }}>
+            AI Picks for Set {setNumber}
+          </span>
+        </div>
+        {suggestions.map((s, i) => (
+          <div key={i} style={{
+            display: 'flex', gap: 10, alignItems: 'flex-start', padding: '6px 0',
+            borderBottom: i < suggestions.length - 1 ? `1px solid ${C.stone}` : 'none',
+          }}>
+            <span style={{ fontFamily: F.body, fontSize: 13, fontWeight: 600, color: C.charcoal, minWidth: 60 }}>
+              {s.word}
+            </span>
+            {s.theme && (
+              <Tag text={s.theme} bg={C.sagePale} color={C.sage} />
+            )}
+            <span style={{ fontFamily: F.body, fontSize: 11, color: C.muted, lineHeight: 1.5, flex: 1 }}>
+              {s.reasoning}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div style={{
       background: C.sageMist, borderTop: `1px solid ${C.stone}`, borderBottom: `1px solid ${C.stone}`,
-      padding: '11px 20px', display: 'flex', gap: 9, alignItems: 'flex-start',
+      padding: '11px 20px', display: 'flex', gap: 9, alignItems: 'center', justifyContent: 'space-between',
     }}>
-      <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>🤖</span>
-      <span style={{ fontFamily: F.body, fontSize: 12, color: C.ink, lineHeight: 1.6 }}>
-        Your child is saying {spokenWords.map((sw, i) => (
-          <React.Fragment key={sw.id}>
-            {i > 0 && (i === spokenWords.length - 1 ? ' and ' : ', ')}
-            <SpokenChip text={sw.word} />
-          </React.Fragment>
-        ))} — the next words build on what they're already using.
-      </span>
+      <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
+        <span style={{ fontSize: 14 }}>🤖</span>
+        <span style={{ fontFamily: F.body, fontSize: 12, color: C.muted }}>
+          Get AI-powered word recommendations for this set
+        </span>
+      </div>
+      <button
+        onClick={onRequest}
+        style={{
+          background: C.sage, color: '#fff', border: 'none', borderRadius: 6,
+          padding: '6px 14px', fontFamily: F.body, fontSize: 11, fontWeight: 600,
+          cursor: 'pointer', whiteSpace: 'nowrap',
+        }}
+      >
+        Suggest words
+      </button>
     </div>
   );
 };
@@ -298,7 +350,7 @@ const SubLabel = ({ text }) => (
 );
 
 /* ─── Set Cards ─── */
-const ThisWeekSetCard = ({ set }) => (
+const ThisWeekSetCard = ({ set, aiSuggestions, aiLoading, onRequestAI }) => (
   <div style={{ background: C.white, border: `1px solid ${C.stone}`, borderRadius: 16, overflow: 'hidden', marginBottom: 10, boxShadow: shadow.card }}>
     <div style={{
       padding: '13px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -325,7 +377,12 @@ const ThisWeekSetCard = ({ set }) => (
       </>
     )}
 
-    <AIContextBanner spokenWords={set.relevantSpoken} />
+    <AISetRecommendation
+      setNumber={set.setNumber}
+      suggestions={aiSuggestions}
+      loading={aiLoading}
+      onRequest={onRequestAI}
+    />
 
     {set.queued.length > 0 && (
       <>
@@ -483,6 +540,25 @@ const LoadingState = () => (
 /* ─── MAIN PAGE ─── */
 const WordPlannerPage = () => {
   const { loading, data, error } = useWordPlannerData();
+  const [aiState, setAiState] = useState({}); // { [setNumber]: { loading, suggestions, error } }
+
+  const requestAISuggestions = useCallback(async (setNumber) => {
+    setAiState(prev => ({ ...prev, [setNumber]: { loading: true, suggestions: null, error: null } }));
+    try {
+      const weekStart = getWeekStart();
+      const { data: result, error: fnError } = await supabase.functions.invoke('suggest-words', {
+        body: { weekStart, setNumber },
+      });
+      if (fnError) throw fnError;
+      if (result?.error) throw new Error(result.error);
+      // Take top 5 suggestions for this set
+      const suggestions = (result?.suggestions || []).slice(0, 5);
+      setAiState(prev => ({ ...prev, [setNumber]: { loading: false, suggestions, error: null } }));
+    } catch (err) {
+      console.error('AI suggestion error:', err);
+      setAiState(prev => ({ ...prev, [setNumber]: { loading: false, suggestions: null, error: err.message } }));
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -520,7 +596,15 @@ const WordPlannerPage = () => {
             <p style={{ fontFamily: F.body, fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 14, marginTop: 0 }}>
               Words carry over from last week — nothing resets. Each day you flash, the oldest word in each set graduates and one new word enters.
             </p>
-            {data.activeSets.map((s, i) => <ThisWeekSetCard key={i} set={s} />)}
+            {data.activeSets.map((s, i) => (
+              <ThisWeekSetCard
+                key={i}
+                set={s}
+                aiSuggestions={aiState[s.setNumber]?.suggestions}
+                aiLoading={aiState[s.setNumber]?.loading}
+                onRequestAI={() => requestAISuggestions(s.setNumber)}
+              />
+            ))}
 
             <LegendBar />
             <div style={{ height: 32 }} />
