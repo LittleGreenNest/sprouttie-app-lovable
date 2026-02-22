@@ -73,13 +73,13 @@ serve(async (req) => {
       });
     }
 
-    const { weekStart } = await req.json();
-    console.log(`Generating suggestions for user ${user.id}, week starting ${weekStart}`);
+    const { weekStart, setNumber } = await req.json();
+    console.log(`Generating suggestions for user ${user.id}, week starting ${weekStart}, set ${setNumber || 'all'}`);
 
     // Fetch user's teaching method preference
     const { data: profile } = await supabase
       .from('profiles')
-      .select('teaching_method')
+      .select('teaching_method, target_language, child_age_band, speech_level')
       .eq('id', user.id)
       .single();
 
@@ -90,7 +90,7 @@ serve(async (req) => {
     // Fetch user's flashcards
     const { data: flashcards } = await supabase
       .from('flashcards')
-      .select('id, front, back, folder, card_status, mastery_level, date_introduced, date_retired, set_number')
+      .select('id, front, back, folder, card_status, mastery_level, date_introduced, date_retired, set_number, active_day_count')
       .eq('user_id', user.id);
 
     // Fetch recent tracking data (last 30 days)
@@ -116,33 +116,38 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .eq('planned_week_start', weekStart);
 
-    // Prepare context for AI
-    const masteredWords = flashcards?.filter(f => f.card_status === 'retired' || (f.mastery_level && f.mastery_level >= 80)) || [];
-    const activeWords = flashcards?.filter(f => f.card_status === 'active') || [];
-    const waitingWords = flashcards?.filter(f => f.card_status === 'waiting' || !f.card_status) || [];
+    // Build set-specific context
+    const allCards = flashcards || [];
+    const setCards = setNumber ? allCards.filter(f => f.set_number === setNumber) : allCards;
+    const otherSetCards = setNumber ? allCards.filter(f => f.set_number && f.set_number !== setNumber) : [];
+
+    // Set-specific breakdowns
+    const setActive = setCards.filter(f => f.card_status === 'active');
+    const setRetired = setCards.filter(f => f.card_status === 'retired' || f.date_retired);
+    const setWaiting = setCards.filter(f => f.card_status === 'waiting' || !f.card_status);
+    const setCategories = [...new Set(setCards.map(f => f.folder).filter(Boolean))];
+    
+    // Categories used across ALL sets (for variety awareness)
+    const allCategories = [...new Set(allCards.map(f => f.folder).filter(Boolean))];
+    
+    // Words active in OTHER sets (to avoid cross-set duplication)
+    const otherActiveWords = otherSetCards.filter(f => f.card_status === 'active').map(f => f.front);
+
     const existingPlanWords = existingPlans?.map(p => p.word) || [];
 
-    const context = {
-      teachingMethod: methodInfo.name,
-      principles: methodInfo.principles,
-      masteredWords: masteredWords.map(f => f.front).slice(0, 50),
-      activeWords: activeWords.map(f => f.front).slice(0, 30),
-      waitingWords: waitingWords.map(f => ({ word: f.front, folder: f.folder })).slice(0, 50),
-      spokenWords: spokenWords?.map(s => ({ word: s.word, notes: s.notes })) || [],
-      existingPlanWords,
-      categories: [...new Set(flashcards?.map(f => f.folder).filter(Boolean))],
-      recentEngagement: trackingData?.reduce((acc, t) => {
-        if (t.engagement) acc.push(t.engagement);
-        return acc;
-      }, [] as number[]) || []
-    };
+    const recentEngagement = trackingData?.reduce((acc, t) => {
+      if (t.engagement) acc.push(t.engagement);
+      return acc;
+    }, [] as number[]) || [];
 
     console.log('Context prepared:', {
-      masteredCount: context.masteredWords.length,
-      activeCount: context.activeWords.length,
-      waitingCount: context.waitingWords.length,
-      spokenCount: context.spokenWords.length,
-      existingPlanCount: context.existingPlanWords.length
+      setNumber,
+      setActiveCount: setActive.length,
+      setRetiredCount: setRetired.length,
+      setWaitingCount: setWaiting.length,
+      setCategories,
+      otherActiveCount: otherActiveWords.length,
+      spokenCount: spokenWords?.length || 0,
     });
 
     // Call Lovable AI
@@ -151,25 +156,31 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
+    const setLabel = setNumber ? `Set ${setNumber}` : 'all sets';
     const systemPrompt = `You are an expert early childhood vocabulary development specialist. You help parents plan which words to teach their children using flashcards.
 
 You are using the "${methodInfo.name}" approach with these principles:
 ${methodInfo.principles.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 
-Based on the child's learning history and spoken words, suggest 10-15 words for the upcoming week.
+You are suggesting words specifically for **${setLabel}**.${setNumber ? ` Each set is flashed independently 3x daily. Words in a set should be thematically coherent or developmentally sequenced.` : ''}
+
+Based on the child's learning history, spoken words, and what's already in this set, suggest 5-8 words that would be good additions to ${setLabel}'s queue.
 
 For each word, provide:
 - The word itself
 - Optional pinyin (if it's a Chinese word)
 - A theme/category
-- Brief reasoning (1 sentence) explaining why this word is appropriate now
+- Brief reasoning (1 sentence) explaining why this word fits this set
 
 Consider:
-- Words the child is already saying (spoken words) - suggest related/expanding vocabulary
-- Mastered words - build on these with related concepts
-- Active words - don't duplicate these
-- Waiting words from their library - prioritize these when appropriate
-- Avoid words already planned for this week
+- **This set's history**: Words already mastered/retired in this set show the thematic pattern — continue it
+- **This set's categories**: Suggest words that fit the established themes of this set
+- Words the child is already saying (spoken words) — suggest related vocabulary
+- **Don't duplicate**: Avoid words active in other sets or already planned
+- Waiting words from their library — prioritize these when they fit the set's theme
+${profile?.target_language ? `- The family is teaching: ${profile.target_language}` : ''}
+${profile?.child_age_band ? `- Child's age band: ${profile.child_age_band}` : ''}
+${profile?.speech_level ? `- Child's speech level: ${profile.speech_level}` : ''}
 
 Return JSON array with this structure:
 [
@@ -177,39 +188,41 @@ Return JSON array with this structure:
     "word": "apple",
     "pinyin": null,
     "theme": "Food",
-    "reasoning": "Builds on spoken word 'eat' and follows concrete noun progression"
+    "reasoning": "Builds on spoken word 'eat' and continues Set 1's food theme"
   }
 ]`;
 
-    const userPrompt = `Here is the child's learning data:
+    const userPrompt = `Here is the child's learning data for **${setLabel}**:
+
+**Words currently active in ${setLabel}:**
+${setActive.length > 0 ? setActive.map(f => `- ${f.front} (${f.folder || 'uncategorized'}, day ${f.active_day_count || 0}/5)`).join('\n') : 'None'}
+
+**Words graduated/retired from ${setLabel}:**
+${setRetired.length > 0 ? setRetired.map(f => `- ${f.front} (${f.folder || 'uncategorized'})`).join('\n') : 'None yet'}
+
+**Words waiting in ${setLabel}'s queue:**
+${setWaiting.length > 0 ? setWaiting.map(f => `- ${f.front} (${f.folder || 'uncategorized'})`).join('\n') : 'None'}
+
+**Categories used in ${setLabel}:** ${setCategories.length > 0 ? setCategories.join(', ') : 'None yet'}
+
+**Words active in OTHER sets (avoid duplicating):**
+${otherActiveWords.length > 0 ? otherActiveWords.join(', ') : 'None'}
+
+**All categories across sets:** ${allCategories.length > 0 ? allCategories.join(', ') : 'None'}
 
 **Spoken Words (what the child is saying):**
-${context.spokenWords.length > 0 
-  ? context.spokenWords.map(s => `- "${s.word}"${s.notes ? ` (${s.notes})` : ''}`).join('\n')
+${spokenWords && spokenWords.length > 0 
+  ? spokenWords.map(s => `- "${s.word}"${s.notes ? ` (${s.notes})` : ''}`).join('\n')
   : 'No spoken words recorded yet'}
 
-**Mastered Words:**
-${context.masteredWords.length > 0 ? context.masteredWords.join(', ') : 'None yet'}
-
-**Currently Active Words:**
-${context.activeWords.length > 0 ? context.activeWords.join(', ') : 'None'}
-
-**Words in Library (waiting to be introduced):**
-${context.waitingWords.length > 0 
-  ? context.waitingWords.map(w => `${w.word} (${w.folder || 'uncategorized'})`).join(', ')
-  : 'None'}
-
-**Existing Categories:**
-${context.categories.length > 0 ? context.categories.join(', ') : 'None'}
-
 **Already Planned This Week:**
-${context.existingPlanWords.length > 0 ? context.existingPlanWords.join(', ') : 'None'}
+${existingPlanWords.length > 0 ? existingPlanWords.join(', ') : 'None'}
 
-**Average Engagement Score:** ${context.recentEngagement.length > 0 
-  ? (context.recentEngagement.reduce((a, b) => a + b, 0) / context.recentEngagement.length).toFixed(1) + '/5'
+**Average Engagement Score:** ${recentEngagement.length > 0 
+  ? (recentEngagement.reduce((a, b) => a + b, 0) / recentEngagement.length).toFixed(1) + '/5'
   : 'No data'}
 
-Please suggest 10-15 words for the upcoming week, following the ${methodInfo.name} principles.`;
+Please suggest 5-8 words for ${setLabel}, following the ${methodInfo.name} principles and building on this set's existing themes.`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -218,7 +231,7 @@ Please suggest 10-15 words for the upcoming week, following the ${methodInfo.nam
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
