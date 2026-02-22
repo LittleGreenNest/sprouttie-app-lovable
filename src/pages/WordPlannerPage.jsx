@@ -522,9 +522,9 @@ const WordPlannerPage = () => {
 
       {hasActiveData && (
         <div style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
+          position: 'fixed', bottom: 72, left: 0, right: 0, zIndex: 25,
           background: `linear-gradient(to top, ${C.cream} 60%, transparent)`,
-          padding: '16px 24px 28px',
+          padding: '16px 24px 12px',
           display: 'flex', justifyContent: 'center', gap: 10,
         }}>
           <button style={{
