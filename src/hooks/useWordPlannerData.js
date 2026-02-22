@@ -75,12 +75,13 @@ export const useWordPlannerData = () => {
 
       const thisWeekStart = getWeekStart();
       const lastWeekStart = addDays(thisWeekStart, -7);
+      const fourWeeksAgo = addDays(thisWeekStart, -28);
 
-      // parallel fetches
+      // parallel fetches — extend tracking to 4 weeks for pace analysis
       const [fcRes, swRes, dtRes, wpRes, prRes] = await Promise.all([
         supabase.from('flashcards').select('*').eq('user_id', user.id),
         supabase.from('spoken_words').select('*').eq('user_id', user.id),
-        supabase.from('daily_tracking').select('*').eq('user_id', user.id).gte('date', lastWeekStart),
+        supabase.from('daily_tracking').select('*').eq('user_id', user.id).gte('date', fourWeeksAgo),
         supabase.from('word_plans').select('*').eq('user_id', user.id).gte('planned_week_start', lastWeekStart),
         supabase.from('profiles').select('*').eq('id', user.id).single(),
       ]);
@@ -96,6 +97,37 @@ export const useWordPlannerData = () => {
         const d = t.user_local_date || t.date;
         return d >= lastWeekStart && d < thisWeekStart;
       });
+
+      /* ─── Session Density Analysis (past 3 completed weeks) ─── */
+      const weeklySessionDensity = [];
+      for (let w = 1; w <= 3; w++) {
+        const wkStart = addDays(thisWeekStart, -7 * w);
+        const wkEnd = addDays(wkStart, 7);
+        const wkTracking = tracking.filter(t => {
+          const d = t.user_local_date || t.date;
+          return d >= wkStart && d < wkEnd;
+        });
+        // Count sessions per day for 7 days
+        const dailySessions = [];
+        for (let d = 0; d < 7; d++) {
+          const dayDate = addDays(wkStart, d);
+          dailySessions.push(countSessionsForDate(wkTracking, dayDate));
+        }
+        const flashDays = dailySessions.filter(s => s > 0).length;
+        const avgSessionsPerFlashDay = flashDays > 0
+          ? dailySessions.filter(s => s > 0).reduce((a, b) => a + b, 0) / flashDays
+          : 0;
+        weeklySessionDensity.push({
+          weekStart: wkStart,
+          flashDays,
+          avgSessionsPerFlashDay: Math.round(avgSessionsPerFlashDay * 10) / 10,
+          totalSessions: dailySessions.reduce((a, b) => a + b, 0),
+        });
+      }
+
+      // Detect low density: ≤1 avg session/day for 3 consecutive completed weeks
+      const hasLowDensity = weeklySessionDensity.length >= 3 &&
+        weeklySessionDensity.every(w => w.flashDays > 0 && w.avgSessionsPerFlashDay <= 1.0);
 
       /* ─── This Week's Sets ─── */
       // Build set of flashcard IDs flashed this week (treats them as actively in rotation)
@@ -257,6 +289,10 @@ export const useWordPlannerData = () => {
         thisWeekRange: formatDateRange(thisWeekStart),
         lastWeekRange: formatDateRange(lastWeekStart),
         hasData: flashcards.length > 0,
+        // Pace adaptation
+        weeklySessionDensity,
+        hasLowDensity,
+        preferredPace: profile?.preferred_pace || 'standard',
       });
     } catch (err) {
       console.error('WordPlanner fetch error:', err);

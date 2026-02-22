@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useWordPlannerData } from '@/hooks/useWordPlannerData';
 import { supabase } from '@/integrations/supabase/client';
 import { getWeekStart } from '@/utils/planningEngine';
+import { useAuth } from '@/context/AuthContext';
 
 /* ─── colour tokens (spec values) ─── */
 const C = {
@@ -530,6 +531,99 @@ const LegendBar = () => (
   </div>
 );
 
+/* ─── Pace Adaptation Check-in ─── */
+const PaceCheckin = ({ density, childName, currentPace, onPaceConfirm }) => {
+  const [selectedPace, setSelectedPace] = useState(currentPace || 'standard');
+  const [confirmed, setConfirmed] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  if (confirmed) return null;
+
+  const avgSessions = density.length > 0
+    ? (density.reduce((sum, w) => sum + w.avgSessionsPerFlashDay, 0) / density.length).toFixed(1)
+    : '1';
+
+  const handleConfirm = async () => {
+    setSaving(true);
+    try {
+      await onPaceConfirm(selectedPace);
+      setConfirmed(true);
+    } catch (e) {
+      console.error('Failed to save pace:', e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{
+      background: C.amberBg, border: `1px solid #E8D9A8`, borderRadius: 14,
+      overflow: 'hidden', marginBottom: 20, boxShadow: shadow.card,
+    }}>
+      <div style={{ padding: '18px 20px 14px' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+          <span style={{ fontSize: 18 }}>💛</span>
+          <span style={{ fontFamily: F.display, fontSize: 15, fontWeight: 700, color: C.amberText }}>
+            A quick check-in
+          </span>
+        </div>
+        <p style={{ fontFamily: F.body, fontSize: 13, color: '#6B5A1A', lineHeight: 1.65, margin: '0 0 14px 0' }}>
+          {childName ? `${childName}'s` : 'Your'} sets have been getting about <strong>{avgSessions} session{avgSessions !== '1' ? 's' : ''} per day</strong> over the past few weeks — ideally each word gets 3 sessions daily for the strongest retention.
+        </p>
+        <p style={{ fontFamily: F.body, fontSize: 13, color: '#6B5A1A', lineHeight: 1.65, margin: '0 0 16px 0' }}>
+          You could slow the queue so new words enter every 2 days instead of every day, giving each word more exposure time. Or keep the current pace if it's working for you.
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+          {[
+            { value: 'standard', label: 'Keep current pace', desc: '1 new word per set each flash day' },
+            { value: 'gentle', label: 'Slow down a bit', desc: '1 new word every 2 flash days — more exposure time' },
+          ].map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setSelectedPace(opt.value)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
+                borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+                border: selectedPace === opt.value ? `2px solid ${C.sage}` : `1.5px solid #D4CEBF`,
+                background: selectedPace === opt.value ? C.sagePale : C.white,
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <div style={{
+                width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                border: selectedPace === opt.value ? `5px solid ${C.sage}` : `2px solid ${C.stoneMid}`,
+                background: C.white,
+              }} />
+              <div>
+                <div style={{ fontFamily: F.body, fontSize: 13, fontWeight: 600, color: C.charcoal }}>{opt.label}</div>
+                <div style={{ fontFamily: F.body, fontSize: 11, color: C.muted, marginTop: 1 }}>{opt.desc}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{
+        borderTop: '1px solid #E8D9A8', padding: '12px 20px',
+        display: 'flex', justifyContent: 'flex-end',
+      }}>
+        <button
+          onClick={handleConfirm}
+          disabled={saving}
+          style={{
+            background: C.sage, color: '#fff', border: 'none', borderRadius: 8,
+            padding: '9px 22px', fontFamily: F.body, fontSize: 13, fontWeight: 600,
+            cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1,
+          }}
+        >
+          {saving ? 'Saving…' : 'Confirm'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const SectionHeader = ({ title, right }) => (
   <>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
@@ -569,8 +663,18 @@ const LoadingState = () => (
 
 /* ─── MAIN PAGE ─── */
 const WordPlannerPage = () => {
-  const { loading, data, error } = useWordPlannerData();
-  const [aiState, setAiState] = useState({}); // { [setNumber]: { loading, suggestions, error } }
+  const { loading, data, error, refetch } = useWordPlannerData();
+  const { currentUser } = useAuth();
+  const [aiState, setAiState] = useState({});
+
+  const handlePaceConfirm = useCallback(async (pace) => {
+    if (!currentUser?.id) return;
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ preferred_pace: pace })
+      .eq('id', currentUser.id);
+    if (updateError) throw updateError;
+  }, [currentUser]);
 
   const requestAISuggestions = useCallback(async (setNumber) => {
     setAiState(prev => ({ ...prev, [setNumber]: { loading: true, suggestions: null, contextSentence: null, error: null } }));
@@ -621,6 +725,14 @@ const WordPlannerPage = () => {
               thisWeekDays={data.thisWeekDays}
               thisWeekFullDays={data.thisWeekFullDays}
             />
+
+            {data.hasLowDensity && data.preferredPace === 'standard' && (
+              <PaceCheckin
+                density={data.weeklySessionDensity}
+                currentPace={data.preferredPace}
+                onPaceConfirm={handlePaceConfirm}
+              />
+            )}
 
             <SectionHeader title="This Week's Plan" right={data.thisWeekRange} />
             <p style={{ fontFamily: F.body, fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 14, marginTop: 0 }}>
