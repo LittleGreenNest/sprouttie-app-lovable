@@ -131,22 +131,40 @@ const DaySquare = ({ sessions }) => {
   );
 };
 
-const LastWeekCheckin = ({ checkinDays, fullDays }) => {
+const LastWeekCheckin = ({ checkinDays, fullDays, thisWeekDays, thisWeekFullDays }) => {
   const [pace, setPace] = useState(3);
   const weekLabel = fullDays >= 5 ? '✓ Strong week' : fullDays >= 3 ? '✓ Steady week' : 'Room to grow';
+  const todayIdx = new Date().getDay(); // 0=Sun
+  const thisWeekDayIdx = todayIdx === 0 ? 6 : todayIdx - 1; // 0=Mon
 
   return (
     <div style={{ background: C.white, border: `1px solid ${C.stone}`, borderRadius: 12, overflow: 'hidden', marginBottom: 28, boxShadow: shadow.card }}>
       <div style={{ padding: '16px 20px' }}>
+        {/* This Week So Far */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <span style={{ fontFamily: F.body, fontSize: 10, fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase', color: C.muted }}>Last Week Check-in</span>
+          <span style={{ fontFamily: F.body, fontSize: 10, fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase', color: C.muted }}>This Week So Far</span>
+          <span style={{ background: C.sagePale, color: C.sage, fontFamily: F.body, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20 }}>
+            {thisWeekFullDays} full day{thisWeekFullDays !== 1 ? 's' : ''}
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: 5, marginBottom: 16, marginTop: 8 }}>
+          {thisWeekDays.map((d, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, opacity: i > thisWeekDayIdx ? 0.35 : 1 }}>
+              <span style={{ fontFamily: F.body, fontSize: 9, fontWeight: 700, color: i === thisWeekDayIdx ? C.sage : C.faint, textTransform: 'uppercase' }}>{d.label}</span>
+              <DaySquare sessions={d.sessions} />
+            </div>
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: C.stone, marginBottom: 14 }} />
+
+        {/* Last Week */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <span style={{ fontFamily: F.body, fontSize: 10, fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase', color: C.muted }}>Last Week</span>
           <span style={{ background: C.sagePale, color: C.sage, fontFamily: F.body, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20 }}>{weekLabel}</span>
         </div>
-        <p style={{ fontFamily: F.body, fontSize: 14, color: C.ink, lineHeight: 1.55, marginBottom: 14, margin: 0 }}>
-          Your child completed <strong style={{ color: C.sage }}>{fullDays} full day{fullDays !== 1 ? 's' : ''}</strong> last week — ideally 3 sessions each.
-          {fullDays >= 5 ? " That's a consistent week." : fullDays >= 3 ? ' A steady effort.' : ' Every session counts — keep going!'}
-        </p>
-        <div style={{ display: 'flex', gap: 5, marginBottom: 8, marginTop: 14 }}>
+        <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
           {checkinDays.map((d, i) => (
             <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
               <span style={{ fontFamily: F.body, fontSize: 9, fontWeight: 700, color: C.faint, textTransform: 'uppercase' }}>{d.label}</span>
@@ -494,6 +512,8 @@ const WordPlannerPage = () => {
             <LastWeekCheckin
               checkinDays={data.checkinDays}
               fullDays={data.fullDays}
+              thisWeekDays={data.thisWeekDays}
+              thisWeekFullDays={data.thisWeekFullDays}
             />
 
             <SectionHeader title="This Week's Plan" right={data.thisWeekRange} />

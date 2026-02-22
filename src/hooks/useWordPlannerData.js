@@ -169,6 +169,13 @@ export const useWordPlannerData = () => {
       }));
       const fullDays = checkinDays.filter(d => d.sessions >= 3).length;
 
+      /* ─── This Week So Far ─── */
+      const thisWeekDays = DAY_LABELS.map((label, i) => ({
+        label,
+        sessions: countSessionsForDate(thisWeekTracking, addDays(thisWeekStart, i)),
+      }));
+      const thisWeekFullDays = thisWeekDays.filter(d => d.sessions >= 3).length;
+
       /* ─── Last Week's Words ─── */
       const lastWeekSets = setNumbersToShow.map(setNum => {
         const graduated = flashcards.filter(c =>
@@ -235,6 +242,8 @@ export const useWordPlannerData = () => {
         lastWeekSets: lastWeekSets.filter(s => s.wordCount > 0),
         checkinDays,
         fullDays,
+        thisWeekDays,
+        thisWeekFullDays,
         todaySessions,
         dayInWeek,
         totalActive,
