@@ -98,12 +98,18 @@ export const useWordPlannerData = () => {
       });
 
       /* ─── This Week's Sets ─── */
+      // Build set of flashcard IDs flashed this week (treats them as actively in rotation)
+      const flashedThisWeekIds = new Set(
+        thisWeekTracking.filter(t => t.status === 'flashed').map(t => t.flashcard_id)
+      );
+
       // Determine which set numbers exist in the user's flashcards
       const allSetNumbers = [...new Set(flashcards.map(c => c.set_number).filter(Boolean))].sort((a, b) => a - b);
       const setNumbersToShow = allSetNumbers.length > 0 ? allSetNumbers : [1, 2, 3];
       const activeSets = setNumbersToShow.map(setNum => {
+        // Active = card_status 'active' OR was flashed this week (even if still 'waiting')
         const setCards = flashcards
-          .filter(c => c.set_number === setNum && c.card_status === 'active' && !c.date_retired)
+          .filter(c => c.set_number === setNum && !c.date_retired && (c.card_status === 'active' || flashedThisWeekIds.has(c.id)))
           .sort((a, b) => (a.date_introduced || a.created_at || '').localeCompare(b.date_introduced || b.created_at || ''));
 
         const active = setCards.map(c => {
@@ -122,7 +128,7 @@ export const useWordPlannerData = () => {
 
         // Queued: waiting cards in this set
         const queued = flashcards
-          .filter(c => c.set_number === setNum && c.card_status === 'waiting')
+          .filter(c => c.set_number === setNum && c.card_status === 'waiting' && !flashedThisWeekIds.has(c.id))
           .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
           .slice(0, 3)
           .map((c, i) => ({
