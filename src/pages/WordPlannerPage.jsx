@@ -489,7 +489,7 @@ const WordPlannerPage = () => {
     );
   }
 
-  const hasActiveData = data?.activeSets?.some(s => s.activeCount > 0);
+  const hasActiveData = data?.activeSets?.some(s => s.activeCount > 0 || s.queuedCount > 0);
 
   return (
     <>
