@@ -281,6 +281,7 @@ export type Database = {
           onboarding_completed: boolean
           pets_and_toys: string | null
           plan: string
+          preferred_pace: string | null
           reply_pattern: string | null
           speech_level: string | null
           stripe_customer_id: string | null
@@ -305,6 +306,7 @@ export type Database = {
           onboarding_completed?: boolean
           pets_and_toys?: string | null
           plan?: string
+          preferred_pace?: string | null
           reply_pattern?: string | null
           speech_level?: string | null
           stripe_customer_id?: string | null
@@ -329,6 +331,7 @@ export type Database = {
           onboarding_completed?: boolean
           pets_and_toys?: string | null
           plan?: string
+          preferred_pace?: string | null
           reply_pattern?: string | null
           speech_level?: string | null
           stripe_customer_id?: string | null
