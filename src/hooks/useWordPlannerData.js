@@ -98,7 +98,10 @@ export const useWordPlannerData = () => {
       });
 
       /* ─── This Week's Sets ─── */
-      const activeSets = [1, 2, 3].map(setNum => {
+      // Determine which set numbers exist in the user's flashcards
+      const allSetNumbers = [...new Set(flashcards.map(c => c.set_number).filter(Boolean))].sort((a, b) => a - b);
+      const setNumbersToShow = allSetNumbers.length > 0 ? allSetNumbers : [1, 2, 3];
+      const activeSets = setNumbersToShow.map(setNum => {
         const setCards = flashcards
           .filter(c => c.set_number === setNum && c.card_status === 'active' && !c.date_retired)
           .sort((a, b) => (a.date_introduced || a.created_at || '').localeCompare(b.date_introduced || b.created_at || ''));
@@ -161,7 +164,7 @@ export const useWordPlannerData = () => {
       const fullDays = checkinDays.filter(d => d.sessions >= 3).length;
 
       /* ─── Last Week's Words ─── */
-      const lastWeekSets = [1, 2, 3].map(setNum => {
+      const lastWeekSets = setNumbersToShow.map(setNum => {
         const graduated = flashcards.filter(c =>
           c.set_number === setNum &&
           c.date_retired &&
