@@ -268,20 +268,16 @@ export type Database = {
       }
       profiles: {
         Row: {
-          caregivers: string | null
           child_age_band: string | null
           created_at: string | null
           current_streak: number | null
-          daily_activities: string | null
           daily_time_commitment: string | null
           email: string
           id: string
           last_activity_date: string | null
           longest_streak: number | null
           onboarding_completed: boolean
-          pets_and_toys: string | null
           plan: string
-          preferred_pace: string | null
           reply_pattern: string | null
           speech_level: string | null
           stripe_customer_id: string | null
@@ -293,20 +289,16 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          caregivers?: string | null
           child_age_band?: string | null
           created_at?: string | null
           current_streak?: number | null
-          daily_activities?: string | null
           daily_time_commitment?: string | null
           email: string
           id: string
           last_activity_date?: string | null
           longest_streak?: number | null
           onboarding_completed?: boolean
-          pets_and_toys?: string | null
           plan?: string
-          preferred_pace?: string | null
           reply_pattern?: string | null
           speech_level?: string | null
           stripe_customer_id?: string | null
@@ -318,20 +310,16 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          caregivers?: string | null
           child_age_band?: string | null
           created_at?: string | null
           current_streak?: number | null
-          daily_activities?: string | null
           daily_time_commitment?: string | null
           email?: string
           id?: string
           last_activity_date?: string | null
           longest_streak?: number | null
           onboarding_completed?: boolean
-          pets_and_toys?: string | null
           plan?: string
-          preferred_pace?: string | null
           reply_pattern?: string | null
           speech_level?: string | null
           stripe_customer_id?: string | null

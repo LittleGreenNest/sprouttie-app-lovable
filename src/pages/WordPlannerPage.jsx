@@ -1,8 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { useWordPlannerData } from '@/hooks/useWordPlannerData';
-import { supabase } from '@/integrations/supabase/client';
-import { getWeekStart } from '@/utils/planningEngine';
-import { useAuth } from '@/context/AuthContext';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 
 /* ─── colour tokens (spec values) ─── */
 const C = {
@@ -26,11 +23,6 @@ const C = {
   doneBg:    '#EBF5EF',
 };
 
-const F = {
-  body: 'var(--font-body)',
-  display: 'var(--font-display)',
-};
-
 const shadow = {
   card:    '0 1px 3px rgba(30,45,39,.06), 0 4px 14px rgba(30,45,39,.05)',
   primary: '0 4px 16px rgba(59,122,87,.25)',
@@ -51,68 +43,191 @@ const Pips = ({ filled, total = 5, graduated = false }) => (
 
 const Tag = ({ text, bg, color }) => (
   <span style={{
-    fontSize: 9, fontFamily: F.body, fontWeight: 700, textTransform: 'uppercase',
-    letterSpacing: 0.5, padding: '2px 6px', borderRadius: 3, background: bg, color,
+    fontSize: 9, fontFamily: 'Inter', fontWeight: 700, textTransform: 'uppercase',
+    letterSpacing: 0.5, padding: '2px 6px', borderRadius: 3,
+    background: bg, color,
   }}>{text}</span>
 );
 
 const SpokenChip = ({ text }) => (
   <span style={{
     background: C.amberBg, color: C.amberText,
-    fontSize: 10, fontFamily: F.body, fontWeight: 600,
+    fontSize: 10, fontFamily: 'Inter', fontWeight: 600,
     padding: '1px 6px', borderRadius: 3, display: 'inline-flex', whiteSpace: 'nowrap',
   }}>{text}</span>
 );
 
-/* StickyNav removed — app-level Navbar and BottomTabBar handle navigation */
+/* ─── data ─── */
+const thisWeekSets = [
+  {
+    name: 'Set 1', activeCount: 5, queuedCount: 3,
+    active: [
+      { word: 'Shoe', emoji: '🌱', meta: 'Just entered — 5 days to go', day: 0 },
+      { word: 'Sock', emoji: '🌱', meta: 'Needs 4 more days', day: 1 },
+      { word: 'Hat', emoji: '🌱', meta: 'Needs 3 more days', day: 2 },
+      { word: 'Red car', emoji: '🌱', meta: 'Needs 2 more days', day: 3, phrase: true },
+      { word: 'Cup', emoji: '🌱', meta: "Almost done — graduates after tomorrow's flash", day: 4 },
+    ],
+    aiContext: (
+      <>Alexander is saying <SpokenChip text="Big truck" /> and <SpokenChip text="Yellow bus" /> — the next words build the Mandarin for vehicles he's already talking about in English.</>
+    ),
+    queued: [
+      { rank: 1, word: 'Truck', tags: ['Next to enter', 'Vehicles'], ai: "He says 'Big truck' in English — flashing stabilises it in Mandarin." },
+      { rank: 2, word: 'Bus', tags: ['Vehicles'], ai: "Pairs with 'Yellow bus' — builds the Mandarin bridge for a word he loves." },
+      { rank: 3, word: 'Car', tags: ['Vehicles'], ai: "Completes the vehicle cluster and reinforces 'Red car' phrase." },
+    ],
+  },
+  {
+    name: 'Set 2', activeCount: 5, queuedCount: 3,
+    active: [
+      { word: 'Lamp', emoji: '🌱', meta: 'Just entered — 5 days to go', day: 0 },
+      { word: 'Table', emoji: '🌱', meta: 'Needs 4 more days', day: 1 },
+      { word: 'Chair', emoji: '🌱', meta: 'Needs 3 more days', day: 2 },
+      { word: 'Bird', emoji: '🌱', meta: 'Needs 2 more days', day: 3 },
+      { word: 'Shoes', emoji: '🌱', meta: "Almost done — graduates after tomorrow's flash", day: 4 },
+    ],
+    aiContext: (
+      <>Alexander is saying <SpokenChip text="Go there" /> and <SpokenChip text="Put back" /> — this set shifts toward action words to match what he's already using.</>
+    ),
+    queued: [
+      { rank: 1, word: 'Go', tags: ['Next to enter', 'Actions'], ai: "He says 'Go there' — flashing builds the Mandarin for something he already uses." },
+      { rank: 2, word: 'Put', tags: ['Actions'], ai: "He says 'Put back' — another active word worth stabilising in Mandarin." },
+      { rank: 3, word: 'See', tags: ['Actions'], ai: "'I see a bus' — a core action verb already in his spontaneous speech." },
+    ],
+  },
+  {
+    name: 'Set 3', activeCount: 5, queuedCount: 3,
+    active: [
+      { word: 'Bed', emoji: '🌱', meta: 'Just entered — 5 days to go', day: 0 },
+      { word: 'Door', emoji: '🌱', meta: 'Needs 4 more days', day: 1 },
+      { word: 'Boat', emoji: '🌱', meta: 'Needs 3 more days', day: 2 },
+      { word: 'Cat', emoji: '🌱', meta: 'Needs 2 more days', day: 3 },
+      { word: 'Spoon', emoji: '🌱', meta: "Almost done — graduates after tomorrow's flash", day: 4 },
+    ],
+    aiContext: (
+      <>Alexander said <SpokenChip text="Nai nai Chor, ye ye Chor" /> — he's naming family in phrases. These next words reinforce the people he talks about most.</>
+    ),
+    queued: [
+      { rank: 1, word: 'Nai nai', tags: ['Next to enter', 'Family'], ai: "He's already saying this — flashing builds the visual character connection in Mandarin." },
+      { rank: 2, word: 'Ye ye', tags: ['Family'], ai: "Always paired with Nai nai — introducing both mirrors how he already uses them." },
+      { rank: 3, word: 'Sit', tags: ['Actions'], ai: "'Chor' (sit) is in his phrase — the Mandarin bridges his Cantonese to the target language." },
+    ],
+  },
+];
 
-const TodayLaunchpad = ({ todaySessions, dayLabel, dayInWeek, totalSets, totalActive }) => {
-  const sessionLabels = [1, 2, 3].map(n => {
-    if (n <= todaySessions) return { label: `✓ Session ${n}`, bg: 'rgba(255,255,255,.88)', color: C.sage, border: 'none' };
-    if (n === todaySessions + 1) return { label: `▶ Session ${n}`, bg: 'rgba(255,255,255,.28)', color: '#fff', border: '1px solid rgba(255,255,255,.45)' };
-    return { label: `Session ${n}`, bg: 'rgba(255,255,255,.1)', color: 'rgba(255,255,255,.45)', border: 'none' };
-  });
+const lastWeekSets = [
+  {
+    name: 'Set 1', wordCount: 9,
+    graduated: { word: 'Mama', emoji: '🌳' },
+    gradChip: '✓ Mama graduated',
+    words: [
+      { word: 'Cup', emoji: '🌱', meta: 'Introduced Day 1 · Day 4 of 5', day: 4 },
+      { word: 'Red car', emoji: '🌱', meta: 'Introduced Day 2 · Day 3 of 5', day: 3, phrase: true },
+      { word: 'Hat', emoji: '🌱', meta: 'Introduced Day 3 · Day 2 of 5', day: 2 },
+      { word: 'Sock', emoji: '🌱', meta: 'Introduced Day 4 · Day 1 of 5', day: 1 },
+      { word: 'Ball', emoji: '🌿', meta: 'Carried from prior week · Day 4 of 5', day: 4 },
+      { word: 'More', emoji: '🌿', meta: 'Carried from prior week · Day 3 of 5', day: 3 },
+      { word: 'Up', emoji: '🌿', meta: 'Carried from prior week · Day 2 of 5', day: 2 },
+      { word: 'No', emoji: '🌿', meta: 'Carried from prior week · Day 1 of 5', day: 1 },
+    ],
+  },
+  {
+    name: 'Set 2', wordCount: 9,
+    graduated: { word: 'Water', emoji: '🌳' },
+    gradChip: '✓ Water graduated',
+    words: [
+      { word: 'Shoes', emoji: '🌱', meta: 'Introduced Day 1 · Day 4 of 5', day: 4 },
+      { word: 'Bird', emoji: '🌱', meta: 'Introduced Day 2 · Day 3 of 5', day: 3 },
+      { word: 'Chair', emoji: '🌱', meta: 'Introduced Day 3 · Day 2 of 5', day: 2 },
+      { word: 'Table', emoji: '🌱', meta: 'Introduced Day 4 · Day 1 of 5', day: 1 },
+      { word: 'Dada', emoji: '🌿', meta: 'Carried from prior week · Day 4 of 5', day: 4 },
+      { word: 'Dog', emoji: '🌿', meta: 'Carried from prior week · Day 3 of 5', day: 3 },
+      { word: 'Eat', emoji: '🌿', meta: 'Carried from prior week · Day 2 of 5', day: 2 },
+      { word: 'Yes', emoji: '🌿', meta: 'Carried from prior week · Day 1 of 5', day: 1 },
+    ],
+  },
+  {
+    name: 'Set 3', wordCount: 9,
+    graduated: { word: 'More', emoji: '🌳' },
+    gradChip: '✓ More graduated',
+    words: [
+      { word: 'Spoon', emoji: '🌱', meta: 'Introduced Day 1 · Day 4 of 5', day: 4 },
+      { word: 'Cat', emoji: '🌱', meta: 'Introduced Day 2 · Day 3 of 5', day: 3 },
+      { word: 'Boat', emoji: '🌱', meta: 'Introduced Day 3 · Day 2 of 5', day: 2 },
+      { word: 'Door', emoji: '🌱', meta: 'Introduced Day 4 · Day 1 of 5', day: 1 },
+      { word: 'Bath', emoji: '🌿', meta: 'Carried from prior week · Day 4 of 5', day: 4 },
+      { word: 'Up', emoji: '🌿', meta: 'Carried from prior week · Day 3 of 5', day: 3 },
+      { word: 'Dog', emoji: '🌿', meta: 'Carried from prior week · Day 2 of 5', day: 2 },
+      { word: 'Ball', emoji: '🌿', meta: 'Carried from prior week · Day 1 of 5', day: 1 },
+    ],
+  },
+];
 
-  return (
-    <div style={{ background: C.sage, borderRadius: 16, overflow: 'hidden', boxShadow: shadow.today, marginBottom: 12 }}>
-      <div style={{ padding: '20px 24px 18px', display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: 180 }}>
-          <div style={{ fontFamily: F.body, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: 'rgba(255,255,255,.6)', marginBottom: 4 }}>
-            Today · {dayLabel}
-          </div>
-          <div style={{ fontFamily: F.display, fontSize: 22, color: '#fff', letterSpacing: -0.2, marginBottom: 5 }}>
-            Session {Math.min(todaySessions + 1, 3)} of 3
-          </div>
-          <div style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,.72)' }}>
-            Day {dayInWeek} of 5 · {totalSets} sets · {totalActive} words ready
-          </div>
-        </div>
-        <button style={{
-          background: '#fff', color: C.sage, border: 'none', borderRadius: 8,
-          padding: '12px 20px', fontFamily: F.body, fontSize: 14, fontWeight: 700,
-          boxShadow: '0 2px 10px rgba(0,0,0,.12)', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
-        }}>
-          Flash now
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polygon points="2,0 12,6 2,12" fill={C.sage}/></svg>
-        </button>
+const lastWeekDays = [
+  { label: 'M', sessions: 3 },
+  { label: 'T', sessions: 3 },
+  { label: 'W', sessions: 3 },
+  { label: 'T', sessions: 2 },
+  { label: 'F', sessions: 3 },
+  { label: 'S', sessions: 0 },
+  { label: 'S', sessions: 3 },
+];
+
+/* ─── Sub-components ─── */
+
+const StickyNav = () => (
+  <div style={{
+    position: 'sticky', top: 0, zIndex: 100,
+    background: C.white, borderBottom: `1px solid ${C.stone}`,
+    height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '0 24px',
+  }}>
+    <span style={{ fontFamily: 'Inter', fontSize: 17, fontWeight: 600, color: C.sage }}>🌱 Sprouttie</span>
+    <div style={{
+      width: 32, height: 32, borderRadius: '50%', background: C.sagePale,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: 'Inter', fontSize: 13, fontWeight: 600, color: C.sage,
+    }}>C</div>
+  </div>
+);
+
+const TodayLaunchpad = () => (
+  <div style={{ background: C.sage, borderRadius: 16, overflow: 'hidden', boxShadow: shadow.today, marginBottom: 12 }}>
+    <div style={{ padding: '20px 24px 18px', display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div style={{ flex: 1, minWidth: 180 }}>
+        <div style={{ fontFamily: 'Inter', fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: 'rgba(255,255,255,.6)', marginBottom: 4 }}>Today · Mon 24 Feb</div>
+        <div style={{ fontFamily: "'Playfair Display'", fontSize: 22, color: '#fff', letterSpacing: -0.2, marginBottom: 5 }}>Session 2 of 3</div>
+        <div style={{ fontFamily: 'Inter', fontSize: 13, color: 'rgba(255,255,255,.72)' }}>Day 1 of 5 · 3 sets · 15 words ready</div>
       </div>
-      <div style={{ background: 'rgba(0,0,0,.18)', padding: '10px 24px', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span style={{ fontFamily: F.body, fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,.55)', flexShrink: 0 }}>Today's sessions</span>
-        {sessionLabels.map((s, i) => (
-          <span key={i} style={{
-            fontFamily: F.body, fontSize: 11, fontWeight: 600,
-            padding: '4px 11px', borderRadius: 20,
-            background: s.bg, color: s.color, border: s.border || 'none',
-          }}>{s.label}</span>
-        ))}
-      </div>
+      <button style={{
+        background: '#fff', color: C.sage, border: 'none', borderRadius: 8,
+        padding: '12px 20px', fontFamily: 'Inter', fontSize: 14, fontWeight: 700,
+        boxShadow: '0 2px 10px rgba(0,0,0,.12)', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+      }}>
+        Flash now
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polygon points="2,0 12,6 2,12" fill={C.sage}/></svg>
+      </button>
     </div>
-  );
-};
+    <div style={{ background: 'rgba(0,0,0,.18)', padding: '10px 24px', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+      <span style={{ fontFamily: 'Inter', fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,.55)', flexShrink: 0 }}>Today's sessions</span>
+      {[
+        { label: '✓ Session 1', bg: 'rgba(255,255,255,.88)', color: C.sage, border: 'none' },
+        { label: '▶ Session 2', bg: 'rgba(255,255,255,.28)', color: '#fff', border: '1px solid rgba(255,255,255,.45)' },
+        { label: 'Session 3', bg: 'rgba(255,255,255,.1)', color: 'rgba(255,255,255,.45)', border: 'none' },
+      ].map((s, i) => (
+        <span key={i} style={{
+          fontFamily: 'Inter', fontSize: 11, fontWeight: 600,
+          padding: '4px 11px', borderRadius: 20,
+          background: s.bg, color: s.color, border: s.border || 'none',
+        }}>{s.label}</span>
+      ))}
+    </div>
+  </div>
+);
 
 const DaySquare = ({ sessions }) => {
-  const dots = sessions >= 3
+  const dots = sessions === 3
     ? [C.white, C.white, C.white]
     : sessions === 2
     ? [C.sageLight, C.sageLight, C.stoneMid]
@@ -134,43 +249,22 @@ const DaySquare = ({ sessions }) => {
   );
 };
 
-const LastWeekCheckin = ({ checkinDays, fullDays, thisWeekDays, thisWeekFullDays }) => {
+const LastWeekCheckin = () => {
   const [pace, setPace] = useState(3);
-  const weekLabel = fullDays >= 5 ? '✓ Strong week' : fullDays >= 3 ? '✓ Steady week' : 'Room to grow';
-  const todayIdx = new Date().getDay(); // 0=Sun
-  const thisWeekDayIdx = todayIdx === 0 ? 6 : todayIdx - 1; // 0=Mon
-
   return (
     <div style={{ background: C.white, border: `1px solid ${C.stone}`, borderRadius: 12, overflow: 'hidden', marginBottom: 28, boxShadow: shadow.card }}>
       <div style={{ padding: '16px 20px' }}>
-        {/* This Week So Far */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <span style={{ fontFamily: F.body, fontSize: 10, fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase', color: C.muted }}>This Week So Far</span>
-          <span style={{ background: C.sagePale, color: C.sage, fontFamily: F.body, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20 }}>
-            {thisWeekFullDays} full day{thisWeekFullDays !== 1 ? 's' : ''}
-          </span>
+          <span style={{ fontFamily: 'Inter', fontSize: 10, fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase', color: C.muted }}>Last Week Check-in</span>
+          <span style={{ background: C.sagePale, color: C.sage, fontFamily: 'Inter', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20 }}>✓ Strong week</span>
         </div>
-        <div style={{ display: 'flex', gap: 5, marginBottom: 16, marginTop: 8 }}>
-          {thisWeekDays.map((d, i) => (
-            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, opacity: i > thisWeekDayIdx ? 0.35 : 1 }}>
-              <span style={{ fontFamily: F.body, fontSize: 9, fontWeight: 700, color: i === thisWeekDayIdx ? C.sage : C.faint, textTransform: 'uppercase' }}>{d.label}</span>
-              <DaySquare sessions={d.sessions} />
-            </div>
-          ))}
-        </div>
-
-        {/* Divider */}
-        <div style={{ height: 1, background: C.stone, marginBottom: 14 }} />
-
-        {/* Last Week */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <span style={{ fontFamily: F.body, fontSize: 10, fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase', color: C.muted }}>Last Week</span>
-          <span style={{ background: C.sagePale, color: C.sage, fontFamily: F.body, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20 }}>{weekLabel}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
-          {checkinDays.map((d, i) => (
+        <p style={{ fontFamily: 'Inter', fontSize: 14, color: C.ink, lineHeight: 1.55, marginBottom: 14, margin: 0, marginTop: 0 }}>
+          Alexander completed <strong style={{ color: C.sage }}>5 full days</strong> last week — ideally 3 sessions each. That's a consistent week.
+        </p>
+        <div style={{ display: 'flex', gap: 5, marginBottom: 8, marginTop: 14 }}>
+          {lastWeekDays.map((d, i) => (
             <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontFamily: F.body, fontSize: 9, fontWeight: 700, color: C.faint, textTransform: 'uppercase' }}>{d.label}</span>
+              <span style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 700, color: C.faint, textTransform: 'uppercase' }}>{d.label}</span>
               <DaySquare sessions={d.sessions} />
             </div>
           ))}
@@ -183,15 +277,15 @@ const LastWeekCheckin = ({ checkinDays, fullDays, thisWeekDays, thisWeekFullDays
           ].map((l, i) => (
             <div key={i} style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
               <div style={{ width: 11, height: 11, borderRadius: 3, background: l.bg, border: l.border }} />
-              <span style={{ fontFamily: F.body, fontSize: 11, color: C.muted }}>{l.label}</span>
+              <span style={{ fontFamily: 'Inter', fontSize: 11, color: C.muted }}>{l.label}</span>
             </div>
           ))}
         </div>
-        <div style={{ fontFamily: F.body, fontSize: 12, color: C.muted, marginBottom: 6 }}>Confirm your pace for this week</div>
+        <div style={{ fontFamily: 'Inter', fontSize: 12, color: C.muted, marginBottom: 6 }}>Confirm your pace for this week</div>
         <div style={{ display: 'flex', background: C.cream, border: `1px solid ${C.stone}`, borderRadius: 8, padding: 3, gap: 3 }}>
           {[3, 2].map(n => (
             <button key={n} onClick={() => setPace(n)} style={{
-              flex: 1, padding: 8, textAlign: 'center', fontFamily: F.body, fontSize: 13, fontWeight: 600,
+              flex: 1, padding: 8, textAlign: 'center', fontFamily: 'Inter', fontSize: 13, fontWeight: 600,
               border: 'none', borderRadius: 6, cursor: 'pointer',
               background: pace === n ? C.sage : 'transparent',
               color: pace === n ? '#fff' : C.muted,
@@ -204,25 +298,25 @@ const LastWeekCheckin = ({ checkinDays, fullDays, thisWeekDays, thisWeekFullDays
       </div>
       <div style={{ background: C.sageMist, borderTop: `1px solid ${C.stone}`, padding: '10px 20px', display: 'flex', gap: 8, alignItems: 'center' }}>
         <div style={{ width: 6, height: 6, background: C.sage, borderRadius: '50%' }} />
-        <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 500, color: C.sage }}>Pace confirmed — plan is live</span>
+        <span style={{ fontFamily: 'Inter', fontSize: 12, fontWeight: 500, color: C.sage }}>Pace confirmed — plan is live</span>
       </div>
     </div>
   );
 };
 
-/* ─── Word Rows ─── */
+/* ─── Word Row (active) ─── */
 const ActiveWordRow = ({ word, emoji, meta, day, phrase, isLast }) => (
   <div style={{
     display: 'grid', gridTemplateColumns: '20px 1fr auto', padding: '10px 20px', gap: 10,
-    borderBottom: isLast ? 'none' : '1px solid rgba(232,227,216,.5)',
+    borderBottom: isLast ? 'none' : `1px solid rgba(232,227,216,.5)`,
   }}>
     <span style={{ fontSize: 14 }}>{emoji}</span>
     <div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 3 }}>
-        <span style={{ fontFamily: F.body, fontSize: 14, fontWeight: 500, color: C.ink }}>{word}</span>
+        <span style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: 500, color: C.ink }}>{word}</span>
         {phrase && <Tag text="Phrase" bg={C.phraseBg} color={C.phraseClr} />}
       </div>
-      <div style={{ fontFamily: F.body, fontSize: 11, color: C.muted, lineHeight: 1.4 }}>
+      <div style={{ fontFamily: 'Inter', fontSize: 11, color: C.muted, lineHeight: 1.4 }}>
         {meta.split(/(\d+ (?:more )?days?)/g).map((part, i) =>
           /\d+ (?:more )?days?/.test(part)
             ? <span key={i} style={{ color: C.sage, fontWeight: 500 }}>{part}</span>
@@ -232,11 +326,12 @@ const ActiveWordRow = ({ word, emoji, meta, day, phrase, isLast }) => (
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
       <Pips filled={day} />
-      <span style={{ fontFamily: F.body, fontSize: 10, color: C.faint, whiteSpace: 'nowrap' }}>Day {day} of 5</span>
+      <span style={{ fontFamily: 'Inter', fontSize: 10, color: C.faint, whiteSpace: 'nowrap' }}>Day {day} of 5</span>
     </div>
   </div>
 );
 
+/* ─── Queued Word Row ─── */
 const QueuedWordRow = ({ rank, word, tags, ai, isLast }) => {
   const borderColor = rank === 1 ? C.sage : rank === 2 ? C.sageMid : C.sageLight;
   const badgeBg = rank === 1 ? C.sage : rank === 2 ? C.sageMid : C.sageLight;
@@ -246,186 +341,87 @@ const QueuedWordRow = ({ rank, word, tags, ai, isLast }) => {
     <div style={{
       display: 'grid', gridTemplateColumns: '20px 1fr auto', padding: '10px 20px', paddingLeft: 17, gap: 10,
       background: '#FAFDF9', borderLeft: `3px solid ${borderColor}`,
-      borderBottom: isLast ? 'none' : '1px solid rgba(232,227,216,.5)',
+      borderBottom: isLast ? 'none' : `1px solid rgba(232,227,216,.5)`,
     }}>
       <span style={{
         width: 16, height: 16, borderRadius: '50%', background: badgeBg, color: badgeColor,
-        fontFamily: F.body, fontSize: 9, fontWeight: 700,
+        fontFamily: 'Inter', fontSize: 9, fontWeight: 700,
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>{rank}</span>
       <div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 3, alignItems: 'center' }}>
-          <span style={{ fontFamily: F.body, fontSize: 14, fontWeight: 600, color: C.charcoal }}>{word}</span>
+          <span style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: 600, color: C.charcoal }}>{word}</span>
           {tags.map(t => {
             if (t === 'Next to enter') return <Tag key={t} text={t} bg={C.sagePale} color={C.sage} />;
             return <Tag key={t} text={t} bg={C.stone} color={C.muted} />;
           })}
         </div>
-        {ai && <div style={{ fontFamily: F.body, fontSize: 11, color: C.sageMid, fontStyle: 'italic', lineHeight: 1.4 }}>{ai}</div>}
+        <div style={{ fontFamily: 'Inter', fontSize: 11, color: C.sageMid, fontStyle: 'italic', lineHeight: 1.4 }}>{ai}</div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
         <Pips filled={0} />
-        <span style={{ fontFamily: F.body, fontSize: 10, color: C.faint, whiteSpace: 'nowrap' }}>queued</span>
+        <span style={{ fontFamily: 'Inter', fontSize: 10, color: C.faint, whiteSpace: 'nowrap' }}>queued</span>
       </div>
     </div>
   );
 };
 
-/* ─── AI Recommendation per Set ─── */
-const AISetRecommendation = ({ setNumber, suggestions, contextSentence, loading, error, onRequest }) => {
-  if (loading) {
-    return (
-      <div style={{
-        background: C.sageMist, borderTop: `1px solid ${C.stone}`, borderBottom: `1px solid ${C.stone}`,
-        padding: '14px 20px', display: 'flex', gap: 9, alignItems: 'center',
-      }}>
-        <span style={{ fontSize: 14, animation: 'spin 1s linear infinite' }}>🤖</span>
-        <span style={{ fontFamily: F.body, fontSize: 12, color: C.muted }}>Generating recommendations for Set {setNumber}…</span>
-      </div>
-    );
-  }
+/* ─── AI Context Banner ─── */
+const AIContextBanner = ({ children }) => (
+  <div style={{
+    background: C.sageMist, borderTop: `1px solid ${C.stone}`, borderBottom: `1px solid ${C.stone}`,
+    padding: '11px 20px', display: 'flex', gap: 9, alignItems: 'flex-start',
+  }}>
+    <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>🤖</span>
+    <span style={{ fontFamily: 'Inter', fontSize: 12, color: C.ink, lineHeight: 1.6 }}>{children}</span>
+  </div>
+);
 
-  if (error) {
-    return (
-      <div style={{
-        background: '#FEF2F2', borderTop: `1px solid ${C.stone}`, borderBottom: `1px solid ${C.stone}`,
-        padding: '11px 20px', display: 'flex', gap: 9, alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        <span style={{ fontFamily: F.body, fontSize: 12, color: '#991B1B' }}>
-          {error.includes('Rate limit') ? '⏳ Rate limited — try again shortly' : `⚠ ${error}`}
-        </span>
-        <button onClick={onRequest} style={{
-          background: 'none', border: `1px solid ${C.stoneMid}`, borderRadius: 6,
-          padding: '4px 12px', fontFamily: F.body, fontSize: 11, fontWeight: 600,
-          color: C.muted, cursor: 'pointer',
-        }}>Retry</button>
-      </div>
-    );
-  }
-
-  if (suggestions && suggestions.length > 0) {
-    return (
-      <div style={{
-        background: C.sageMist, borderTop: `1px solid ${C.stone}`, borderBottom: `1px solid ${C.stone}`,
-        padding: '12px 20px',
-      }}>
-        <div style={{ display: 'flex', gap: 7, alignItems: 'center', marginBottom: contextSentence ? 6 : 8 }}>
-          <span style={{ fontSize: 13 }}>🤖</span>
-          <span style={{ fontFamily: F.body, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: C.sage }}>
-            AI Picks for Set {setNumber}
-          </span>
-        </div>
-        {contextSentence && (
-          <p style={{
-            fontFamily: F.body, fontSize: 12, color: C.sageMid, fontStyle: 'italic',
-            lineHeight: 1.5, margin: '0 0 10px 0', padding: '0 0 8px 0',
-            borderBottom: `1px solid ${C.stone}`,
-          }}>
-            {contextSentence}
-          </p>
-        )}
-        {suggestions.map((s, i) => (
-          <div key={i} style={{
-            display: 'flex', gap: 10, alignItems: 'flex-start', padding: '6px 0',
-            borderBottom: i < suggestions.length - 1 ? `1px solid ${C.stone}` : 'none',
-          }}>
-            <span style={{ fontFamily: F.body, fontSize: 13, fontWeight: 600, color: C.charcoal, minWidth: 60 }}>
-              {s.word}
-            </span>
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
-              {s.theme && <Tag text={s.theme} bg={C.sagePale} color={C.sage} />}
-              {s.score && <Tag text={`★${s.score}`} bg={C.amberBg} color={C.amberText} />}
-            </div>
-            <span style={{ fontFamily: F.body, fontSize: 11, color: C.muted, lineHeight: 1.5, flex: 1 }}>
-              {s.reasoning}
-            </span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div style={{
-      background: C.sageMist, borderTop: `1px solid ${C.stone}`, borderBottom: `1px solid ${C.stone}`,
-      padding: '11px 20px', display: 'flex', gap: 9, alignItems: 'center', justifyContent: 'space-between',
-    }}>
-      <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
-        <span style={{ fontSize: 14 }}>🤖</span>
-        <span style={{ fontFamily: F.body, fontSize: 12, color: C.muted }}>
-          Get AI-powered word recommendations for this set
-        </span>
-      </div>
-      <button
-        onClick={onRequest}
-        style={{
-          background: C.sage, color: '#fff', border: 'none', borderRadius: 6,
-          padding: '6px 14px', fontFamily: F.body, fontSize: 11, fontWeight: 600,
-          cursor: 'pointer', whiteSpace: 'nowrap',
-        }}
-      >
-        Suggest words
-      </button>
-    </div>
-  );
-};
-
+/* ─── Sub-label ─── */
 const SubLabel = ({ text }) => (
   <div style={{
-    padding: '7px 20px 5px', fontFamily: F.body, fontSize: 10, fontWeight: 700,
+    padding: '7px 20px 5px', fontFamily: 'Inter', fontSize: 10, fontWeight: 700,
     letterSpacing: 1, textTransform: 'uppercase', color: C.muted,
     background: C.cream, borderTop: `1px solid ${C.stone}`, borderBottom: `1px solid ${C.stone}`,
   }}>{text}</div>
 );
 
-/* ─── Set Cards ─── */
-const ThisWeekSetCard = ({ set, aiSuggestions, aiContextSentence, aiLoading, aiError, onRequestAI }) => (
+/* ─── This Week Set Card ─── */
+const ThisWeekSetCard = ({ set }) => (
   <div style={{ background: C.white, border: `1px solid ${C.stone}`, borderRadius: 16, overflow: 'hidden', marginBottom: 10, boxShadow: shadow.card }}>
+    {/* Header */}
     <div style={{
       padding: '13px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       background: C.cream, borderBottom: `1px solid ${C.stone}`,
     }}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-        <span style={{ fontFamily: F.body, fontSize: 13, fontWeight: 700, color: C.charcoal }}>{set.name}</span>
-        <span className="set-sub" style={{ fontFamily: F.body, fontSize: 11, color: C.muted }}>· {set.activeCount} words, flashed every session</span>
+        <span style={{ fontFamily: 'Inter', fontSize: 13, fontWeight: 700, color: C.charcoal }}>{set.name}</span>
+        <span className="set-sub" style={{ fontFamily: 'Inter', fontSize: 11, color: C.muted }}>· 5 words, flashed every session</span>
       </div>
       <div style={{ display: 'flex', gap: 6 }}>
-        <span style={{ fontFamily: F.body, fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 10, background: C.stone, color: C.muted }}>{set.activeCount} active</span>
-        {set.queuedCount > 0 && (
-          <span style={{ fontFamily: F.body, fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 10, background: C.sagePale, color: C.sage }}>{set.queuedCount} queued</span>
-        )}
+        <span style={{ fontFamily: 'Inter', fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 10, background: C.stone, color: C.muted }}>5 active</span>
+        <span style={{ fontFamily: 'Inter', fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 10, background: C.sagePale, color: C.sage }}>3 queued</span>
       </div>
     </div>
 
-    {set.active.length > 0 && (
-      <>
-        <SubLabel text="Flashing this week" />
-        {set.active.map((w, i) => (
-          <ActiveWordRow key={w.id || i} {...w} isLast={i === set.active.length - 1} />
-        ))}
-      </>
-    )}
+    {/* Active words */}
+    <SubLabel text="Flashing this week" />
+    {set.active.map((w, i) => (
+      <ActiveWordRow key={i} {...w} isLast={i === set.active.length - 1} />
+    ))}
 
-    <AISetRecommendation
-      setNumber={set.setNumber}
-      suggestions={aiSuggestions}
-      contextSentence={aiContextSentence}
-      loading={aiLoading}
-      error={aiError}
-      onRequest={onRequestAI}
-    />
+    {/* AI banner */}
+    <AIContextBanner>{set.aiContext}</AIContextBanner>
 
-    {set.queued.length > 0 && (
-      <>
-        <SubLabel text="Coming up next — in order" />
-        {set.queued.map((w, i) => (
-          <QueuedWordRow key={i} {...w} isLast={i === set.queued.length - 1} />
-        ))}
-      </>
-    )}
+    {/* Queued */}
+    <SubLabel text="Coming up next — in order" />
+    {set.queued.map((w, i) => (
+      <QueuedWordRow key={i} {...w} isLast={i === set.queued.length - 1} />
+    ))}
   </div>
 );
 
+/* ─── Last Week Set Card (collapsible) ─── */
 const LastWeekSetCard = ({ set }) => {
   const [open, setOpen] = useState(false);
   const introWords = set.words.filter(w => w.emoji === '🌱');
@@ -441,13 +437,11 @@ const LastWeekSetCard = ({ set }) => {
         }}
       >
         <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-          <span style={{ fontFamily: F.body, fontSize: 13, fontWeight: 700, color: C.charcoal }}>{set.name}</span>
-          <span style={{ fontFamily: F.body, fontSize: 11, color: C.muted }}>· {set.wordCount} words appeared</span>
+          <span style={{ fontFamily: 'Inter', fontSize: 13, fontWeight: 700, color: C.charcoal }}>{set.name}</span>
+          <span style={{ fontFamily: 'Inter', fontSize: 11, color: C.muted }}>· {set.wordCount} words appeared</span>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {set.gradChip && (
-            <span style={{ fontFamily: F.body, fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 10, background: C.doneBg, color: C.sage }}>{set.gradChip}</span>
-          )}
+          <span style={{ fontFamily: 'Inter', fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 10, background: C.doneBg, color: C.sage }}>{set.gradChip}</span>
           <span style={{
             transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
             fontSize: 12, color: C.muted,
@@ -457,46 +451,41 @@ const LastWeekSetCard = ({ set }) => {
 
       {open && (
         <div>
-          {set.graduated && (
-            <>
-              <SubLabel text="✓ Graduated" />
-              <div style={{
-                display: 'grid', gridTemplateColumns: '20px 1fr auto', padding: '10px 20px', gap: 10,
-                background: C.sageMist,
-              }}>
-                <div style={{
-                  width: 15, height: 15, borderRadius: '50%', background: C.sage, color: '#fff',
-                  fontFamily: F.body, fontSize: 9, fontWeight: 700,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>✓</div>
-                <div>
-                  <span style={{ fontFamily: F.body, fontSize: 14, fontWeight: 600, color: C.sageMid }}>{set.graduated.word}</span>
-                  <div style={{ fontFamily: F.body, fontSize: 11, color: C.muted, lineHeight: 1.4 }}>Completed 5 days · won't return to this set</div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
-                  <Pips filled={5} graduated />
-                </div>
-              </div>
-            </>
-          )}
+          {/* Graduated */}
+          <SubLabel text="✓ Graduated" />
+          <div style={{
+            display: 'grid', gridTemplateColumns: '20px 1fr auto', padding: '10px 20px', gap: 10,
+            background: C.sageMist,
+          }}>
+            <div style={{
+              width: 15, height: 15, borderRadius: '50%', background: C.sage, color: '#fff',
+              fontFamily: 'Inter', fontSize: 9, fontWeight: 700,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>✓</div>
+            <div>
+              <span style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: 600, color: C.sageMid }}>{set.graduated.word}</span>
+              <div style={{ fontFamily: 'Inter', fontSize: 11, color: C.muted, lineHeight: 1.4 }}>Completed 5 days · won't return to this set</div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
+              <Pips filled={5} graduated />
+            </div>
+          </div>
 
-          {set.words.length > 0 && (
-            <>
-              <SubLabel text="Still in progress — carries into this week" />
-              {introWords.map((w, i) => (
-                <ActiveWordRow key={`i${i}`} {...w} isLast={i === introWords.length - 1 && carriedWords.length === 0} />
-              ))}
-              {carriedWords.map((w, i) => (
-                <ActiveWordRow key={`c${i}`} {...w} isLast={i === carriedWords.length - 1} />
-              ))}
-            </>
-          )}
+          {/* Still in progress */}
+          <SubLabel text="Still in progress — carries into this week" />
+          {introWords.map((w, i) => (
+            <ActiveWordRow key={`i${i}`} {...w} isLast={i === introWords.length - 1 && carriedWords.length === 0} />
+          ))}
+          {carriedWords.map((w, i) => (
+            <ActiveWordRow key={`c${i}`} {...w} isLast={i === carriedWords.length - 1} />
+          ))}
         </div>
       )}
     </div>
   );
 };
 
+/* ─── Legend Bar ─── */
 const LegendBar = () => (
   <div style={{
     display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center',
@@ -508,11 +497,11 @@ const LegendBar = () => (
       { icon: '🌿', label: 'Growing' },
       { icon: '🌳', label: 'Graduated' },
     ].map(l => (
-      <div key={l.label} style={{ display: 'flex', gap: 5, alignItems: 'center', fontFamily: F.body, fontSize: 11, color: C.muted }}>
+      <div key={l.label} style={{ display: 'flex', gap: 5, alignItems: 'center', fontFamily: 'Inter', fontSize: 11, color: C.muted }}>
         <span>{l.icon}</span> {l.label}
       </div>
     ))}
-    <div style={{ display: 'flex', gap: 5, alignItems: 'center', fontFamily: F.body, fontSize: 11, color: C.muted }}>
+    <div style={{ display: 'flex', gap: 5, alignItems: 'center', fontFamily: 'Inter', fontSize: 11, color: C.muted }}>
       <div style={{ display: 'flex', gap: 2 }}>
         {[C.sage, C.sage, C.stone, C.stone, C.stone].map((c, i) => (
           <div key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: c }} />
@@ -520,264 +509,76 @@ const LegendBar = () => (
       </div>
       Days flashed (5 = graduates)
     </div>
-    <div style={{ display: 'flex', gap: 5, alignItems: 'center', fontFamily: F.body, fontSize: 11, color: C.muted }}>
+    <div style={{ display: 'flex', gap: 5, alignItems: 'center', fontFamily: 'Inter', fontSize: 11, color: C.muted }}>
       <div style={{ width: 3, height: 14, background: C.sage, borderRadius: 2 }} />
       AI queue
     </div>
-    <div style={{ display: 'flex', gap: 5, alignItems: 'center', fontFamily: F.body, fontSize: 11, color: C.muted }}>
+    <div style={{ display: 'flex', gap: 5, alignItems: 'center', fontFamily: 'Inter', fontSize: 11, color: C.muted }}>
       <SpokenChip text="word" />
-      Your child is saying this
+      Alexander is saying this
     </div>
   </div>
 );
 
-/* ─── Pace Adaptation Check-in ─── */
-const PaceCheckin = ({ density, childName, currentPace, onPaceConfirm }) => {
-  const [selectedPace, setSelectedPace] = useState(currentPace || 'standard');
-  const [confirmed, setConfirmed] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  if (confirmed) return null;
-
-  const avgSessions = density.length > 0
-    ? (density.reduce((sum, w) => sum + w.avgSessionsPerFlashDay, 0) / density.length).toFixed(1)
-    : '1';
-
-  const handleConfirm = async () => {
-    setSaving(true);
-    try {
-      await onPaceConfirm(selectedPace);
-      setConfirmed(true);
-    } catch (e) {
-      console.error('Failed to save pace:', e);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div style={{
-      background: C.amberBg, border: `1px solid #E8D9A8`, borderRadius: 14,
-      overflow: 'hidden', marginBottom: 20, boxShadow: shadow.card,
-    }}>
-      <div style={{ padding: '18px 20px 14px' }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
-          <span style={{ fontSize: 18 }}>💛</span>
-          <span style={{ fontFamily: F.display, fontSize: 15, fontWeight: 700, color: C.amberText }}>
-            A quick check-in
-          </span>
-        </div>
-        <p style={{ fontFamily: F.body, fontSize: 13, color: '#6B5A1A', lineHeight: 1.65, margin: '0 0 14px 0' }}>
-          {childName ? `${childName}'s` : 'Your'} sets have been getting about <strong>{avgSessions} session{avgSessions !== '1' ? 's' : ''} per day</strong> over the past few weeks — ideally each word gets 3 sessions daily for the strongest retention.
-        </p>
-        <p style={{ fontFamily: F.body, fontSize: 13, color: '#6B5A1A', lineHeight: 1.65, margin: '0 0 16px 0' }}>
-          You could slow the queue so new words enter every 2 days instead of every day, giving each word more exposure time. Or keep the current pace if it's working for you.
-        </p>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-          {[
-            { value: 'standard', label: 'Keep current pace', desc: '1 new word per set each flash day' },
-            { value: 'gentle', label: 'Slow down a bit', desc: '1 new word every 2 flash days — more exposure time' },
-          ].map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => setSelectedPace(opt.value)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
-                borderRadius: 10, cursor: 'pointer', textAlign: 'left',
-                border: selectedPace === opt.value ? `2px solid ${C.sage}` : `1.5px solid #D4CEBF`,
-                background: selectedPace === opt.value ? C.sagePale : C.white,
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <div style={{
-                width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
-                border: selectedPace === opt.value ? `5px solid ${C.sage}` : `2px solid ${C.stoneMid}`,
-                background: C.white,
-              }} />
-              <div>
-                <div style={{ fontFamily: F.body, fontSize: 13, fontWeight: 600, color: C.charcoal }}>{opt.label}</div>
-                <div style={{ fontFamily: F.body, fontSize: 11, color: C.muted, marginTop: 1 }}>{opt.desc}</div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{
-        borderTop: '1px solid #E8D9A8', padding: '12px 20px',
-        display: 'flex', justifyContent: 'flex-end',
-      }}>
-        <button
-          onClick={handleConfirm}
-          disabled={saving}
-          style={{
-            background: C.sage, color: '#fff', border: 'none', borderRadius: 8,
-            padding: '9px 22px', fontFamily: F.body, fontSize: 13, fontWeight: 600,
-            cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1,
-          }}
-        >
-          {saving ? 'Saving…' : 'Confirm'}
-        </button>
-      </div>
-    </div>
-  );
-};
-
+/* ─── Section Header ─── */
 const SectionHeader = ({ title, right }) => (
   <>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-      <h2 style={{ fontFamily: F.display, fontSize: 20, fontWeight: 600, color: C.charcoal, margin: 0 }}>{title}</h2>
-      <span style={{ fontFamily: F.body, fontSize: 12, color: C.muted }}>{right}</span>
+      <h2 style={{ fontFamily: "'Playfair Display'", fontSize: 20, fontWeight: 600, color: C.charcoal, margin: 0 }}>{title}</h2>
+      <span style={{ fontFamily: 'Inter', fontSize: 12, color: C.muted }}>{right}</span>
     </div>
     <div style={{ height: 1, background: C.stoneMid, marginBottom: 14 }} />
   </>
 );
 
-/* ─── Empty State ─── */
-const EmptyState = () => (
-  <div style={{
-    background: C.white, border: `1px solid ${C.stone}`, borderRadius: 16,
-    padding: '40px 24px', textAlign: 'center', boxShadow: shadow.card,
-  }}>
-    <div style={{ fontSize: 48, marginBottom: 16 }}>🌱</div>
-    <h2 style={{ fontFamily: F.display, fontSize: 22, color: C.charcoal, marginBottom: 8 }}>No words in your plan yet</h2>
-    <p style={{ fontFamily: F.body, fontSize: 14, color: C.muted, lineHeight: 1.6, maxWidth: 360, margin: '0 auto' }}>
-      Add flashcards and assign them to sets from the Session Log to see your weekly activation plan here.
-    </p>
-  </div>
-);
-
-/* ─── Loading ─── */
-const LoadingState = () => (
-  <div style={{
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    minHeight: '60vh', fontFamily: F.body, fontSize: 14, color: C.muted,
-  }}>
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 32, marginBottom: 12, animation: 'spin 1s linear infinite' }}>🌱</div>
-      <span>Loading your plan…</span>
-    </div>
-  </div>
-);
-
 /* ─── MAIN PAGE ─── */
 const WordPlannerPage = () => {
-  const { loading, data, error, refetch } = useWordPlannerData();
-  const { currentUser } = useAuth();
-  const [aiState, setAiState] = useState({});
-
-  const handlePaceConfirm = useCallback(async (pace) => {
-    if (!currentUser?.id) return;
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ preferred_pace: pace })
-      .eq('id', currentUser.id);
-    if (updateError) throw updateError;
-  }, [currentUser]);
-
-  const requestAISuggestions = useCallback(async (setNumber) => {
-    setAiState(prev => ({ ...prev, [setNumber]: { loading: true, suggestions: null, contextSentence: null, error: null } }));
-    try {
-      const weekStart = getWeekStart();
-      const { data: result, error: fnError } = await supabase.functions.invoke('suggest-words', {
-        body: { weekStart, setNumber },
-      });
-      if (fnError) throw fnError;
-      if (result?.error) throw new Error(result.error);
-      const suggestions = (result?.suggestions || []).slice(0, 5);
-      const contextSentence = result?.context_sentence || null;
-      setAiState(prev => ({ ...prev, [setNumber]: { loading: false, suggestions, contextSentence, error: null } }));
-    } catch (err) {
-      console.error('AI suggestion error:', err);
-      setAiState(prev => ({ ...prev, [setNumber]: { loading: false, suggestions: null, contextSentence: null, error: err.message } }));
-    }
-  }, []);
-
-  if (loading) {
-    return (
-      <div style={{ WebkitFontSmoothing: 'antialiased' }}>
-        <LoadingState />
-      </div>
-    );
-  }
-
-  const hasActiveData = data?.activeSets?.some(s => s.activeCount > 0 || s.queuedCount > 0);
-
   return (
-    <div style={{
-      WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale',
-    }}>
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '20px 24px 120px' }}>
-        {hasActiveData ? (
-          <>
-            <TodayLaunchpad
-              todaySessions={data.todaySessions}
-              dayLabel={data.today.dayMonth}
-              dayInWeek={data.dayInWeek}
-              totalSets={data.totalSets}
-              totalActive={data.totalActive}
-            />
+    <>
+      {/* Google Fonts */}
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
-            <LastWeekCheckin
-              checkinDays={data.checkinDays}
-              fullDays={data.fullDays}
-              thisWeekDays={data.thisWeekDays}
-              thisWeekFullDays={data.thisWeekFullDays}
-            />
+      <div style={{
+        background: C.cream, minHeight: '100vh',
+        WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale',
+      }}>
+        <StickyNav />
 
-            {data.hasLowDensity && data.preferredPace === 'standard' && (
-              <PaceCheckin
-                density={data.weeklySessionDensity}
-                currentPace={data.preferredPace}
-                onPaceConfirm={handlePaceConfirm}
-              />
-            )}
+        <div style={{ maxWidth: 580, margin: '0 auto', padding: '20px 24px 120px' }}>
+          <TodayLaunchpad />
+          <LastWeekCheckin />
 
-            <SectionHeader title="This Week's Plan" right={data.thisWeekRange} />
-            <p style={{ fontFamily: F.body, fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 14, marginTop: 0 }}>
-              Words carry over from last week — nothing resets. Each day you flash, the oldest word in each set graduates and one new word enters.
-            </p>
-            {data.activeSets.map((s, i) => (
-              <ThisWeekSetCard
-                key={i}
-                set={s}
-                aiSuggestions={aiState[s.setNumber]?.suggestions}
-                aiContextSentence={aiState[s.setNumber]?.contextSentence}
-                aiLoading={aiState[s.setNumber]?.loading}
-                aiError={aiState[s.setNumber]?.error}
-                onRequestAI={() => requestAISuggestions(s.setNumber)}
-              />
-            ))}
+          {/* This Week's Plan */}
+          <SectionHeader title="This Week's Plan" right="24 Feb – 2 Mar" />
+          <p style={{ fontFamily: 'Inter', fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 14, marginTop: 0 }}>
+            Words carry over from last week — nothing resets. Each day you flash, the oldest word in each set graduates and one new word enters.
+          </p>
+          {thisWeekSets.map((s, i) => <ThisWeekSetCard key={i} set={s} />)}
 
-            <LegendBar />
-            <div style={{ height: 32 }} />
+          {/* Legend */}
+          <LegendBar />
 
-            {data.lastWeekSets.length > 0 && (
-              <>
-                <SectionHeader title="Last Week's Words" right={data.lastWeekRange} />
-                <p style={{ fontFamily: F.body, fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 14, marginTop: 0 }}>
-                  A record of what appeared and what graduated. Tap any set to expand.
-                </p>
-                {data.lastWeekSets.map((s, i) => <LastWeekSetCard key={i} set={s} />)}
-              </>
-            )}
-          </>
-        ) : (
-          <EmptyState />
-        )}
-      </div>
+          {/* Spacer */}
+          <div style={{ height: 32 }} />
 
-      {hasActiveData && (
+          {/* Last Week's Words */}
+          <SectionHeader title="Last Week's Words" right="17–23 Feb" />
+          <p style={{ fontFamily: 'Inter', fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 14, marginTop: 0 }}>
+            A record of what appeared and what graduated. Tap any set to expand.
+          </p>
+          {lastWeekSets.map((s, i) => <LastWeekSetCard key={i} set={s} />)}
+        </div>
+
+        {/* Fixed CTA Bar */}
         <div style={{
-          position: 'fixed', bottom: 72, left: 0, right: 0, zIndex: 25,
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
           background: `linear-gradient(to top, ${C.cream} 60%, transparent)`,
-          padding: '16px 24px 12px',
+          padding: '16px 24px 28px',
           display: 'flex', justifyContent: 'center', gap: 10,
         }}>
           <button style={{
             background: C.sage, color: '#fff', border: 'none', borderRadius: 8,
-            padding: '13px 28px', fontFamily: F.body, fontSize: 14, fontWeight: 600,
+            padding: '13px 28px', fontFamily: 'Inter', fontSize: 14, fontWeight: 600,
             boxShadow: shadow.primary, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 8,
           }}>
@@ -786,14 +587,21 @@ const WordPlannerPage = () => {
           </button>
           <button style={{
             background: 'none', border: `1px solid ${C.stoneMid}`, borderRadius: 8,
-            padding: '13px 18px', fontFamily: F.body, fontSize: 13, fontWeight: 500,
+            padding: '13px 18px', fontFamily: 'Inter', fontSize: 13, fontWeight: 500,
             color: C.muted, cursor: 'pointer',
           }}>
             Swap a word
           </button>
         </div>
-      )}
-    </div>
+      </div>
+
+      {/* Responsive styles */}
+      <style>{`
+        @media (max-width: 580px) {
+          .set-sub { display: none !important; }
+        }
+      `}</style>
+    </>
   );
 };
 

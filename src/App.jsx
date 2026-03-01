@@ -49,7 +49,7 @@ const Privacy = lazy(() => import('./pages/Privacy'));
 
 const ComingSoonPage = lazy(() => import('./components/ui/ComingSoonPage'));
 const PronunciationPortal = lazy(() => import('./components/pronunciation/PronunciationPortal'));
-
+const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlanner'));
 const BookRecommendations = lazy(() => import('./components/storybooks/BookRecommendations'));
 const Support = lazy(() => import('@/pages/Support'));
 const WordPlannerPage = lazy(() => import('./pages/WordPlannerPage'));
@@ -123,7 +123,8 @@ const AppContent = () => {
             <Route path="/garden-guide" element={<GardenGuide />} />
             
             <Route path="/pronunciation" element={<PronunciationPortal />} />
-            <Route path="/word-planner" element={<WordPlannerPage />} />
+            <Route path="/word-planner" element={<WeeklyWordPlanner />} />
+            <Route path="/word-planner-v2" element={<WordPlannerPage />} />
             <Route path="/book-recommendations" element={<BookRecommendations />} />
             <Route path="/book-recommendations" element={<BookRecommendations />} />
 

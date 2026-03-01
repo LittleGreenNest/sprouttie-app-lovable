@@ -44,39 +44,6 @@ const STEPS = [
     ],
   },
   {
-    key: 'caregivers',
-    title: "Who does your child spend the most time with?",
-    subtitle: "This helps us pick the right family vocabulary.",
-    multi: true,
-    options: [
-      { value: 'parents', label: 'Parents', emoji: '👨‍👩‍👧' },
-      { value: 'grandparents', label: 'Grandparents', emoji: '👴👵' },
-      { value: 'nanny_helper', label: 'Nanny / Helper', emoji: '🤱' },
-      { value: 'siblings', label: 'Siblings', emoji: '👧👦' },
-    ],
-  },
-  {
-    key: 'pets_and_toys',
-    title: "Any pets or favourite toys right now?",
-    subtitle: "We'll weave these into the first words. Type freely.",
-    freeText: true,
-    placeholder: "e.g. a dog named Coco, toy cars, a stuffed bunny",
-  },
-  {
-    key: 'daily_activities',
-    title: "What fills your child's day?",
-    subtitle: "Select what's most common. These shape the first words.",
-    multi: true,
-    options: [
-      { value: 'meals', label: 'Mealtimes', emoji: '🍽️' },
-      { value: 'bath', label: 'Bath time', emoji: '🛁' },
-      { value: 'park', label: 'Park / Outdoors', emoji: '🌳' },
-      { value: 'playgroup', label: 'Playgroup / School', emoji: '🏫' },
-      { value: 'reading', label: 'Reading books', emoji: '📚' },
-      { value: 'screen', label: 'Screen time', emoji: '📺' },
-    ],
-  },
-  {
     key: 'reply_pattern',
     titleFn: (answers) => {
       const langLabel = {
@@ -153,15 +120,6 @@ const PersonaliseFlow = ({ onComplete }) => {
     }
   };
 
-  const handleFreeTextNext = async () => {
-    if (step < totalSteps - 1) {
-      setDirection(1);
-      setStep(step + 1);
-    } else {
-      await saveAndFinish(answers);
-    }
-  };
-
   const saveAndFinish = async (finalAnswers) => {
     setSaving(true);
     try {
@@ -169,14 +127,6 @@ const PersonaliseFlow = ({ onComplete }) => {
       const targetLang = Array.isArray(finalAnswers.target_language)
         ? finalAnswers.target_language.join(',')
         : finalAnswers.target_language;
-
-      const caregivers = Array.isArray(finalAnswers.caregivers)
-        ? finalAnswers.caregivers.join(',')
-        : finalAnswers.caregivers || null;
-
-      const dailyActivities = Array.isArray(finalAnswers.daily_activities)
-        ? finalAnswers.daily_activities.join(',')
-        : finalAnswers.daily_activities || null;
 
       const { error } = await supabase
         .from('profiles')
@@ -186,9 +136,6 @@ const PersonaliseFlow = ({ onComplete }) => {
           speech_level: finalAnswers.speech_level,
           reply_pattern: finalAnswers.reply_pattern,
           daily_time_commitment: finalAnswers.daily_time_commitment,
-          caregivers: caregivers,
-          pets_and_toys: finalAnswers.pets_and_toys || null,
-          daily_activities: dailyActivities,
           onboarding_completed: true,
         })
         .eq('id', currentUser.id);
@@ -306,75 +253,51 @@ const PersonaliseFlow = ({ onComplete }) => {
               {current.subtitle}
             </p>
 
-            {/* Free text input step */}
-            {current.freeText ? (
-              <div className="space-y-4">
-                <textarea
-                  value={answers[current.key] || ''}
-                  onChange={(e) => setAnswers({ ...answers, [current.key]: e.target.value })}
-                  placeholder={current.placeholder}
-                  maxLength={300}
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] text-base font-medium resize-none focus:border-[hsl(var(--sprouttie-green))] focus:outline-none transition-colors"
-                />
-                <motion.button
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  onClick={handleFreeTextNext}
-                  className="w-full py-3 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold transition-all"
-                >
-                  {(answers[current.key] || '').trim() ? 'Next' : 'Skip'}
-                </motion.button>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-3">
-                  {current.options.map((option) => {
-                    const isSelected = current.multi
-                      ? (answers[current.key] || []).includes(option.value)
-                      : answers[current.key] === option.value;
-                    return (
-                      <motion.button
-                        key={option.value}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => handleSelect(option.value)}
-                        className={`
-                          w-full flex items-center gap-3 px-5 py-4 rounded-xl text-left
-                          transition-all duration-200 border-2
-                          ${isSelected
-                            ? 'border-[hsl(var(--sprouttie-green))] bg-[hsl(var(--sprouttie-green)/0.08)] shadow-md'
-                            : 'border-[hsl(var(--border))] bg-[hsl(var(--card))] hover:border-[hsl(var(--sprouttie-green)/0.5)]'
-                          }
-                        `}
-                      >
-                        <span className="text-2xl">{option.emoji}</span>
-                        <span className={`text-base font-medium ${
-                          isSelected ? 'text-[hsl(var(--sprouttie-green-dark))]' : 'text-[hsl(var(--foreground))]'
-                        }`}>
-                          {option.label}
-                        </span>
-                        {current.multi && isSelected && (
-                          <span className="ml-auto text-[hsl(var(--sprouttie-green))]">✓</span>
-                        )}
-                      </motion.button>
-                    );
-                  })}
-                </div>
-
-                {/* Next button for multi-select steps */}
-                {current.multi && (
+            <div className="space-y-3">
+              {current.options.map((option) => {
+                const isSelected = current.multi
+                  ? (answers[current.key] || []).includes(option.value)
+                  : answers[current.key] === option.value;
+                return (
                   <motion.button
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: (answers[current.key] || []).length > 0 ? 1 : 0.4 }}
-                    onClick={handleMultiNext}
-                    disabled={(answers[current.key] || []).length === 0}
-                    className="w-full mt-5 py-3 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold transition-all disabled:opacity-40"
+                    key={option.value}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => handleSelect(option.value)}
+                    className={`
+                      w-full flex items-center gap-3 px-5 py-4 rounded-xl text-left
+                      transition-all duration-200 border-2
+                      ${isSelected
+                        ? 'border-[hsl(var(--sprouttie-green))] bg-[hsl(var(--sprouttie-green)/0.08)] shadow-md'
+                        : 'border-[hsl(var(--border))] bg-[hsl(var(--card))] hover:border-[hsl(var(--sprouttie-green)/0.5)]'
+                      }
+                    `}
                   >
-                    Next
+                    <span className="text-2xl">{option.emoji}</span>
+                    <span className={`text-base font-medium ${
+                      isSelected ? 'text-[hsl(var(--sprouttie-green-dark))]' : 'text-[hsl(var(--foreground))]'
+                    }`}>
+                      {option.label}
+                    </span>
+                    {current.multi && isSelected && (
+                      <span className="ml-auto text-[hsl(var(--sprouttie-green))]">✓</span>
+                    )}
                   </motion.button>
-                )}
-              </>
+                );
+              })}
+            </div>
+
+            {/* Next button for multi-select steps */}
+            {current.multi && (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: (answers[current.key] || []).length > 0 ? 1 : 0.4 }}
+                onClick={handleMultiNext}
+                disabled={(answers[current.key] || []).length === 0}
+                className="w-full mt-5 py-3 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold transition-all disabled:opacity-40"
+              >
+                Next
+              </motion.button>
             )}
           </motion.div>
         </AnimatePresence>
