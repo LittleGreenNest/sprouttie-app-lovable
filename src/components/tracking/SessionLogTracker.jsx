@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
 import { useFlashcards } from '../../context/FlashcardContext';
 import { toast } from 'react-toastify';
-import { ChevronLeft, ChevronRight, Pencil, Check, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, Check, Plus, X, Sparkles } from 'lucide-react';
 import UpgradeBanner from './UpgradeBanner';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -40,6 +40,9 @@ const SessionLogTracker = () => {
   
   // Session occurred flag
   const [sessionOccurred, setSessionOccurred] = useState(false);
+  
+  // Backlog/recommended words
+  const [backlogWords, setBacklogWords] = useState([]);
 
   const dateString = useMemo(() => selectedDate.toISOString().split('T')[0], [selectedDate]);
   
@@ -57,6 +60,7 @@ const SessionLogTracker = () => {
       refreshFlashcards(); // Ensure flashcards are synced from DB
       loadTrackingData();
       loadRotationSummary();
+      loadBacklogWords();
     } else {
       setLoading(false);
     }
@@ -167,6 +171,109 @@ const SessionLogTracker = () => {
     } catch (error) {
       console.error('Error loading rotation summary:', error);
     }
+  };
+
+  // Load backlog words from word_plans for current week
+  const loadBacklogWords = async () => {
+    if (!currentUser) return;
+    try {
+      const today = new Date();
+      const day = today.getDay();
+      const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+      const weekStart = new Date(today);
+      weekStart.setDate(diff);
+      const weekStartStr = weekStart.toISOString().split('T')[0];
+
+      const { data, error } = await supabase
+        .from('word_plans')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('planned_week_start', weekStartStr)
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+      setBacklogWords(data || []);
+    } catch (error) {
+      console.error('Error loading backlog:', error);
+    }
+  };
+
+  // Get recommended words for a specific set being edited
+  const getRecommendedWords = () => {
+    if (!editingSetId) return [];
+    
+    const wordsInSets = new Set();
+    sets.forEach(set => {
+      const setCards = getFlashcardsForSet(set.id);
+      setCards.forEach(card => wordsInSets.add(card.id));
+    });
+
+    // Get the current set's categories to find related words
+    const currentSetCards = getFlashcardsForSet(editingSetId);
+    const setCategories = new Set(currentSetCards.map(c => c.folder).filter(Boolean));
+
+    // 1. Backlog words that have matching flashcards not yet in any set
+    const backlogFlashcardMatches = [];
+    backlogWords.forEach(bp => {
+      const matchingCard = flashcards.find(
+        f => f.front?.toLowerCase() === bp.word.toLowerCase() && !wordsInSets.has(f.id)
+      );
+      if (matchingCard) {
+        backlogFlashcardMatches.push({
+          ...matchingCard,
+          _source: 'backlog',
+          _reason: `From your planner${bp.theme ? ` · ${bp.theme}` : ''}`,
+        });
+      }
+    });
+
+    // 2. Category-based: words from same categories as the set
+    const categoryMatches = [];
+    if (setCategories.size > 0) {
+      flashcards.forEach(card => {
+        if (wordsInSets.has(card.id)) return;
+        if (backlogFlashcardMatches.some(b => b.id === card.id)) return;
+        if (setCategories.has(card.folder)) {
+          categoryMatches.push({
+            ...card,
+            _source: 'category',
+            _reason: `Same category · ${card.folder}`,
+          });
+        }
+      });
+    }
+
+    // 3. If a category has >20 words, expand to other categories
+    const flashedByCategory = {};
+    flashcards.forEach(card => {
+      const cat = card.folder || 'default';
+      if (!flashedByCategory[cat]) flashedByCategory[cat] = 0;
+      flashedByCategory[cat]++;
+    });
+
+    const otherCategoryMatches = [];
+    setCategories.forEach(cat => {
+      if ((flashedByCategory[cat] || 0) > 20) {
+        flashcards.forEach(card => {
+          if (wordsInSets.has(card.id)) return;
+          if (backlogFlashcardMatches.some(b => b.id === card.id)) return;
+          if (categoryMatches.some(c => c.id === card.id)) return;
+          if (!setCategories.has(card.folder) && card.folder) {
+            otherCategoryMatches.push({
+              ...card,
+              _source: 'related',
+              _reason: `Expand variety · ${card.folder}`,
+            });
+          }
+        });
+      }
+    });
+
+    return [
+      ...backlogFlashcardMatches.slice(0, 5),
+      ...categoryMatches.slice(0, 5),
+      ...otherCategoryMatches.slice(0, 3),
+    ];
   };
 
   const toggleSetRound = async (setId, round) => {
@@ -675,13 +782,39 @@ const SessionLogTracker = () => {
                         </div>
                       </div>
                       
-                      {/* Add new words */}
+                      {/* Recommended for you */}
+                      {(() => {
+                        const recommended = getRecommendedWords();
+                        if (recommended.length === 0) return null;
+                        return (
+                          <div>
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+                              <p className="text-sm font-medium text-violet-700">Recommended for you</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {recommended.map(word => (
+                                <button
+                                  key={word.id}
+                                  onClick={() => handleAddWordToSet(word.id)}
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-full text-sm transition-colors border border-violet-200"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                  <span>{word.front || word.word}</span>
+                                  <span className="text-[10px] opacity-60">{word._reason}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      
+                      {/* Add new words - Browse all */}
                       <div>
-                        <p className="text-sm text-muted-foreground mb-2">Add words:</p>
+                        <p className="text-sm text-muted-foreground mb-2">Browse all words:</p>
                         
                         {/* Filter Row */}
                         <div className="flex flex-wrap gap-2 mb-3">
-                          {/* Category Filter */}
                           <select
                             value={selectedCategoryFilter}
                             onChange={(e) => setSelectedCategoryFilter(e.target.value)}
@@ -693,7 +826,6 @@ const SessionLogTracker = () => {
                             ))}
                           </select>
                           
-                          {/* Type Filter (Word vs Phrase) */}
                           <select
                             value={selectedTypeFilter}
                             onChange={(e) => setSelectedTypeFilter(e.target.value)}
@@ -705,7 +837,6 @@ const SessionLogTracker = () => {
                           </select>
                         </div>
                         
-                        {/* Search Input */}
                         <input
                           type="text"
                           value={searchQuery}
@@ -714,7 +845,6 @@ const SessionLogTracker = () => {
                           className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm mb-2"
                         />
                         
-                        {/* Available Words List */}
                         <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
                           {getAvailableWords().slice(0, 30).map(word => (
                             <button

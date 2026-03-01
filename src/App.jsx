@@ -52,7 +52,7 @@ const PronunciationPortal = lazy(() => import('./components/pronunciation/Pronun
 const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlanner'));
 const BookRecommendations = lazy(() => import('./components/storybooks/BookRecommendations'));
 const Support = lazy(() => import('@/pages/Support'));
-const WordPlannerPage = lazy(() => import('./pages/WordPlannerPage'));
+
 
 // Loading spinner component
 const LoadingSpinner = () => (
@@ -124,7 +124,7 @@ const AppContent = () => {
             
             <Route path="/pronunciation" element={<PronunciationPortal />} />
             <Route path="/word-planner" element={<WeeklyWordPlanner />} />
-            <Route path="/word-planner-v2" element={<WordPlannerPage />} />
+            
             <Route path="/book-recommendations" element={<BookRecommendations />} />
             <Route path="/book-recommendations" element={<BookRecommendations />} />
 
