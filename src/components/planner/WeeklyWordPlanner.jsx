@@ -246,11 +246,15 @@ const WeeklyWordPlanner = () => {
     }
   };
 
-  // Add a single AI suggestion to backlog + flashcards
+  // Add a single AI suggestion to backlog + flashcards (if new)
   const handleAddSuggestion = async (suggestion) => {
     setAddingWord(suggestion.word);
     try {
-      // Add to word_plans
+      const existsInFlashcards = userFlashcards.some(
+        f => f.front?.toLowerCase() === suggestion.word.toLowerCase()
+      );
+
+      // Add to word_plans (backlog)
       await supabase.from('word_plans').insert({
         user_id: currentUser.id,
         word: suggestion.word,
@@ -261,10 +265,7 @@ const WeeklyWordPlanner = () => {
         display_order: wordPlans.length,
       });
 
-      // Add to flashcards if not already there
-      const existsInFlashcards = userFlashcards.some(
-        f => f.front?.toLowerCase() === suggestion.word.toLowerCase()
-      );
+      // Only add to flashcards if NOT already there
       if (!existsInFlashcards) {
         await supabase.from('flashcards').insert({
           user_id: currentUser.id,
@@ -274,9 +275,10 @@ const WeeklyWordPlanner = () => {
           card_type: 'word',
           card_status: 'waiting',
         });
+        toast.success(`"${suggestion.word}" added to your words & backlog`);
+      } else {
+        toast.success(`"${suggestion.word}" added to backlog`);
       }
-
-      toast.success(`"${suggestion.word}" added to your words`);
       
       // Remove from suggestions list
       setAiSuggestions(prev => prev.filter(s => s.word !== suggestion.word));
@@ -456,7 +458,7 @@ const WeeklyWordPlanner = () => {
                       ) : (
                         <>
                           <Plus className="w-3 h-3" />
-                          Add
+                          {alreadyInFlashcards ? 'Add to backlog' : 'Add'}
                         </>
                       )}
                     </button>
