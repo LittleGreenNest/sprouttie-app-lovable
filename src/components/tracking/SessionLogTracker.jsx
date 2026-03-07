@@ -469,8 +469,12 @@ const SessionLogTracker = () => {
     const setFlashcards = getFlashcardsForSet(setId);
     if (setFlashcards.length === 0) return [];
     
-    // Sort by date_introduced (primary), then created_at (fallback), ascending
+    // Sort by set_display_order first, then date_introduced, then created_at
     const sorted = [...setFlashcards].sort((a, b) => {
+      const aOrder = a.set_display_order ?? 999;
+      const bOrder = b.set_display_order ?? 999;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      
       const aDate = a.date_introduced || a.created_at || '9999-12-31';
       const bDate = b.date_introduced || b.created_at || '9999-12-31';
       return new Date(aDate) - new Date(bDate);
