@@ -801,21 +801,14 @@ const SessionLogTracker = () => {
                         </button>
                       </div>
                       
-                      {/* Current words with remove option */}
+                      {/* Current words - drag to reorder, click X to remove */}
                       <div>
-                        <p className="text-sm text-muted-foreground mb-2">Current words (click to remove):</p>
-                        <div className="flex flex-wrap gap-2">
-                          {words.map(word => (
-                            <button
-                              key={word.id}
-                              onClick={() => handleRemoveWordFromSet(word.id)}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-full text-sm transition-colors"
-                            >
-                              <span>{word.front || word.word}</span>
-                              <X className="w-3 h-3" />
-                            </button>
-                          ))}
-                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">Current words (drag to reorder):</p>
+                        <SortableWordList
+                          words={words}
+                          onRemove={handleRemoveWordFromSet}
+                          onReorder={handleReorderWords}
+                        />
                       </div>
                       
                       {/* Recommended for you */}
