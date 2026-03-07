@@ -545,22 +545,13 @@ const SessionLogTracker = () => {
   const handleReorderWords = async (reorderedWords) => {
     if (!editingSetId || !currentUser) return;
 
-    // Update local flashcard state with new display orders
-    const updates = reorderedWords.map((word, index) => ({
-      id: word.id,
-      set_display_order: index,
-    }));
-
-    // Optimistic local update
-    const { setFlashcards } = await import('../../context/FlashcardContext');
-    // We'll update via direct state manipulation isn't clean — use supabase + refresh
     try {
       // Batch update display orders in Supabase
-      const promises = updates.map(({ id, set_display_order }) =>
+      const promises = reorderedWords.map((word, index) =>
         supabase
           .from('flashcards')
-          .update({ set_display_order })
-          .eq('id', id)
+          .update({ set_display_order: index })
+          .eq('id', word.id)
           .eq('user_id', currentUser.id)
       );
       await Promise.all(promises);
