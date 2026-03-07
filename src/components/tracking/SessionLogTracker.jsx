@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useFlashcards } from '../../context/FlashcardContext';
 import { toast } from 'react-toastify';
 import { ChevronLeft, ChevronRight, Pencil, Check, Plus, X, Sparkles } from 'lucide-react';
+import SortableWordList from './SortableWordList';
 import UpgradeBanner from './UpgradeBanner';
 import { motion, AnimatePresence } from 'framer-motion';
 
