@@ -171,6 +171,7 @@ export type Database = {
           mastery_level: number | null
           phrase_group: string | null
           review_count: number | null
+          set_display_order: number | null
           set_number: number | null
           updated_at: string | null
           user_id: string
@@ -190,6 +191,7 @@ export type Database = {
           mastery_level?: number | null
           phrase_group?: string | null
           review_count?: number | null
+          set_display_order?: number | null
           set_number?: number | null
           updated_at?: string | null
           user_id: string
@@ -209,6 +211,7 @@ export type Database = {
           mastery_level?: number | null
           phrase_group?: string | null
           review_count?: number | null
+          set_display_order?: number | null
           set_number?: number | null
           updated_at?: string | null
           user_id?: string

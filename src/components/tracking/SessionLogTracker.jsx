@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useFlashcards } from '../../context/FlashcardContext';
 import { toast } from 'react-toastify';
 import { ChevronLeft, ChevronRight, Pencil, Check, Plus, X, Sparkles } from 'lucide-react';
+import SortableWordList from './SortableWordList';
 import UpgradeBanner from './UpgradeBanner';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -468,8 +469,12 @@ const SessionLogTracker = () => {
     const setFlashcards = getFlashcardsForSet(setId);
     if (setFlashcards.length === 0) return [];
     
-    // Sort by date_introduced (primary), then created_at (fallback), ascending
+    // Sort by set_display_order first, then date_introduced, then created_at
     const sorted = [...setFlashcards].sort((a, b) => {
+      const aOrder = a.set_display_order ?? 999;
+      const bOrder = b.set_display_order ?? 999;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      
       const aDate = a.date_introduced || a.created_at || '9999-12-31';
       const bDate = b.date_introduced || b.created_at || '9999-12-31';
       return new Date(aDate) - new Date(bDate);
@@ -535,6 +540,28 @@ const SessionLogTracker = () => {
     const currentIds = currentSet.flashcardIds || [];
     await updateSetFlashcards(editingSetId, currentIds.filter(id => id !== wordId));
     toast.success('Word removed from set');
+  };
+
+  const handleReorderWords = async (reorderedWords) => {
+    if (!editingSetId || !currentUser) return;
+
+    try {
+      // Batch update display orders in Supabase
+      const promises = reorderedWords.map((word, index) =>
+        supabase
+          .from('flashcards')
+          .update({ set_display_order: index })
+          .eq('id', word.id)
+          .eq('user_id', currentUser.id)
+      );
+      await Promise.all(promises);
+      
+      // Refresh to pick up new order
+      await refreshFlashcards();
+    } catch (error) {
+      console.error('Error reordering words:', error);
+      toast.error('Failed to save order');
+    }
   };
 
   // Set colors for visual grouping
@@ -765,21 +792,14 @@ const SessionLogTracker = () => {
                         </button>
                       </div>
                       
-                      {/* Current words with remove option */}
+                      {/* Current words - drag to reorder, click X to remove */}
                       <div>
-                        <p className="text-sm text-muted-foreground mb-2">Current words (click to remove):</p>
-                        <div className="flex flex-wrap gap-2">
-                          {words.map(word => (
-                            <button
-                              key={word.id}
-                              onClick={() => handleRemoveWordFromSet(word.id)}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-full text-sm transition-colors"
-                            >
-                              <span>{word.front || word.word}</span>
-                              <X className="w-3 h-3" />
-                            </button>
-                          ))}
-                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">Current words (drag to reorder):</p>
+                        <SortableWordList
+                          words={words}
+                          onRemove={handleRemoveWordFromSet}
+                          onReorder={handleReorderWords}
+                        />
                       </div>
                       
                       {/* Recommended for you */}
