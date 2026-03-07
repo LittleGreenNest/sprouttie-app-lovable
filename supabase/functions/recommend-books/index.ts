@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,14 +6,24 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { words, childAge, detectedLanguages, excludeBooks, varietySeed } = await req.json();
-    
+    const {
+      words,
+      childAgeBand,
+      targetLanguage,
+      detectedLanguages,
+      excludeBooks,
+      varietySeed,
+      themes,
+      masteryBreakdown,
+      spokenWordStages,
+      feedbackHistory,
+    } = await req.json();
+
     if (!words || words.length === 0) {
       return new Response(
         JSON.stringify({ error: 'No words provided' }),
@@ -27,33 +36,95 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    console.log(`Recommending books for ${words.length} words, age: ${childAge || 'not specified'}, languages: ${JSON.stringify(detectedLanguages)}`);
+    console.log(`Recommending books: ${words.length} words, age: ${childAgeBand || 'unknown'}, languages: ${JSON.stringify(detectedLanguages)}`);
 
-    // Build language instruction based on detected languages
-    const languageInstructions = (() => {
-      const langs = detectedLanguages || ['english'];
-      const hasChineseLangs = langs.some(l => ['mandarin', 'cantonese', 'hokkien', 'chinese'].includes(l));
-      const isMultilingual = langs.length > 1 || hasChineseLangs;
-      
-      if (isMultilingual) {
-        const langList = langs.join(', ');
-        return `IMPORTANT: This child is learning in a multilingual household with these languages: ${langList}.
-You MUST include a mix of books:
-- Include 2-3 books that are bilingual (English + Mandarin Chinese) or originally written in Chinese/Mandarin. These are essential.
-- Include books like "Dragons Love Tacos", Maisy series, or bilingual picture books published by publishers like Better Link Press, Cypress Book, or Tuttle Publishing.
-- For Mandarin/Chinese books, well-known bilingual series include: "What Does Bunny See?", "I Am Chinese", "A is for Asia", "Eyes that Kiss in the Corners", or books from the "Chinese Nursery Rhymes" series.
-- Also include 1-2 high-quality English picture books that feature vocabulary from the child's word list.
-- Prioritize books that are authentically multilingual or culturally relevant to Asian families.`;
-      }
-      return `Recommend books primarily in English that are widely available.`;
+    // --- Build age instruction ---
+    const ageInstruction = (() => {
+      if (!childAgeBand) return 'The child is in early childhood (ages 1-5).';
+      const ageMap: Record<string, string> = {
+        '0-6m': 'The child is 0-6 months old. Recommend high-contrast board books, cloth books, and simple sensory books.',
+        '6-12m': 'The child is 6-12 months old. Recommend sturdy board books with simple words, textures, and flaps.',
+        '12-18m': 'The child is 12-18 months old. Recommend board books with single words, animal sounds, and simple stories.',
+        '18-24m': 'The child is 18-24 months old. Recommend picture books with short sentences, repetition, and familiar objects.',
+        '2-3y': 'The child is 2-3 years old. Recommend picture books with simple plots, rhymes, and vocabulary building.',
+        '3-5y': 'The child is 3-5 years old. Recommend picture books with richer stories, early concepts, and longer narratives.',
+        '5+': 'The child is 5+ years old. Recommend early readers, chapter picture books, and more complex stories.',
+      };
+      return ageMap[childAgeBand] || `The child's age band is "${childAgeBand}".`;
     })();
 
-    // Exclude previously seen books
-    const excludeSection = excludeBooks && excludeBooks.length > 0 
-      ? `\nDo NOT recommend these books that were already shown: ${excludeBooks.join(', ')}. You MUST pick completely different books.`
+    // --- Build language instruction ---
+    const languageInstructions = (() => {
+      const langs = detectedLanguages || ['english'];
+      const hasChineseLangs = langs.some((l: string) => ['mandarin', 'cantonese', 'hokkien', 'chinese'].includes(l));
+      const isMultilingual = langs.length > 1 || hasChineseLangs;
+
+      if (targetLanguage) {
+        const langLower = targetLanguage.toLowerCase();
+        if (['mandarin', 'chinese', 'hokkien', 'cantonese'].some(l => langLower.includes(l))) {
+          return `IMPORTANT: This family is learning ${targetLanguage}. Include 2-3 bilingual (English + Chinese/Mandarin) or Chinese-language picture books. Also include 2-3 high-quality English books matching vocabulary. Prioritize culturally relevant books for Asian families.`;
+        }
+      }
+
+      if (isMultilingual) {
+        return `IMPORTANT: This child is learning in a multilingual household with: ${langs.join(', ')}. Include 2-3 bilingual or target-language books alongside English options. Prioritize culturally relevant books.`;
+      }
+      return 'Recommend books primarily in English that are widely available.';
+    })();
+
+    // --- Build mastery context ---
+    const masterySection = (() => {
+      if (!masteryBreakdown) return '';
+      const { learning = [], mastered = [] } = masteryBreakdown;
+      let section = '';
+      if (learning.length > 0) {
+        section += `\nWords the child is CURRENTLY LEARNING (prioritize books with these): ${learning.slice(0, 15).join(', ')}`;
+      }
+      if (mastered.length > 0) {
+        section += `\nWords the child has MASTERED (good for reinforcement but don't over-focus): ${mastered.slice(0, 10).join(', ')}`;
+      }
+      return section;
+    })();
+
+    // --- Build spoken words context ---
+    const spokenSection = (() => {
+      if (!spokenWordStages) return '';
+      const { growing = [], newWords = [] } = spokenWordStages;
+      let section = '';
+      if (growing.length > 0) {
+        section += `\nWords the child is ACTIVELY TRYING TO SAY (high priority for book matching): ${growing.join(', ')}`;
+      }
+      if (newWords.length > 0) {
+        section += `\nWords the child just started saying: ${newWords.join(', ')}`;
+      }
+      return section;
+    })();
+
+    // --- Build theme context ---
+    const themeSection = themes && themes.length > 0
+      ? `\nThe child's flashcards are organized into these themes/categories: ${themes.join(', ')}. Try to match books to these interest areas.`
       : '';
 
-    // Add variety by rotating focus categories based on seed
+    // --- Build feedback context ---
+    const feedbackSection = (() => {
+      if (!feedbackHistory) return '';
+      const { liked = [], disliked = [] } = feedbackHistory;
+      let section = '';
+      if (liked.length > 0) {
+        section += `\nThe parent LIKED these previously recommended books (suggest similar styles/authors): ${liked.slice(0, 5).join(', ')}`;
+      }
+      if (disliked.length > 0) {
+        section += `\nThe parent DISLIKED these books (avoid similar styles): ${disliked.slice(0, 5).join(', ')}`;
+      }
+      return section;
+    })();
+
+    // --- Exclude previously seen ---
+    const excludeSection = excludeBooks && excludeBooks.length > 0
+      ? `\nDo NOT recommend these books that were already shown: ${excludeBooks.join(', ')}. Pick completely different books.`
+      : '';
+
+    // --- Variety rotation ---
     const varietyCategories = [
       'focus on books about daily routines and home life',
       'focus on books about nature, animals, and the outdoors',
@@ -65,20 +136,28 @@ You MUST include a mix of books:
     const seed = varietySeed || 0;
     const varietyFocus = varietyCategories[seed % varietyCategories.length];
 
-    const prompt = `You are an expert children's librarian specializing in multilingual and multicultural families. Based on these vocabulary words a child is learning: ${words.slice(0, 25).join(', ')}
+    const prompt = `You are an expert children's librarian specializing in multilingual and multicultural families.
 
-${childAge ? `The child is approximately ${childAge} years old.` : 'The child is in early childhood (ages 1-5).'}
+${ageInstruction}
+
+The child is learning these vocabulary words: ${words.slice(0, 30).join(', ')}
+${masterySection}
+${spokenSection}
+${themeSection}
 
 ${languageInstructions}
+${feedbackSection}
 ${excludeSection}
 
 For this batch, please ${varietyFocus}.
 
 Recommend exactly 6 real, age-appropriate children's books that:
-1. Feature some of these vocabulary words naturally in context
+1. Feature vocabulary words the child is currently LEARNING (not just mastered ones)
 2. Are real, published books available in libraries or bookstores (NOT fictional titles)
 3. Are diverse and varied — no two books from the same series unless truly exceptional
-4. Include culturally relevant books for multilingual Asian families when applicable
+4. Match the child's actual age range for reading level
+5. When possible, align with the child's current interest themes
+6. Reflect parent preferences from feedback when available
 
 For each book, provide:
 - title: The exact book title (must be a real published book)
@@ -89,7 +168,7 @@ For each book, provide:
 - description: A brief 1-2 sentence description of why this book helps with these specific words
 - coverColor: A simple color for the UI card (pick from: blue, green, purple, orange, pink, amber)
 
-Respond with valid JSON only, in this exact format:
+Respond with valid JSON only:
 {
   "books": [
     {
@@ -122,7 +201,7 @@ Respond with valid JSON only, in this exact format:
     if (!response.ok) {
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
-      
+
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
@@ -140,18 +219,14 @@ Respond with valid JSON only, in this exact format:
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
-    
+
     if (!content) {
       throw new Error("No response from AI");
     }
 
-    console.log("AI response received, parsing...");
-
-    // Parse the JSON response - handle potential markdown code blocks
     let books;
     try {
       let jsonStr = content;
-      // Remove markdown code blocks if present
       if (jsonStr.includes('```json')) {
         jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?/g, '');
       } else if (jsonStr.includes('```')) {
