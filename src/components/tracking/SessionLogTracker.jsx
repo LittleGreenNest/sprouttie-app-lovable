@@ -542,6 +542,37 @@ const SessionLogTracker = () => {
     toast.success('Word removed from set');
   };
 
+  const handleReorderWords = async (reorderedWords) => {
+    if (!editingSetId || !currentUser) return;
+
+    // Update local flashcard state with new display orders
+    const updates = reorderedWords.map((word, index) => ({
+      id: word.id,
+      set_display_order: index,
+    }));
+
+    // Optimistic local update
+    const { setFlashcards } = await import('../../context/FlashcardContext');
+    // We'll update via direct state manipulation isn't clean — use supabase + refresh
+    try {
+      // Batch update display orders in Supabase
+      const promises = updates.map(({ id, set_display_order }) =>
+        supabase
+          .from('flashcards')
+          .update({ set_display_order })
+          .eq('id', id)
+          .eq('user_id', currentUser.id)
+      );
+      await Promise.all(promises);
+      
+      // Refresh to pick up new order
+      await refreshFlashcards();
+    } catch (error) {
+      console.error('Error reordering words:', error);
+      toast.error('Failed to save order');
+    }
+  };
+
   // Set colors for visual grouping
   const setColors = [
     'bg-primary',
