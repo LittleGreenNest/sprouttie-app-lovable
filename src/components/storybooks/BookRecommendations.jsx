@@ -2,68 +2,31 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
 import { useFlashcards } from '../../context/FlashcardContext';
-import { Book, Sparkles, RefreshCw, ChevronDown, ChevronUp, ExternalLink, Globe } from 'lucide-react';
+import { Book, Sparkles, RefreshCw, ChevronDown, ChevronUp, ExternalLink, Globe, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Detect languages from flashcard words and spoken words
 const detectLanguages = (flashcards, spokenWords) => {
-  const languages = new Set(['english']); // always baseline
-
+  const languages = new Set(['english']);
   const allText = [
     ...flashcards.map(fc => `${fc.front || ''} ${fc.back || ''}`),
     ...spokenWords,
   ].join(' ');
 
-  // CJK unified ideographs range – covers Mandarin, Cantonese, traditional/simplified
   const hasCJK = /[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/.test(allText);
-  if (hasCJK) {
-    languages.add('mandarin');
-    languages.add('chinese');
-  }
-
-  // Bopomofo – Taiwanese Mandarin phonetics
+  if (hasCJK) { languages.add('mandarin'); languages.add('chinese'); }
   const hasBopomofo = /[\u3100-\u312f]/.test(allText);
   if (hasBopomofo) languages.add('mandarin');
-
-  // Hokkien / Taiwanese POJ romanization markers (tone diacritics like á, â, à, ā, ǎ)
-  // Combined with common Hokkien words in folders
   const hasHokkienDiacritics = /[āáǎàāéêèěẽōóǒòōḿńňǹ]/i.test(allText);
-  const hasHokkienFolder = flashcards.some(fc =>
-    fc.folder && /hokkien|taiwanese|台語|閩南/i.test(fc.folder)
-  );
+  const hasHokkienFolder = flashcards.some(fc => fc.folder && /hokkien|taiwanese|台語|閩南/i.test(fc.folder));
   if (hasHokkienDiacritics || hasHokkienFolder) languages.add('hokkien');
-
-  // Japanese kana
   const hasJapanese = /[\u3040-\u309f\u30a0-\u30ff]/.test(allText);
   if (hasJapanese) languages.add('japanese');
-
-  // Korean hangul
   const hasKorean = /[\uac00-\ud7af]/.test(allText);
   if (hasKorean) languages.add('korean');
 
   return Array.from(languages);
-};
-
-const STORAGE_KEY = 'sprouttie_recommended_books';
-const MAX_HISTORY = 30;
-
-const getBookHistory = () => {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  } catch {
-    return [];
-  }
-};
-
-const saveBookHistory = (books) => {
-  try {
-    const existing = getBookHistory();
-    const newTitles = books.map(b => b.title);
-    const combined = [...new Set([...existing, ...newTitles])];
-    // Keep only last MAX_HISTORY to avoid growing forever
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(combined.slice(-MAX_HISTORY)));
-  } catch {}
 };
 
 const colorClasses = {
@@ -108,9 +71,7 @@ const WordSourcePanel = ({ flashedWords, spokenWords, detectedLanguages }) => (
         <p className="text-xs font-medium text-muted-foreground mb-2">From Flashcards:</p>
         <div className="flex flex-wrap gap-1.5">
           {flashedWords.slice(0, 30).map((word, i) => (
-            <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
-              {word}
-            </span>
+            <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">{word}</span>
           ))}
           {flashedWords.length > 30 && (
             <span className="text-xs text-muted-foreground">+{flashedWords.length - 30} more</span>
@@ -123,9 +84,7 @@ const WordSourcePanel = ({ flashedWords, spokenWords, detectedLanguages }) => (
         <p className="text-xs font-medium text-muted-foreground mb-2">Words They Say:</p>
         <div className="flex flex-wrap gap-1.5">
           {spokenWords.slice(0, 30).map((word, i) => (
-            <span key={i} className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full">
-              {word}
-            </span>
+            <span key={i} className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full">{word}</span>
           ))}
           {spokenWords.length > 30 && (
             <span className="text-xs text-muted-foreground">+{spokenWords.length - 30} more</span>
@@ -136,21 +95,23 @@ const WordSourcePanel = ({ flashedWords, spokenWords, detectedLanguages }) => (
   </div>
 );
 
-const BookCard = ({ book, index }) => (
-  <motion.a
-    href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&i=stripbooks`}
-    target="_blank"
-    rel="noopener noreferrer"
+const BookCard = ({ book, index, feedback, onFeedback }) => (
+  <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay: index * 0.08 }}
-    className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-md transition-shadow block cursor-pointer group"
+    className="bg-card rounded-xl border border-border overflow-hidden"
   >
     {/* Color Bar */}
     <div className={`h-2 ${colorClasses[book.coverColor]?.split(' ')[0] || 'bg-primary'}`} />
 
     <div className="p-4 space-y-3">
-      <div>
+      <a
+        href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&i=stripbooks`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block group"
+      >
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
             {book.title}
@@ -158,7 +119,7 @@ const BookCard = ({ book, index }) => (
           <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />
         </div>
         <p className="text-sm text-muted-foreground">by {book.author}</p>
-      </div>
+      </a>
 
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs px-2 py-1 bg-secondary rounded-full text-muted-foreground">
@@ -188,45 +149,155 @@ const BookCard = ({ book, index }) => (
           </div>
         </div>
       )}
+
+      {/* Feedback buttons */}
+      <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+        <span className="text-xs text-muted-foreground mr-auto">Was this helpful?</span>
+        <button
+          onClick={() => onFeedback(book, 'up')}
+          className={`p-1.5 rounded-lg transition-colors ${
+            feedback === 'up'
+              ? 'bg-emerald-100 text-emerald-600'
+              : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+          }`}
+          aria-label="Thumbs up"
+        >
+          <ThumbsUp className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => onFeedback(book, 'down')}
+          className={`p-1.5 rounded-lg transition-colors ${
+            feedback === 'down'
+              ? 'bg-red-100 text-red-500'
+              : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+          }`}
+          aria-label="Thumbs down"
+        >
+          <ThumbsDown className="w-4 h-4" />
+        </button>
+      </div>
     </div>
-  </motion.a>
+  </motion.div>
 );
 
 // --- Main Component ---
 
 const BookRecommendations = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, profile } = useAuth();
   const { flashcards } = useFlashcards();
 
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [spokenWords, setSpokenWords] = useState([]);
+  const [spokenWordsData, setSpokenWordsData] = useState([]);
   const [showWordSource, setShowWordSource] = useState(false);
   const [lastGenerated, setLastGenerated] = useState(null);
   const [generateCount, setGenerateCount] = useState(0);
+  const [feedbackMap, setFeedbackMap] = useState({});    // { bookTitle: 'up'|'down' }
+  const [excludeTitles, setExcludeTitles] = useState([]); // from DB
 
-  // Fetch spoken words
+  // Fetch spoken words + book history + existing feedback on mount
   useEffect(() => {
-    const fetchSpokenWords = async () => {
-      if (!currentUser) return;
-      const { data, error } = await supabase
-        .from('spoken_words')
-        .select('word')
-        .eq('user_id', currentUser.id);
-      if (!error && data) setSpokenWords(data.map(sw => sw.word));
+    if (!currentUser) return;
+
+    const fetchAll = async () => {
+      const [spokenRes, historyRes, feedbackRes] = await Promise.all([
+        supabase.from('spoken_words').select('word, word_stage').eq('user_id', currentUser.id),
+        supabase.from('recommended_books').select('title').eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(30),
+        supabase.from('book_feedback').select('book_title, feedback').eq('user_id', currentUser.id),
+      ]);
+
+      if (spokenRes.data) setSpokenWordsData(spokenRes.data);
+      if (historyRes.data) setExcludeTitles(historyRes.data.map(r => r.title));
+      if (feedbackRes.data) {
+        const map = {};
+        feedbackRes.data.forEach(f => { map[f.book_title] = f.feedback; });
+        setFeedbackMap(map);
+      }
     };
-    fetchSpokenWords();
+    fetchAll();
   }, [currentUser]);
 
-  // Get unique words from flashcards
+  const spokenWords = spokenWordsData.map(sw => sw.word);
   const flashedWords = [...new Set(flashcards.map(fc => fc.front || fc.word).filter(Boolean))];
-
-  // Combine both sources
   const allWords = [...new Set([...flashedWords, ...spokenWords])];
-
-  // Detect languages from content
   const detectedLanguages = detectLanguages(flashcards, spokenWords);
   const isMultilingual = detectedLanguages.length > 1 || detectedLanguages.some(l => l !== 'english');
+
+  // Build enriched data for the edge function
+  const buildEnrichedPayload = () => {
+    // Mastery breakdown from flashcards
+    const learning = flashcards.filter(fc => (fc.mastery_level || 0) < 4).map(fc => fc.front).filter(Boolean);
+    const mastered = flashcards.filter(fc => (fc.mastery_level || 0) >= 4).map(fc => fc.front).filter(Boolean);
+
+    // Spoken word stages
+    const growing = spokenWordsData.filter(sw => sw.word_stage === 'growing').map(sw => sw.word);
+    const newWords = spokenWordsData.filter(sw => sw.word_stage === 'new').map(sw => sw.word);
+
+    // Themes from flashcard folders
+    const themes = [...new Set(flashcards.map(fc => fc.folder).filter(Boolean).filter(f => f !== 'default'))];
+
+    // Feedback history
+    const liked = Object.entries(feedbackMap).filter(([, v]) => v === 'up').map(([k]) => k);
+    const disliked = Object.entries(feedbackMap).filter(([, v]) => v === 'down').map(([k]) => k);
+
+    return {
+      words: allWords,
+      childAgeBand: profile?.child_age_band || null,
+      targetLanguage: profile?.target_language || null,
+      detectedLanguages,
+      excludeBooks: excludeTitles,
+      varietySeed: generateCount,
+      themes,
+      masteryBreakdown: { learning, mastered },
+      spokenWordStages: { growing, newWords },
+      feedbackHistory: { liked, disliked },
+    };
+  };
+
+  // Save recommendations to DB
+  const saveRecommendationsToDb = async (books) => {
+    if (!currentUser) return;
+    const rows = books.map(b => ({
+      user_id: currentUser.id,
+      title: b.title,
+      author: b.author || null,
+      language: b.language || null,
+      age_range: b.ageRange || null,
+      description: b.description || null,
+      cover_color: b.coverColor || null,
+      matching_words: b.matchingWords || [],
+    }));
+    const { error } = await supabase.from('recommended_books').insert(rows);
+    if (error) console.error('Error saving book history:', error);
+  };
+
+  // Handle feedback
+  const handleFeedback = async (book, type) => {
+    if (!currentUser) return;
+    const current = feedbackMap[book.title];
+    const newType = current === type ? null : type; // toggle off if same
+
+    setFeedbackMap(prev => {
+      const next = { ...prev };
+      if (newType) { next[book.title] = newType; }
+      else { delete next[book.title]; }
+      return next;
+    });
+
+    if (newType) {
+      await supabase.from('book_feedback').upsert({
+        user_id: currentUser.id,
+        book_title: book.title,
+        book_author: book.author || null,
+        feedback: newType,
+      }, { onConflict: 'user_id,book_title' });
+    } else {
+      await supabase.from('book_feedback')
+        .delete()
+        .eq('user_id', currentUser.id)
+        .eq('book_title', book.title);
+    }
+  };
 
   const generateRecommendations = useCallback(async () => {
     if (allWords.length === 0) {
@@ -236,30 +307,24 @@ const BookRecommendations = () => {
 
     setLoading(true);
     try {
-      const excludeBooks = getBookHistory();
-      const varietySeed = generateCount;
+      const payload = buildEnrichedPayload();
 
       const { data, error } = await supabase.functions.invoke('recommend-books', {
-        body: {
-          words: allWords,
-          childAge: null,
-          detectedLanguages,
-          excludeBooks,
-          varietySeed,
-        }
+        body: payload,
       });
 
       if (error) throw error;
-      if (data.error) {
-        toast.error(data.error);
-        return;
-      }
+      if (data.error) { toast.error(data.error); return; }
 
       const books = data.books || [];
       setRecommendations(books);
       setLastGenerated(new Date());
       setGenerateCount(c => c + 1);
-      saveBookHistory(books);
+
+      // Persist to DB instead of localStorage
+      await saveRecommendationsToDb(books);
+      setExcludeTitles(prev => [...new Set([...prev, ...books.map(b => b.title)])].slice(-30));
+
       toast.success(
         isMultilingual
           ? '📚 Books recommended in your languages!'
@@ -271,7 +336,7 @@ const BookRecommendations = () => {
     } finally {
       setLoading(false);
     }
-  }, [allWords, detectedLanguages, generateCount, isMultilingual]);
+  }, [allWords, detectedLanguages, generateCount, isMultilingual, feedbackMap, profile, spokenWordsData, flashcards, excludeTitles]);
 
   return (
     <div className="space-y-6">
@@ -286,6 +351,9 @@ const BookRecommendations = () => {
               <h2 className="text-xl font-semibold text-foreground">AI Book Recommendations</h2>
               <p className="text-sm text-muted-foreground">
                 Based on {flashedWords.length} flashcard words and {spokenWords.length} spoken words
+                {profile?.child_age_band && (
+                  <span className="ml-1">· Age: {profile.child_age_band}</span>
+                )}
                 {isMultilingual && (
                   <span className="ml-1 text-primary font-medium">· Multilingual 🌏</span>
                 )}
@@ -356,7 +424,13 @@ const BookRecommendations = () => {
       {recommendations.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2">
           {recommendations.map((book, index) => (
-            <BookCard key={`${book.title}-${index}`} book={book} index={index} />
+            <BookCard
+              key={`${book.title}-${index}`}
+              book={book}
+              index={index}
+              feedback={feedbackMap[book.title] || null}
+              onFeedback={handleFeedback}
+            />
           ))}
         </div>
       )}

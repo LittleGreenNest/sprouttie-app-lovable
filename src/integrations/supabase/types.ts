@@ -74,6 +74,33 @@ export type Database = {
         }
         Relationships: []
       }
+      book_feedback: {
+        Row: {
+          book_author: string | null
+          book_title: string
+          created_at: string
+          feedback: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          book_author?: string | null
+          book_title: string
+          created_at?: string
+          feedback: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          book_author?: string | null
+          book_title?: string
+          created_at?: string
+          feedback?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_flashing_sessions: {
         Row: {
           cards_introduced: number | null
@@ -396,6 +423,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      recommended_books: {
+        Row: {
+          age_range: string | null
+          author: string | null
+          cover_color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          language: string | null
+          matching_words: string[] | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          age_range?: string | null
+          author?: string | null
+          cover_color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          language?: string | null
+          matching_words?: string[] | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          age_range?: string | null
+          author?: string | null
+          cover_color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          language?: string | null
+          matching_words?: string[] | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       spoken_words: {
         Row: {
