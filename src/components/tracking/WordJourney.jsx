@@ -138,8 +138,8 @@ const WordCard = ({ word, index }) => {
               )}
 
               {/* Set info */}
-              {word.setName && (
-                <p className="text-[10px] text-slate-400">Set: {word.setName}</p>
+              {word.folder && word.folder !== 'Uncategorized' && (
+                <p className="text-[10px] text-slate-400">📁 {word.folder}</p>
               )}
             </div>
           </motion.div>
