@@ -253,6 +253,21 @@ const WordJourney = () => {
     return result;
   }, [wordJourneys, search, sortBy, filterStage]);
 
+  // Group by folder
+  const groupedByFolder = useMemo(() => {
+    if (!groupByFolder) return null;
+    const groups = {};
+    filtered.forEach(w => {
+      const folder = w.folder;
+      if (!groups[folder]) groups[folder] = { words: [], totalFlashes: 0 };
+      groups[folder].words.push(w);
+      groups[folder].totalFlashes += w.flashCount;
+    });
+    return Object.entries(groups)
+      .sort((a, b) => b[1].totalFlashes - a[1].totalFlashes)
+      .map(([folder, data]) => ({ folder, ...data }));
+  }, [filtered, groupByFolder]);
+
   // Summary stats
   const summary = useMemo(() => {
     const stages = { learning: 0, familiar: 0, confident: 0, mastered: 0 };
