@@ -214,6 +214,7 @@ const WordJourney = () => {
           id: card.id,
           front: card.front,
           back: card.back,
+          folder: card.folder || 'Uncategorized',
           setNumber: card.set_number,
           setName: card.set_number ? setMap[card.set_number] || `Set ${card.set_number}` : null,
           flashCount,
