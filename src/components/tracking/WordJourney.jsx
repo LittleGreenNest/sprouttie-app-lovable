@@ -155,8 +155,9 @@ const WordJourney = () => {
   const [trackingData, setTrackingData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState('most'); // most, least, recent, alpha
+  const [sortBy, setSortBy] = useState('most');
   const [filterStage, setFilterStage] = useState('all');
+  const [groupByFolder, setGroupByFolder] = useState(false);
 
   useEffect(() => {
     if (currentUser) loadTracking();
