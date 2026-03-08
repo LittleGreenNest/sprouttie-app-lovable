@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
 import { useFlashcards } from '../../context/FlashcardContext';
-import { Search, ChevronDown, ChevronUp, Sparkles, Calendar, Hash, TrendingUp } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Sparkles, Calendar, Hash, TrendingUp, FolderOpen, List } from 'lucide-react';
 
 const MASTERY_THRESHOLDS = { familiar: 5, confident: 15, mastered: 30 };
 
@@ -138,8 +138,8 @@ const WordCard = ({ word, index }) => {
               )}
 
               {/* Set info */}
-              {word.setName && (
-                <p className="text-[10px] text-slate-400">Set: {word.setName}</p>
+              {word.folder && word.folder !== 'Uncategorized' && (
+                <p className="text-[10px] text-slate-400">📁 {word.folder}</p>
               )}
             </div>
           </motion.div>
@@ -155,8 +155,9 @@ const WordJourney = () => {
   const [trackingData, setTrackingData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState('most'); // most, least, recent, alpha
+  const [sortBy, setSortBy] = useState('most');
   const [filterStage, setFilterStage] = useState('all');
+  const [groupByFolder, setGroupByFolder] = useState(false);
 
   useEffect(() => {
     if (currentUser) loadTracking();
@@ -213,6 +214,7 @@ const WordJourney = () => {
           id: card.id,
           front: card.front,
           back: card.back,
+          folder: card.folder || 'Uncategorized',
           setNumber: card.set_number,
           setName: card.set_number ? setMap[card.set_number] || `Set ${card.set_number}` : null,
           flashCount,
@@ -250,6 +252,21 @@ const WordJourney = () => {
 
     return result;
   }, [wordJourneys, search, sortBy, filterStage]);
+
+  // Group by folder
+  const groupedByFolder = useMemo(() => {
+    if (!groupByFolder) return null;
+    const groups = {};
+    filtered.forEach(w => {
+      const folder = w.folder;
+      if (!groups[folder]) groups[folder] = { words: [], totalFlashes: 0 };
+      groups[folder].words.push(w);
+      groups[folder].totalFlashes += w.flashCount;
+    });
+    return Object.entries(groups)
+      .sort((a, b) => b[1].totalFlashes - a[1].totalFlashes)
+      .map(([folder, data]) => ({ folder, ...data }));
+  }, [filtered, groupByFolder]);
 
   // Summary stats
   const summary = useMemo(() => {
@@ -303,7 +320,7 @@ const WordJourney = () => {
         ))}
       </div>
 
-      {/* Search + Sort */}
+      {/* Search + Sort + Group */}
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -315,6 +332,13 @@ const WordJourney = () => {
             className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:border-sprouttie-green focus:ring-1 focus:ring-sprouttie-green/30 outline-none transition-all"
           />
         </div>
+        <button
+          onClick={() => setGroupByFolder(!groupByFolder)}
+          className={`p-2 rounded-xl border transition-all ${groupByFolder ? 'bg-sprouttie-green text-white border-sprouttie-green' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}
+          title={groupByFolder ? 'Show flat list' : 'Group by folder'}
+        >
+          {groupByFolder ? <FolderOpen className="w-4 h-4" /> : <List className="w-4 h-4" />}
+        </button>
         <select
           value={sortBy}
           onChange={e => setSortBy(e.target.value)}
@@ -332,6 +356,25 @@ const WordJourney = () => {
         <div className="text-center py-12 text-slate-500">
           <p className="text-lg mb-1">No words found</p>
           <p className="text-sm">Start flashing cards to see your word journey! 🌱</p>
+        </div>
+      ) : groupByFolder && groupedByFolder ? (
+        <div className="space-y-4">
+          {groupedByFolder.map(group => (
+            <div key={group.folder} className="space-y-2">
+              <div className="flex items-center gap-2 px-1">
+                <FolderOpen className="w-4 h-4 text-sprouttie-green" />
+                <h3 className="text-sm font-bold text-slate-700">{group.folder}</h3>
+                <span className="text-[10px] font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+                  {group.words.length} words · {group.totalFlashes} flashes
+                </span>
+              </div>
+              <div className="space-y-2">
+                {group.words.map((word, i) => (
+                  <WordCard key={word.id} word={word} index={i} />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="space-y-2">
