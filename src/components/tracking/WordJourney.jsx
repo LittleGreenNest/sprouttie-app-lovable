@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
 import { useFlashcards } from '../../context/FlashcardContext';
-import { Search, ChevronDown, ChevronUp, Sparkles, Calendar, Hash, TrendingUp } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Sparkles, Calendar, Hash, TrendingUp, FolderOpen, List } from 'lucide-react';
 
 const MASTERY_THRESHOLDS = { familiar: 5, confident: 15, mastered: 30 };
 
