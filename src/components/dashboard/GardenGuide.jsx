@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, Lock } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import gardenStage0 from '../../assets/garden-stage-0.png';
 import gardenStage1 from '../../assets/garden-stage-1.png';
 import gardenStage2 from '../../assets/garden-stage-2.png';
