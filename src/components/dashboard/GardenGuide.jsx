@@ -61,8 +61,33 @@ const GARDEN_STAGES = [
   },
 ];
 
-const GardenGuide = ({ currentStreak = 0 }) => {
+const GardenGuide = () => {
   const navigate = useNavigate();
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStreak = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('current_streak')
+            .eq('id', user.id)
+            .single();
+          if (data?.current_streak) {
+            setCurrentStreak(data.current_streak);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch streak:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStreak();
+  }, []);
 
   const getCurrentStage = () => {
     if (currentStreak === 0) return 0;
