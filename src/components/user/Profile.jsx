@@ -467,6 +467,18 @@ const Profile = () => {
       </div>
 
       {renderSubscriptionDetails()}
+
+      {/* Install App */}
+      <div className="mt-6 border rounded-lg p-6 bg-white shadow-sm">
+        <h3 className="text-lg font-medium text-gray-900 mb-3">Install App</h3>
+        <p className="text-sm text-gray-500 mb-3">Add Sprouttie to your home screen for quick access and a full-screen experience.</p>
+        <button
+          className="text-sm text-[hsl(var(--sprouttie-green))] font-medium hover:underline"
+          onClick={() => navigate('/install')}
+        >
+          View install instructions →
+        </button>
+      </div>
       
       {/* Account Management Options */}
       <div className="mt-6 border rounded-lg p-6 bg-white shadow-sm">

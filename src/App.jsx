@@ -22,8 +22,6 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 // Landing Page
 import LandingPage from './pages/LandingPage';
 
-// PWA Components
-import InstallPrompt from './components/pwa/InstallPrompt';
 
 // Supabase
 import { supabase } from '@/integrations/supabase/client';
