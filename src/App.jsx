@@ -192,8 +192,6 @@ function App() {
             </Routes>
           </Suspense>
           
-          {/* PWA Install Prompt */}
-          <InstallPrompt />
           
           {/* Toast Container for notifications */}
           <ToastContainer 
