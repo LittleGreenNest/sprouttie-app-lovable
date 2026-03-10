@@ -759,9 +759,9 @@ const SessionLogTracker = () => {
                           ✨ New
                         </span>
                       )}
-                      {word.back && word.back !== (word.front || word.word) && (
+                      {(word.date_introduced || word.created_at) && (
                         <span className="text-xs text-muted-foreground">
-                          ({word.back})
+                          {new Date(word.date_introduced || word.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                         </span>
                       )}
                     </div>
