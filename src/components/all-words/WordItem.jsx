@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { motion } from 'framer-motion';
 import { Edit2 } from 'lucide-react';
 import PronunciationButton from '../pronunciation/PronunciationButton';
 import TonePracticeModal from '../pronunciation/TonePracticeModal';
 
-const WordItem = ({ card, isFlashed, onEdit, index, isCompact = false, userPlan = 'free' }) => {
+const WordItem = memo(({ card, isFlashed, onEdit, index, isCompact = false, userPlan = 'free' }) => {
   const [showPracticeModal, setShowPracticeModal] = useState(false);
 
   return (
@@ -24,7 +24,6 @@ const WordItem = ({ card, isFlashed, onEdit, index, isCompact = false, userPlan 
         whileHover={{ scale: 1.01, x: 2 }}
       >
       <div className={`flex items-start ${isCompact ? 'gap-2' : 'gap-3'}`}>
-        {/* Status indicator - hidden in compact mode */}
         {!isCompact && (
           <div className="flex-shrink-0 mt-0.5">
             {isFlashed ? (
@@ -41,7 +40,6 @@ const WordItem = ({ card, isFlashed, onEdit, index, isCompact = false, userPlan 
           </div>
         )}
 
-        {/* Content */}
         <div className="flex-1 min-w-0">
           <div className={`font-medium text-slate-800 truncate ${isCompact ? 'text-xs' : 'text-sm'}`}>
             {card.label}
@@ -73,7 +71,6 @@ const WordItem = ({ card, isFlashed, onEdit, index, isCompact = false, userPlan 
           )}
         </div>
 
-        {/* Pronunciation button - hidden in compact mode */}
         {!isCompact && (
           <div className="flex-shrink-0">
             <PronunciationButton
@@ -86,7 +83,6 @@ const WordItem = ({ card, isFlashed, onEdit, index, isCompact = false, userPlan 
           </div>
         )}
 
-        {/* Status pill - more compact in compact mode */}
         <div className={`flex-shrink-0 ${isCompact ? 'ml-auto' : ''}`}>
           <span className={`${isCompact ? 'text-[9px] px-1.5 py-0.5' : 'text-[10px] px-2 py-0.5'} font-semibold rounded-full ${
             isFlashed 
@@ -97,7 +93,6 @@ const WordItem = ({ card, isFlashed, onEdit, index, isCompact = false, userPlan 
           </span>
         </div>
 
-        {/* Edit button - hidden in compact mode */}
         {!isCompact && (
           <button
             onClick={(e) => {
@@ -128,6 +123,8 @@ const WordItem = ({ card, isFlashed, onEdit, index, isCompact = false, userPlan 
     )}
   </>
   );
-};
+});
+
+WordItem.displayName = 'WordItem';
 
 export default WordItem;

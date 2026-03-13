@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import WordItem from './WordItem';
 
-const CategoryCard = ({ 
+const CategoryCard = memo(({ 
   category, 
   words, 
   flashedIds, 
@@ -19,7 +19,6 @@ const CategoryCard = ({
   const totalCount = words.length;
   const percentage = totalCount > 0 ? Math.round((flashedCount / totalCount) * 100) : 0;
   
-  // Show preview of first 6 words
   const previewWords = words.slice(0, 6);
   const previewText = previewWords.map(w => w.label).join('、');
 
@@ -31,7 +30,6 @@ const CategoryCard = ({
       transition={{ delay: index * 0.05 }}
       className={`bg-white ${isCompact ? 'rounded-xl' : 'rounded-2xl'} shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-200`}
     >
-      {/* Header - Always visible */}
       <button
         onClick={onToggle}
         className={`w-full text-left ${isCompact ? 'p-3' : 'p-5'} focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-inset transition-colors hover:bg-slate-50`}
@@ -67,14 +65,12 @@ const CategoryCard = ({
           </div>
         </div>
 
-        {/* Preview row - only show in full view when collapsed */}
         {!isExpanded && !isCompact && previewWords.length > 0 && (
           <div className="text-sm text-slate-600 truncate mb-3 opacity-70">
             {previewText}{totalCount > 6 ? '...' : ''}
           </div>
         )}
 
-        {/* Progress bar */}
         <div className={`w-full bg-slate-100 rounded-full ${isCompact ? 'h-1.5' : 'h-2.5'} overflow-hidden`}>
           <motion.div
             className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full"
@@ -85,7 +81,6 @@ const CategoryCard = ({
         </div>
       </button>
 
-      {/* Expandable content */}
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
@@ -115,6 +110,8 @@ const CategoryCard = ({
       </AnimatePresence>
     </motion.div>
   );
-};
+});
+
+CategoryCard.displayName = 'CategoryCard';
 
 export default CategoryCard;
