@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, CalendarCheck, Layers, BookOpen, MoreHorizontal, X, History, ListChecks, MessageCircle, Headphones, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, CalendarCheck, Layers, BookOpen, MoreHorizontal, X, History, ListChecks, MessageCircle, Headphones, CalendarDays, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PRIMARY_TABS = [
