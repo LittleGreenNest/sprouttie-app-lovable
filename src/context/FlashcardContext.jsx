@@ -155,19 +155,27 @@ export const FlashcardProvider = ({ children }) => {
         set_number: card.set_number,
       }));
 
-      // Extract unique categories from flashcards
+      // Extract unique categories from flashcards (deduplicate by name)
       const uniqueFolders = [...new Set(transformedFlashcards.map(fc => fc.categoryId))];
       const derivedCategories = uniqueFolders
         .filter(folder => folder && folder !== 'default')
-        .map((folder, index) => ({
+        .map((folder) => ({
           id: folder,
           name: folder
         }));
 
-      // Merge with default categories if needed
+      // Merge with default categories if needed (deduplicated)
       const mergedCategories = derivedCategories.length > 0 
         ? derivedCategories 
         : (localCategories ? JSON.parse(localCategories) : defaultCategories);
+      
+      // Deduplicate by id to prevent duplicate key warnings
+      const seen = new Set();
+      const uniqueCategories = mergedCategories.filter(cat => {
+        if (seen.has(cat.id)) return false;
+        seen.add(cat.id);
+        return true;
+      });
 
       setFlashcards(transformedFlashcards);
       setCategories(mergedCategories);
