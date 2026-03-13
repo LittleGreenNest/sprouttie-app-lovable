@@ -551,7 +551,7 @@ export const FlashcardProvider = ({ children }) => {
     }
   };
   
-  const contextValue = {
+  const contextValue = useMemo(() => ({
     categories,
     setCategories,
     flashcards,
@@ -571,7 +571,7 @@ export const FlashcardProvider = ({ children }) => {
     getTrackingData,
     getFlashcardStats,
     refreshFlashcards,
-  };
+  }), [categories, flashcards, sets, history, loading, updateSetFlashcards, getFlashcardsByCategory, getFlashcardsForSet]);
   
   return (
     <FlashcardContext.Provider value={contextValue}>
