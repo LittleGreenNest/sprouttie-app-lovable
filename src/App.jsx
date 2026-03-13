@@ -50,6 +50,7 @@ const PronunciationPortal = lazy(() => import('./components/pronunciation/Pronun
 const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlanner'));
 const BookRecommendations = lazy(() => import('./components/storybooks/BookRecommendations'));
 const WordJourney = lazy(() => import('./components/tracking/WordJourney'));
+const PhotoScanner = lazy(() => import('./components/import/PhotoScanner'));
 const Support = lazy(() => import('@/pages/Support'));
 
 
