@@ -98,6 +98,7 @@ export default defineConfig(({ mode }) => {
             'vendor-charts': ['recharts'],
             'vendor-motion': ['framer-motion'],
             'vendor-supabase': ['@supabase/supabase-js'],
+            'vendor-query': ['@tanstack/react-query'],
           },
         },
       },

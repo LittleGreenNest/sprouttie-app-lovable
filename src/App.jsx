@@ -4,6 +4,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ToastContainer } from 'react-toastify';
 import './App.css';
 
+// Lazy load toast CSS - not needed for initial render
+import('react-toastify/dist/ReactToastify.css');
+
 // Context Providers
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { FlashcardProvider } from './context/FlashcardContext';
