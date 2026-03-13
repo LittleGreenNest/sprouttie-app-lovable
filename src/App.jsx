@@ -127,6 +127,7 @@ const AppContent = () => {
             
             <Route path="/book-recommendations" element={<BookRecommendations />} />
             <Route path="/word-journey" element={<WordJourney />} />
+            <Route path="/scan-flashcards" element={<PhotoScanner />} />
 
             {/* profile page */}
             <Route path="/profile" element={<Profile />} />
