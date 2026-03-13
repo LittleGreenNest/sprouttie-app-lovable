@@ -178,7 +178,7 @@ export const FlashcardProvider = ({ children }) => {
       });
 
       setFlashcards(transformedFlashcards);
-      setCategories(mergedCategories);
+      setCategories(uniqueCategories);
       setLoading(false);
     } catch (error) {
       console.error("Error loading flashcards from Supabase:", error);
