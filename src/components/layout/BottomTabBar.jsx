@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, CalendarCheck, Layers, BookOpen, MoreHorizontal, X, History, ListChecks, MessageCircle, Headphones, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, CalendarCheck, Layers, BookOpen, MoreHorizontal, X, History, ListChecks, MessageCircle, Headphones, CalendarDays, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PRIMARY_TABS = [
@@ -15,6 +15,7 @@ const MORE_TABS = [
   { id: 'flashed-history', label: 'Flashed History', icon: History },
   { id: 'all-words', label: 'All Words', icon: ListChecks },
   { id: 'spoken-words', label: 'Words Said', icon: MessageCircle },
+  { id: 'scan-flashcards', label: 'Scan Cards', icon: Camera },
 ];
 
 const TabButton = ({ icon: Icon, label, active, onClick }) => (

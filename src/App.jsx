@@ -50,6 +50,7 @@ const PronunciationPortal = lazy(() => import('./components/pronunciation/Pronun
 const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlanner'));
 const BookRecommendations = lazy(() => import('./components/storybooks/BookRecommendations'));
 const WordJourney = lazy(() => import('./components/tracking/WordJourney'));
+const PhotoScanner = lazy(() => import('./components/import/PhotoScanner'));
 const Support = lazy(() => import('@/pages/Support'));
 
 
@@ -126,6 +127,7 @@ const AppContent = () => {
             
             <Route path="/book-recommendations" element={<BookRecommendations />} />
             <Route path="/word-journey" element={<WordJourney />} />
+            <Route path="/scan-flashcards" element={<PhotoScanner />} />
 
             {/* profile page */}
             <Route path="/profile" element={<Profile />} />
