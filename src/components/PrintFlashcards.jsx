@@ -492,9 +492,9 @@ if (cardIndex === 0 && page.length > 1) {
             <div>
               {/* Category Filter Dropdown */}
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Select Category</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Select Category</label>
                 <select
-                  className="w-full border rounded-md px-3 py-2"
+                  className="w-full border border-border rounded-lg px-3 py-2.5 bg-background text-foreground text-sm"
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                 >
@@ -507,22 +507,22 @@ if (cardIndex === 0 && page.length > 1) {
                 </select>
               </div>
               
-              <h4 className="text-sm font-medium mb-2">Select flashcards to print:</h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-60 overflow-y-auto p-2 border rounded">
+              <h4 className="text-sm font-medium text-foreground mb-2">Select flashcards to print:</h4>
+              <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto p-2 border border-border rounded-lg">
                 {getFilteredFlashcards().map(flashcard => {
                   const category = categories.find(c => c.id === flashcard.categoryId);
                   return (
                     <div 
                       key={flashcard.id}
-                      className={`px-3 py-2 rounded-md border cursor-pointer ${
+                      className={`px-3 py-2.5 rounded-lg border-2 cursor-pointer transition-all text-center ${
                         selectedFlashcards.includes(flashcard.id) 
-                          ? 'bg-green-100 border-green-300' 
-                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                          ? 'bg-primary/10 border-primary text-foreground' 
+                          : 'bg-secondary/30 border-transparent hover:border-border'
                       }`}
                       onClick={() => toggleFlashcardSelection(flashcard.id)}
                     >
-                      <div className="font-medium">{flashcard.word}</div>
-                      <div className="text-xs text-gray-500">{category ? category.name : 'Unknown'}</div>
+                      <div className="font-semibold text-foreground">{flashcard.word}</div>
+                      <div className="text-xs text-muted-foreground">{category ? category.name : 'Unknown'}</div>
                     </div>
                   );
                 })}
