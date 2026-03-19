@@ -471,15 +471,15 @@ if (cardIndex === 0 && page.length > 1) {
         <h3 className="font-semibold text-foreground mb-4">Print Flashcards</h3>
         
         {/* Selection Mode Tabs */}
-        <div className="flex mb-6 border-b">
+        <div className="flex mb-4 bg-secondary/50 rounded-lg p-1 gap-1">
           <button 
-            className={`px-4 py-2 ${selectionMode === 'manual-flashcards' ? 'bg-blue-100 border-b-2 border-blue-500 font-medium' : 'hover:bg-gray-100'}`}
+            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${selectionMode === 'manual-flashcards' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             onClick={() => setSelectionMode('manual-flashcards')}
           >
             Select Flashcards
           </button>
           <button 
-            className={`px-4 py-2 ${selectionMode === 'next-day-sets' ? 'bg-blue-100 border-b-2 border-blue-500 font-medium' : 'hover:bg-gray-100'}`}
+            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${selectionMode === 'next-day-sets' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             onClick={() => setSelectionMode('next-day-sets')}
           >
             Next Day Sets
