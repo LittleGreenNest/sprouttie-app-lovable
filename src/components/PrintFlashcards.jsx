@@ -459,8 +459,8 @@ if (cardIndex === 0 && page.length > 1) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="space-y-4 pb-24">
+      <div className="bg-card rounded-xl border border-border p-4 sm:p-6">
         {/* Free prints remaining banner */}
         {userPlan === 'free' && (
           <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
@@ -468,7 +468,7 @@ if (cardIndex === 0 && page.length > 1) {
             <a href="/plans" className="underline font-medium text-amber-900 hover:text-amber-700">Upgrade for unlimited</a>
           </div>
         )}
-        <h3 className="font-medium mb-4">Print Flashcards</h3>
+        <h3 className="font-semibold text-foreground mb-4">Print Flashcards</h3>
         
         {/* Selection Mode Tabs */}
         <div className="flex mb-6 border-b">
