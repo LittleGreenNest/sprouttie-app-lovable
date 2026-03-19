@@ -459,8 +459,8 @@ if (cardIndex === 0 && page.length > 1) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="space-y-4 pb-24">
+      <div className="bg-card rounded-xl border border-border p-4 sm:p-6">
         {/* Free prints remaining banner */}
         {userPlan === 'free' && (
           <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
@@ -468,18 +468,18 @@ if (cardIndex === 0 && page.length > 1) {
             <a href="/plans" className="underline font-medium text-amber-900 hover:text-amber-700">Upgrade for unlimited</a>
           </div>
         )}
-        <h3 className="font-medium mb-4">Print Flashcards</h3>
+        <h3 className="font-semibold text-foreground mb-4">Print Flashcards</h3>
         
         {/* Selection Mode Tabs */}
-        <div className="flex mb-6 border-b">
+        <div className="flex mb-4 bg-secondary/50 rounded-lg p-1 gap-1">
           <button 
-            className={`px-4 py-2 ${selectionMode === 'manual-flashcards' ? 'bg-blue-100 border-b-2 border-blue-500 font-medium' : 'hover:bg-gray-100'}`}
+            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${selectionMode === 'manual-flashcards' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             onClick={() => setSelectionMode('manual-flashcards')}
           >
             Select Flashcards
           </button>
           <button 
-            className={`px-4 py-2 ${selectionMode === 'next-day-sets' ? 'bg-blue-100 border-b-2 border-blue-500 font-medium' : 'hover:bg-gray-100'}`}
+            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${selectionMode === 'next-day-sets' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             onClick={() => setSelectionMode('next-day-sets')}
           >
             Next Day Sets
@@ -492,9 +492,9 @@ if (cardIndex === 0 && page.length > 1) {
             <div>
               {/* Category Filter Dropdown */}
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Select Category</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Select Category</label>
                 <select
-                  className="w-full border rounded-md px-3 py-2"
+                  className="w-full border border-border rounded-lg px-3 py-2.5 bg-background text-foreground text-sm"
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                 >
@@ -507,22 +507,22 @@ if (cardIndex === 0 && page.length > 1) {
                 </select>
               </div>
               
-              <h4 className="text-sm font-medium mb-2">Select flashcards to print:</h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-60 overflow-y-auto p-2 border rounded">
+              <h4 className="text-sm font-medium text-foreground mb-2">Select flashcards to print:</h4>
+              <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto p-2 border border-border rounded-lg">
                 {getFilteredFlashcards().map(flashcard => {
                   const category = categories.find(c => c.id === flashcard.categoryId);
                   return (
                     <div 
                       key={flashcard.id}
-                      className={`px-3 py-2 rounded-md border cursor-pointer ${
+                      className={`px-3 py-2.5 rounded-lg border-2 cursor-pointer transition-all text-center ${
                         selectedFlashcards.includes(flashcard.id) 
-                          ? 'bg-green-100 border-green-300' 
-                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                          ? 'bg-primary/10 border-primary text-foreground' 
+                          : 'bg-secondary/30 border-transparent hover:border-border'
                       }`}
                       onClick={() => toggleFlashcardSelection(flashcard.id)}
                     >
-                      <div className="font-medium">{flashcard.word}</div>
-                      <div className="text-xs text-gray-500">{category ? category.name : 'Unknown'}</div>
+                      <div className="font-semibold text-foreground">{flashcard.word}</div>
+                      <div className="text-xs text-muted-foreground">{category ? category.name : 'Unknown'}</div>
                     </div>
                   );
                 })}
@@ -532,16 +532,16 @@ if (cardIndex === 0 && page.length > 1) {
           
           {selectionMode === 'next-day-sets' && (
             <div>
-              <h4 className="text-sm font-medium mb-2">Select sets:</h4>
+              <h4 className="text-sm font-medium text-foreground mb-2">Select sets:</h4>
               <div className="flex flex-wrap gap-2 mb-4">
                 {sets.map(set => (
                   <button
                     key={set.id}
                     onClick={() => toggleSetSelection(set.id)}
-                    className={`px-3 py-2 rounded-md text-sm ${
+                    className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                       selectedSets.includes(set.id)
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'bg-secondary text-foreground hover:bg-secondary/80'
                     }`}
                   >
                     {set.name}
@@ -573,62 +573,65 @@ if (cardIndex === 0 && page.length > 1) {
           )}
         </div>
         
-        {/* Control Buttons */}
-        <div className="flex justify-between">
-          <button
-            onClick={clearSelections}
-            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
-          >
-            Clear Selections
-          </button>
-          
-          <div className="space-x-3 flex items-center">
-  <button
-    onClick={generatePreview}
-    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-    disabled={selectedFlashcards.length === 0}
-  >
-    Generate Preview
-  </button>
+        {/* Control Buttons - Mobile Responsive */}
+        <div className="space-y-3">
+          {/* Primary Actions Row */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={generatePreview}
+              className="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 transition-all shadow-md disabled:opacity-50 disabled:shadow-none"
+              disabled={selectedFlashcards.length === 0}
+            >
+              Generate Preview
+            </button>
+            <button
+              onClick={generatePDF}
+              className="flex-1 py-3 px-4 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl font-semibold hover:opacity-90 transition-all shadow-md disabled:opacity-50 disabled:shadow-none"
+              disabled={previewFlashcards.length === 0}
+            >
+              Download PDF
+            </button>
+          </div>
 
-  <label className="inline-flex items-center space-x-2 text-sm">
-    <input
-      type="checkbox"
-      className="rounded border-gray-300"
-      checked={includeBack}
-      onChange={(e) => setIncludeBack(e.target.checked)}
-    />
-    <span>Add back pages</span>
-  </label>
+          {/* Secondary Controls Row */}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={clearSelections}
+              className="px-4 py-2 text-muted-foreground border border-border rounded-lg hover:bg-secondary text-sm transition-colors"
+            >
+              Clear Selections
+            </button>
 
-  <div className="inline-flex rounded-md overflow-hidden border">
-    <button
-      type="button"
-      onClick={() => setPreviewSide('front')}
-      className={`px-3 py-2 text-sm ${previewSide==='front' ? 'bg-gray-900 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
-      disabled={previewPages.length === 0}
-    >
-      Front Preview
-    </button>
-    <button
-      type="button"
-      onClick={() => setPreviewSide('back')}
-      className={`px-3 py-2 text-sm ${previewSide==='back' ? 'bg-gray-900 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
-      disabled={!includeBack || previewPages.length === 0}
-    >
-      Back Preview
-    </button>
-  </div>
+            <label className="inline-flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                className="rounded border-border accent-primary"
+                checked={includeBack}
+                onChange={(e) => setIncludeBack(e.target.checked)}
+              />
+              <span>Add back pages</span>
+            </label>
 
-  <button
-    onClick={generatePDF}
-    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-    disabled={previewFlashcards.length === 0}
-  >
-    Download PDF
-  </button>
-</div>
-</div>
+            <div className="inline-flex rounded-lg overflow-hidden border border-border">
+              <button
+                type="button"
+                onClick={() => setPreviewSide('front')}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${previewSide==='front' ? 'bg-foreground text-background' : 'bg-background text-foreground hover:bg-secondary'}`}
+                disabled={previewPages.length === 0}
+              >
+                Front
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewSide('back')}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${previewSide==='back' ? 'bg-foreground text-background' : 'bg-background text-foreground hover:bg-secondary'}`}
+                disabled={!includeBack || previewPages.length === 0}
+              >
+                Back
+              </button>
+            </div>
+          </div>
+        </div>
 
       </div>
       
