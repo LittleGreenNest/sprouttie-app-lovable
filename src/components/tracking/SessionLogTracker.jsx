@@ -973,11 +973,11 @@ const SessionLogTracker = () => {
       </div>
       
       {/* Save Button */}
-      <div className="flex justify-end">
+      <div className="mt-2">
         <button
           onClick={saveEngagementData}
           disabled={saving}
-          className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+          className="w-full py-4 bg-primary text-primary-foreground rounded-xl font-semibold text-lg hover:bg-primary/90 transition-all shadow-md hover:shadow-lg disabled:opacity-50"
         >
           {saving ? 'Saving...' : "Save Today's Records"}
         </button>

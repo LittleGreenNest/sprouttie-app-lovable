@@ -573,62 +573,65 @@ if (cardIndex === 0 && page.length > 1) {
           )}
         </div>
         
-        {/* Control Buttons */}
-        <div className="flex justify-between">
-          <button
-            onClick={clearSelections}
-            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
-          >
-            Clear Selections
-          </button>
-          
-          <div className="space-x-3 flex items-center">
-  <button
-    onClick={generatePreview}
-    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-    disabled={selectedFlashcards.length === 0}
-  >
-    Generate Preview
-  </button>
+        {/* Control Buttons - Mobile Responsive */}
+        <div className="space-y-3">
+          {/* Primary Actions Row */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={generatePreview}
+              className="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 transition-all shadow-md disabled:opacity-50 disabled:shadow-none"
+              disabled={selectedFlashcards.length === 0}
+            >
+              Generate Preview
+            </button>
+            <button
+              onClick={generatePDF}
+              className="flex-1 py-3 px-4 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl font-semibold hover:opacity-90 transition-all shadow-md disabled:opacity-50 disabled:shadow-none"
+              disabled={previewFlashcards.length === 0}
+            >
+              Download PDF
+            </button>
+          </div>
 
-  <label className="inline-flex items-center space-x-2 text-sm">
-    <input
-      type="checkbox"
-      className="rounded border-gray-300"
-      checked={includeBack}
-      onChange={(e) => setIncludeBack(e.target.checked)}
-    />
-    <span>Add back pages</span>
-  </label>
+          {/* Secondary Controls Row */}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={clearSelections}
+              className="px-4 py-2 text-muted-foreground border border-border rounded-lg hover:bg-secondary text-sm transition-colors"
+            >
+              Clear Selections
+            </button>
 
-  <div className="inline-flex rounded-md overflow-hidden border">
-    <button
-      type="button"
-      onClick={() => setPreviewSide('front')}
-      className={`px-3 py-2 text-sm ${previewSide==='front' ? 'bg-gray-900 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
-      disabled={previewPages.length === 0}
-    >
-      Front Preview
-    </button>
-    <button
-      type="button"
-      onClick={() => setPreviewSide('back')}
-      className={`px-3 py-2 text-sm ${previewSide==='back' ? 'bg-gray-900 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
-      disabled={!includeBack || previewPages.length === 0}
-    >
-      Back Preview
-    </button>
-  </div>
+            <label className="inline-flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                className="rounded border-border accent-primary"
+                checked={includeBack}
+                onChange={(e) => setIncludeBack(e.target.checked)}
+              />
+              <span>Add back pages</span>
+            </label>
 
-  <button
-    onClick={generatePDF}
-    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-    disabled={previewFlashcards.length === 0}
-  >
-    Download PDF
-  </button>
-</div>
-</div>
+            <div className="inline-flex rounded-lg overflow-hidden border border-border">
+              <button
+                type="button"
+                onClick={() => setPreviewSide('front')}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${previewSide==='front' ? 'bg-foreground text-background' : 'bg-background text-foreground hover:bg-secondary'}`}
+                disabled={previewPages.length === 0}
+              >
+                Front
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewSide('back')}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${previewSide==='back' ? 'bg-foreground text-background' : 'bg-background text-foreground hover:bg-secondary'}`}
+                disabled={!includeBack || previewPages.length === 0}
+              >
+                Back
+              </button>
+            </div>
+          </div>
+        </div>
 
       </div>
       
