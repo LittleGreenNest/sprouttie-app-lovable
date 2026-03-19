@@ -532,16 +532,16 @@ if (cardIndex === 0 && page.length > 1) {
           
           {selectionMode === 'next-day-sets' && (
             <div>
-              <h4 className="text-sm font-medium mb-2">Select sets:</h4>
+              <h4 className="text-sm font-medium text-foreground mb-2">Select sets:</h4>
               <div className="flex flex-wrap gap-2 mb-4">
                 {sets.map(set => (
                   <button
                     key={set.id}
                     onClick={() => toggleSetSelection(set.id)}
-                    className={`px-3 py-2 rounded-md text-sm ${
+                    className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                       selectedSets.includes(set.id)
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'bg-secondary text-foreground hover:bg-secondary/80'
                     }`}
                   >
                     {set.name}
