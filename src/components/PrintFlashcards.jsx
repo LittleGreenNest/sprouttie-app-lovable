@@ -766,7 +766,7 @@ if (cardIndex === 0 && page.length > 1) {
     <div className="mt-4 text-xs sm:text-sm text-muted-foreground space-y-1">
       <p className="font-medium">PDF output notes:</p>
       <ul className="list-disc list-inside ml-2 space-y-0.5">
-        <li>Words printed in bright red, A4 landscape, 2 per page</li>
+        <li>Words printed in {textColor === 'red' ? 'bright red' : 'black'}, A4 landscape, 2 per page</li>
         <li>Short words display at 250pt; longer words auto-scale</li>
         <li>8mm margins — may be tight for some printers</li>
         <li>Total pages: {previewPages.length}</li>
