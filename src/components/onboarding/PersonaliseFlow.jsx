@@ -167,8 +167,6 @@ const SCREENS = [
   },
 ];
 
-// Which screens count toward the visual progress dots
-const PROGRESS_LABELS = ['Hook', 'Pain', 'Outcome', 'About your child', 'About your child', 'About your child', 'About your child', 'About your child', 'Meet', 'System', 'Go'];
 
 // ── Component ────────────────────────────────────────────────────────
 
