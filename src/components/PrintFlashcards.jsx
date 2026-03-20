@@ -700,7 +700,7 @@ if (cardIndex === 0 && page.length > 1) {
               <>
                 <div className="absolute top-0 left-0 w-full h-1/2 flex items-center justify-center px-2">
                   <div
-                    className="text-red-600 font-bold text-center break-all"
+                    className={`${textColor === 'red' ? 'text-red-600' : 'text-black'} font-bold text-center break-all`}
                     style={{
                       fontSize: `${Math.min(page[0].fontSize / 4, 60)}px`,
                       lineHeight: '1.1',
@@ -713,7 +713,7 @@ if (cardIndex === 0 && page.length > 1) {
                 {page.length > 1 && (
                   <div className="absolute bottom-0 left-0 w-full h-1/2 flex items-center justify-center px-2">
                     <div
-                      className="text-red-600 font-bold text-center break-all"
+                      className={`${textColor === 'red' ? 'text-red-600' : 'text-black'} font-bold text-center break-all`}
                       style={{
                         fontSize: `${Math.min(page[1].fontSize / 4, 60)}px`,
                         lineHeight: '1.1',
