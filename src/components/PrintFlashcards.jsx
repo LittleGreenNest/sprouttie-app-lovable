@@ -65,6 +65,7 @@ getFlashcardsForSet
 // NEW: back-side printing & preview toggle
 const [includeBack, setIncludeBack] = useState(false);   // whether to add back pages
 const [previewSide, setPreviewSide] = useState('front'); // 'front' | 'back'
+const [textColor, setTextColor] = useState('red'); // 'red' | 'black'
   
   // State for preview pages - organized how they'll appear on A4 pages
   const [previewPages, setPreviewPages] = useState([]);
