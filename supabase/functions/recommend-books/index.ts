@@ -137,6 +137,11 @@ serve(async (req) => {
     const varietyFocus = varietyCategories[seed % varietyCategories.length];
 
     const prompt = `You are an expert children's librarian specializing in multilingual and multicultural families.
+CRITICAL RULES:
+- Every book you recommend MUST be a real, published book with a verifiable ISBN. Do NOT invent titles.
+- If you are unsure whether a book exists, do NOT include it. Only recommend books you are confident are real.
+- Double-check: the title, author, and publisher must all be real and match a book available in libraries or major bookstores.
+- Never recommend the same book twice across batches. The parent has already seen: ${(excludeBooks || []).join(', ') || 'none yet'}.
 
 ${ageInstruction}
 
@@ -147,26 +152,25 @@ ${themeSection}
 
 ${languageInstructions}
 ${feedbackSection}
-${excludeSection}
 
 For this batch, please ${varietyFocus}.
 
-Recommend exactly 6 real, age-appropriate children's books that:
+Recommend exactly 6 age-appropriate children's books that:
 1. Feature vocabulary words the child is currently LEARNING (not just mastered ones)
-2. Are real, published books available in libraries or bookstores (NOT fictional titles)
-3. Are diverse and varied — no two books from the same series unless truly exceptional
-4. Match the child's actual age range for reading level
-5. When possible, align with the child's current interest themes
-6. Reflect parent preferences from feedback when available
+2. Are REAL, PUBLISHED books — you must be certain of the title and author
+3. Are diverse — no two books from the same author or series
+4. Match the child's actual age range
+5. Align with current interest themes when possible
+6. Reflect parent feedback preferences when available
 
 For each book, provide:
-- title: The exact book title (must be a real published book)
+- title: The exact published book title
 - author: The author's full name
-- language: Either "English", "Bilingual (English/Chinese)", "Chinese", or other relevant language
-- ageRange: Recommended age range (e.g., "2-4 years")
-- matchingWords: Which of the child's vocabulary words appear in this book (list 2-4 words)
-- description: A brief 1-2 sentence description of why this book helps with these specific words
-- coverColor: A simple color for the UI card (pick from: blue, green, purple, orange, pink, amber)
+- language: "English", "Bilingual (English/Chinese)", "Chinese", or other
+- ageRange: e.g. "2-4 years"
+- matchingWords: 2-4 of the child's vocabulary words that appear in this book
+- description: 1-2 sentences on why this book helps with these words
+- coverColor: one of: blue, green, purple, orange, pink, amber
 
 Respond with valid JSON only:
 {
