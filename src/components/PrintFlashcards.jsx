@@ -650,125 +650,111 @@ if (cardIndex === 0 && page.length > 1) {
       
       {/* Updated Preview Section - with PDF-like styling */}
      {previewPages.length > 0 && (
-  <div className="bg-white rounded-lg shadow-md p-6">
-    <div className="flex justify-between items-center mb-4">
-      <h3 className="font-medium">
-        Print Preview of selected words ({previewFlashcards.length} flashcards)
+  <div className="bg-card rounded-xl border border-border p-4 sm:p-6">
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+      <h3 className="font-medium text-foreground">
+        Print Preview ({previewFlashcards.length} flashcards)
       </h3>
       {previewFlashcards.length % 2 !== 0 && (
-        <div className="text-yellow-600 text-sm">
-          For optimal printing, select an even number of flashcards.
+        <div className="text-amber-600 text-xs sm:text-sm">
+          ⚠️ Select an even number for optimal printing.
         </div>
       )}
     </div>
 
-    <div className="mb-3 text-sm text-gray-700">
-      Each card below represents how it will appear on the A4 landscape page (2 words per page, top and bottom).
-    </div>
+    <p className="text-xs sm:text-sm text-muted-foreground mb-3">
+      Each card shows how it will appear on A4 landscape (2 words per page).
+    </p>
 
-    {/* Show exact A4 landscape preview grid with PDF-like styling */}
-    <div className="flex flex-col space-y-4">
+    {/* A4 Preview Cards */}
+    <div className="flex flex-col gap-4">
       {previewPages.map((page, pageIndex) => (
         <div
           key={pageIndex}
-          className="mx-auto w-full max-w-4xl bg-white border border-gray-300 shadow-md"
-          style={{ aspectRatio: '1.414', maxHeight: '400px' }}
+          className="mx-auto w-full bg-white border border-border rounded-lg shadow-sm overflow-hidden"
+          style={{ aspectRatio: '1.414', maxHeight: '300px' }}
         >
           <div className="h-full w-full relative bg-white">
-            {/* Dividing line in the middle */}
-            <div className="absolute top-1/2 left-0 w-full h-px bg-gray-300"></div>
+            {/* Dividing line */}
+            <div className="absolute top-1/2 left-0 w-full h-px bg-border"></div>
 
             {previewSide === 'front' ? (
-  <>
-    {/* FRONT PREVIEW (top half) */}
-    <div className="absolute top-0 left-0 w-full h-1/2 flex items-center justify-center">
-      <div
-        className="text-red-600 font-bold"
-        style={{
-          fontSize: `${Math.min(page[0].fontSize / 3, 100)}px`,
-          lineHeight: '1',
-          margin: '0 8mm',
-          padding: '0',
-        }}
-      >
-        {page[0].word}
-      </div>
-    </div>
+              <>
+                <div className="absolute top-0 left-0 w-full h-1/2 flex items-center justify-center px-2">
+                  <div
+                    className="text-red-600 font-bold text-center break-all"
+                    style={{
+                      fontSize: `${Math.min(page[0].fontSize / 4, 60)}px`,
+                      lineHeight: '1.1',
+                    }}
+                  >
+                    {page[0].word}
+                  </div>
+                </div>
 
-    {/* FRONT PREVIEW (bottom half, if exists) */}
-    {page.length > 1 && (
-      <div className="absolute bottom-0 left-0 w-full h-1/2 flex items-center justify-center">
-        <div
-          className="text-red-600 font-bold"
-          style={{
-            fontSize: `${Math.min(page[1].fontSize / 3, 100)}px`,
-            lineHeight: '1',
-            margin: '0 8mm',
-            padding: '0',
-          }}
-        >
-          {page[1].word}
-        </div>
-      </div>
-    )}
-  </>
-) : (
-  <div>
-    {/* BACK PREVIEW (top-right text to leave center free) */}
-    {page.map((fc, idx) => (
-      <div
-        key={fc.id}
-        className={`absolute ${idx === 0 ? 'top-0' : 'bottom-0'} left-0 w-full h-1/2 flex items-start justify-end p-4`}
-      >
-        <div className="text-right">
-          {fc.english && !/[\u3400-\u9FFF]/.test(fc.word) ? (
-            /* English-only card */
-            <div className="text-sm font-semibold text-gray-800">
-              {fc.english}
-            </div>
-          ) : (
-            /* Chinese card */
-            <>
-              <div className="text-sm font-semibold text-gray-800">
-                English: {fc.english || '—'}
-              </div>
-              <div className="text-xl text-gray-900 my-1">
-                {fc.word || '—'}
-              </div>
-              <div className="text-sm font-semibold text-gray-700">
-                Pinyin: {fc.pinyin || '—'}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    ))}
+                {page.length > 1 && (
+                  <div className="absolute bottom-0 left-0 w-full h-1/2 flex items-center justify-center px-2">
+                    <div
+                      className="text-red-600 font-bold text-center break-all"
+                      style={{
+                        fontSize: `${Math.min(page[1].fontSize / 4, 60)}px`,
+                        lineHeight: '1.1',
+                      }}
+                    >
+                      {page[1].word}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div>
+                {page.map((fc, idx) => (
+                  <div
+                    key={fc.id}
+                    className={`absolute ${idx === 0 ? 'top-0' : 'bottom-0'} left-0 w-full h-1/2 flex items-start justify-end p-3`}
+                  >
+                    <div className="text-right">
+                      {fc.english && !/[\u3400-\u9FFF]/.test(fc.word) ? (
+                        <div className="text-xs sm:text-sm font-semibold text-foreground">
+                          {fc.english}
+                        </div>
+                      ) : (
+                        <>
+                          <div className="text-xs sm:text-sm font-semibold text-foreground">
+                            English: {fc.english || '—'}
+                          </div>
+                          <div className="text-base sm:text-xl text-foreground my-0.5">
+                            {fc.word || '—'}
+                          </div>
+                          <div className="text-xs sm:text-sm font-semibold text-muted-foreground">
+                            Pinyin: {fc.pinyin || '—'}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
 
-    {/* Page number (for back preview) */}
-    <div className="absolute top-2 right-2 bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-bl">
-      Page {pageIndex + 1}
-    </div>
-  </div>
-)}
-  </div>
-
+                <div className="absolute top-1 right-1 bg-muted text-muted-foreground text-[10px] px-1.5 py-0.5 rounded">
+                  Page {pageIndex + 1}
+                </div>
+              </div>
+            )}
           </div>
+        </div>
       ))}
     </div>
 
-                <div className="mt-4 text-sm text-gray-600">
-        <p>Notes about PDF output:</p>
-        <ul className="list-disc list-inside ml-4">
-          <li>Words will be printed in bright red text</li>
-          <li>Each A4 landscape page will contain 2 flashcards (top and bottom)</li>
-          <li>Short words (like "car", "van") will be displayed at 250pt size</li>
-          <li>Longer words will be sized to fill the page width (8mm margins)</li>
-          <li><span className="text-yellow-600 font-semibold">Note:</span> 8mm margins may be too narrow for some printers</li>
-          <li>Total pages: {previewPages.length}</li>
-        </ul>
-      </div>
-    </div> 
-  )}
+    <div className="mt-4 text-xs sm:text-sm text-muted-foreground space-y-1">
+      <p className="font-medium">PDF output notes:</p>
+      <ul className="list-disc list-inside ml-2 space-y-0.5">
+        <li>Words printed in bright red, A4 landscape, 2 per page</li>
+        <li>Short words display at 250pt; longer words auto-scale</li>
+        <li>8mm margins — may be tight for some printers</li>
+        <li>Total pages: {previewPages.length}</li>
+      </ul>
+    </div>
+  </div>
 </div>
 );
 };
