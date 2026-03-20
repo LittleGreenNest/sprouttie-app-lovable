@@ -328,7 +328,7 @@ const generatePreview = () => {
             : (pageHeight * 3) / 4;  // Exact center of bottom half
           
           // Set text properties
-          doc.setTextColor(255, 0, 0); // Bright red color (Sprouttie style - #FF0000)
+          doc.setTextColor(textColor === 'red' ? 255 : 0, 0, 0);
           
           // Get the word and render it
           const text = (flashcard.word ?? '').toString();
