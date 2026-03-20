@@ -243,7 +243,41 @@ Respond with valid JSON only:
       throw new Error("Failed to parse book recommendations");
     }
 
-    console.log(`Successfully parsed ${books.length} book recommendations`);
+    // Validate each book has required fields
+    const requiredFields = ['title', 'author', 'language', 'ageRange', 'matchingWords', 'description', 'coverColor'];
+    const validColors = ['blue', 'green', 'purple', 'orange', 'pink', 'amber'];
+
+    books = books.filter((book: any) => {
+      const hasAllFields = requiredFields.every(f => book[f] != null && book[f] !== '');
+      if (!hasAllFields) {
+        console.warn(`Dropping book missing fields: ${book.title || 'unknown'}`);
+        return false;
+      }
+      // Normalize coverColor
+      if (!validColors.includes(book.coverColor)) {
+        book.coverColor = validColors[Math.floor(Math.random() * validColors.length)];
+      }
+      // Ensure matchingWords is an array
+      if (!Array.isArray(book.matchingWords)) {
+        book.matchingWords = [String(book.matchingWords)];
+      }
+      return true;
+    });
+
+    // Deduplicate by title (case-insensitive)
+    const seenTitles = new Set<string>();
+    const excludeSet = new Set((excludeBooks || []).map((t: string) => t.toLowerCase().trim()));
+    books = books.filter((book: any) => {
+      const key = book.title.toLowerCase().trim();
+      if (seenTitles.has(key) || excludeSet.has(key)) {
+        console.warn(`Deduplicating/excluding: ${book.title}`);
+        return false;
+      }
+      seenTitles.add(key);
+      return true;
+    });
+
+    console.log(`Validated ${books.length} book recommendations`);
 
     return new Response(
       JSON.stringify({ success: true, books }),
