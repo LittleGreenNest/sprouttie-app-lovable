@@ -293,6 +293,9 @@ const SessionLogTracker = () => {
     const isCurrentlyChecked = roundTracking[key];
     const setFlashcards = getFlashcardsForSet(setId);
     
+    // Prevent loadTrackingData from overwriting during toggle
+    setToggling(true);
+    
     // Optimistic update immediately for snappy UX
     setRoundTracking(prev => ({ ...prev, [key]: !isCurrentlyChecked }));
     
@@ -361,6 +364,8 @@ const SessionLogTracker = () => {
       toast.error('Failed to update — please try again');
       // Revert optimistic update on error
       setRoundTracking(prev => ({ ...prev, [key]: isCurrentlyChecked }));
+    } finally {
+      setToggling(false);
     }
   };
 
