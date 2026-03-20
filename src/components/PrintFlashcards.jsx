@@ -755,7 +755,8 @@ if (cardIndex === 0 && page.length > 1) {
       </ul>
     </div>
   </div>
-</div>
+      )}
+    </div>
 );
 };
 
