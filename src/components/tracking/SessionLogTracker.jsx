@@ -55,17 +55,23 @@ const SessionLogTracker = () => {
     return Object.values(roundTracking).filter(v => v).length;
   }, [roundTracking]);
 
+  // Track whether a toggle is in progress to prevent loadTrackingData from overwriting optimistic state
+  const [toggling, setToggling] = useState(false);
+
   // Load data when date or user changes - also refresh flashcards to ensure sync
+  // IMPORTANT: Use currentUser?.id (not the object) to prevent re-fetches on token refresh
   useEffect(() => {
     if (currentUser) {
       refreshFlashcards(); // Ensure flashcards are synced from DB
-      loadTrackingData();
+      if (!toggling) {
+        loadTrackingData();
+      }
       loadRotationSummary();
       loadBacklogWords();
     } else {
       setLoading(false);
     }
-  }, [currentUser, dateString]);
+  }, [currentUser?.id, dateString]);
 
   const loadTrackingData = async () => {
     try {
@@ -287,6 +293,9 @@ const SessionLogTracker = () => {
     const isCurrentlyChecked = roundTracking[key];
     const setFlashcards = getFlashcardsForSet(setId);
     
+    // Prevent loadTrackingData from overwriting during toggle
+    setToggling(true);
+    
     // Optimistic update immediately for snappy UX
     setRoundTracking(prev => ({ ...prev, [key]: !isCurrentlyChecked }));
     
@@ -355,6 +364,8 @@ const SessionLogTracker = () => {
       toast.error('Failed to update — please try again');
       // Revert optimistic update on error
       setRoundTracking(prev => ({ ...prev, [key]: isCurrentlyChecked }));
+    } finally {
+      setToggling(false);
     }
   };
 
