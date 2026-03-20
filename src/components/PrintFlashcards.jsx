@@ -65,6 +65,7 @@ getFlashcardsForSet
 // NEW: back-side printing & preview toggle
 const [includeBack, setIncludeBack] = useState(false);   // whether to add back pages
 const [previewSide, setPreviewSide] = useState('front'); // 'front' | 'back'
+const [textColor, setTextColor] = useState('red'); // 'red' | 'black'
   
   // State for preview pages - organized how they'll appear on A4 pages
   const [previewPages, setPreviewPages] = useState([]);
@@ -327,7 +328,7 @@ const generatePreview = () => {
             : (pageHeight * 3) / 4;  // Exact center of bottom half
           
           // Set text properties
-          doc.setTextColor(255, 0, 0); // Bright red color (Sprouttie style - #FF0000)
+          doc.setTextColor(textColor === 'red' ? 255 : 0, 0, 0);
           
           // Get the word and render it
           const text = (flashcard.word ?? '').toString();
@@ -615,6 +616,23 @@ if (cardIndex === 0 && page.length > 1) {
             <div className="inline-flex rounded-lg overflow-hidden border border-border">
               <button
                 type="button"
+                onClick={() => setTextColor('red')}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${textColor==='red' ? 'bg-red-600 text-white' : 'bg-background text-foreground hover:bg-secondary'}`}
+              >
+                🔴 Red
+              </button>
+              <button
+                type="button"
+                onClick={() => setTextColor('black')}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${textColor==='black' ? 'bg-foreground text-background' : 'bg-background text-foreground hover:bg-secondary'}`}
+              >
+                ⚫ Black
+              </button>
+            </div>
+
+            <div className="inline-flex rounded-lg overflow-hidden border border-border">
+              <button
+                type="button"
                 onClick={() => setPreviewSide('front')}
                 className={`px-3 py-2 text-sm font-medium transition-colors ${previewSide==='front' ? 'bg-foreground text-background' : 'bg-background text-foreground hover:bg-secondary'}`}
                 disabled={previewPages.length === 0}
@@ -682,7 +700,7 @@ if (cardIndex === 0 && page.length > 1) {
               <>
                 <div className="absolute top-0 left-0 w-full h-1/2 flex items-center justify-center px-2">
                   <div
-                    className="text-red-600 font-bold text-center break-all"
+                    className={`${textColor === 'red' ? 'text-red-600' : 'text-black'} font-bold text-center break-all`}
                     style={{
                       fontSize: `${Math.min(page[0].fontSize / 4, 60)}px`,
                       lineHeight: '1.1',
@@ -695,7 +713,7 @@ if (cardIndex === 0 && page.length > 1) {
                 {page.length > 1 && (
                   <div className="absolute bottom-0 left-0 w-full h-1/2 flex items-center justify-center px-2">
                     <div
-                      className="text-red-600 font-bold text-center break-all"
+                      className={`${textColor === 'red' ? 'text-red-600' : 'text-black'} font-bold text-center break-all`}
                       style={{
                         fontSize: `${Math.min(page[1].fontSize / 4, 60)}px`,
                         lineHeight: '1.1',
@@ -748,7 +766,7 @@ if (cardIndex === 0 && page.length > 1) {
     <div className="mt-4 text-xs sm:text-sm text-muted-foreground space-y-1">
       <p className="font-medium">PDF output notes:</p>
       <ul className="list-disc list-inside ml-2 space-y-0.5">
-        <li>Words printed in bright red, A4 landscape, 2 per page</li>
+        <li>Words printed in {textColor === 'red' ? 'bright red' : 'black'}, A4 landscape, 2 per page</li>
         <li>Short words display at 250pt; longer words auto-scale</li>
         <li>8mm margins — may be tight for some printers</li>
         <li>Total pages: {previewPages.length}</li>
