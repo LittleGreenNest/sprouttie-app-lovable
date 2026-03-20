@@ -616,6 +616,23 @@ if (cardIndex === 0 && page.length > 1) {
             <div className="inline-flex rounded-lg overflow-hidden border border-border">
               <button
                 type="button"
+                onClick={() => setTextColor('red')}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${textColor==='red' ? 'bg-red-600 text-white' : 'bg-background text-foreground hover:bg-secondary'}`}
+              >
+                🔴 Red
+              </button>
+              <button
+                type="button"
+                onClick={() => setTextColor('black')}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${textColor==='black' ? 'bg-foreground text-background' : 'bg-background text-foreground hover:bg-secondary'}`}
+              >
+                ⚫ Black
+              </button>
+            </div>
+
+            <div className="inline-flex rounded-lg overflow-hidden border border-border">
+              <button
+                type="button"
                 onClick={() => setPreviewSide('front')}
                 className={`px-3 py-2 text-sm font-medium transition-colors ${previewSide==='front' ? 'bg-foreground text-background' : 'bg-background text-foreground hover:bg-secondary'}`}
                 disabled={previewPages.length === 0}
