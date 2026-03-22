@@ -214,7 +214,7 @@ const PhotoScanner = () => {
           )}
           <div className="flex flex-col items-center gap-3 py-8">
             <Loader2 className="w-10 h-10 text-[hsl(var(--sprouttie-green))] animate-spin" />
-            <p className="font-semibold text-[hsl(var(--sprouttie-ink))]">Scanning your flashcards...</p>
+            <p className="font-semibold text-[hsl(var(--sprouttie-ink))]">Scanning for words...</p>
             <p className="text-sm text-slate-500">Detecting Chinese words and generating translations</p>
           </div>
         </motion.div>
