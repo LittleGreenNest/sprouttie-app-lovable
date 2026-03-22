@@ -153,10 +153,10 @@ const PhotoScanner = () => {
             </div>
             <div>
               <p className="font-semibold text-[hsl(var(--sprouttie-ink))]">
-                Photo your flashcards
+                Snap anything with Chinese words
               </p>
               <p className="text-sm text-slate-500 mt-1">
-                Lay them out so each word is visible
+                Flashcards, toys, posters, books — we'll detect the words
               </p>
             </div>
 
