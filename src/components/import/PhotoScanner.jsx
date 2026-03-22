@@ -135,8 +135,8 @@ const PhotoScanner = () => {
           <Camera className="w-5 h-5 text-[hsl(var(--sprouttie-green-dark))]" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-[hsl(var(--sprouttie-ink))]">Scan Flashcards</h2>
-          <p className="text-xs text-slate-500">Take a photo of your flashcards to add them</p>
+          <h2 className="text-lg font-bold text-[hsl(var(--sprouttie-ink))]">Scan Words</h2>
+          <p className="text-xs text-slate-500">Snap a photo of flashcards, toys, or anything with Chinese words</p>
         </div>
       </div>
 
