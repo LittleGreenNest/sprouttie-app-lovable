@@ -195,7 +195,7 @@ const PhotoScanner = () => {
           />
 
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-            <strong>Tips:</strong> Use good lighting, avoid shadows. Works best with printed cards with clear Chinese characters.
+            <strong>Tips:</strong> Use good lighting, avoid shadows. Works best with clear, visible Chinese characters on any surface.
           </div>
         </motion.div>
       )}
