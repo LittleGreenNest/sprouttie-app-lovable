@@ -24,12 +24,12 @@ serve(async (req) => {
       });
     }
 
-    const systemPrompt = `You are a flashcard word extractor for a bilingual Chinese-English learning app for young children.
+    const systemPrompt = `You are a Chinese word extractor for a bilingual Chinese-English learning app for young children.
 
-The user will send you a photo of physical flashcards laid out on a surface. Each card has a Chinese word or short phrase on it.
+The user will send you a photo that may contain Chinese words. This could be physical flashcards, educational toys, puzzles, posters, book pages, packaging, or any object with Chinese text on it.
 
 Your job:
-1. Detect every distinct Chinese word/phrase visible on the cards.
+1. Detect every distinct Chinese word/phrase visible in the image.
 2. For each word, provide:
    - "chinese": the Chinese characters exactly as written
    - "english": the English translation
@@ -44,8 +44,8 @@ Return ONLY a JSON object with this structure:
   ]
 }
 
-If you cannot read a card clearly, skip it. Do not guess wildly.
-If the image doesn't contain flashcards, return { "words": [], "message": "No flashcards detected in this image." }`;
+If you cannot read a word clearly, skip it. Do not guess wildly.
+If the image doesn't contain any Chinese text, return { "words": [], "message": "No Chinese words detected in this image." }`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -64,7 +64,7 @@ If the image doesn't contain flashcards, return { "words": [], "message": "No fl
               content: [
                 {
                   type: "text",
-                  text: "Please scan this photo of flashcards and extract all the Chinese words you can see.",
+                  text: "Please scan this photo and extract all the Chinese words you can see. This could be flashcards, a toy, a puzzle, a poster, or any object with Chinese text.",
                 },
                 {
                   type: "image_url",

@@ -135,8 +135,8 @@ const PhotoScanner = () => {
           <Camera className="w-5 h-5 text-[hsl(var(--sprouttie-green-dark))]" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-[hsl(var(--sprouttie-ink))]">Scan Flashcards</h2>
-          <p className="text-xs text-slate-500">Take a photo of your flashcards to add them</p>
+          <h2 className="text-lg font-bold text-[hsl(var(--sprouttie-ink))]">Scan Words</h2>
+          <p className="text-xs text-slate-500">Snap a photo of flashcards, toys, or anything with Chinese words</p>
         </div>
       </div>
 
@@ -153,10 +153,10 @@ const PhotoScanner = () => {
             </div>
             <div>
               <p className="font-semibold text-[hsl(var(--sprouttie-ink))]">
-                Photo your flashcards
+                Snap anything with Chinese words
               </p>
               <p className="text-sm text-slate-500 mt-1">
-                Lay them out so each word is visible
+                Flashcards, toys, posters, books — we'll detect the words
               </p>
             </div>
 
@@ -195,7 +195,7 @@ const PhotoScanner = () => {
           />
 
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-            <strong>Tips:</strong> Use good lighting, avoid shadows. Works best with printed cards with clear Chinese characters.
+            <strong>Tips:</strong> Use good lighting, avoid shadows. Works best with clear, visible Chinese characters on any surface.
           </div>
         </motion.div>
       )}
@@ -209,12 +209,12 @@ const PhotoScanner = () => {
         >
           {previewUrl && (
             <div className="rounded-2xl overflow-hidden border border-slate-200">
-              <img src={previewUrl} alt="Scanned flashcards" className="w-full max-h-64 object-cover" />
+              <img src={previewUrl} alt="Scanned words" className="w-full max-h-64 object-cover" />
             </div>
           )}
           <div className="flex flex-col items-center gap-3 py-8">
             <Loader2 className="w-10 h-10 text-[hsl(var(--sprouttie-green))] animate-spin" />
-            <p className="font-semibold text-[hsl(var(--sprouttie-ink))]">Scanning your flashcards...</p>
+            <p className="font-semibold text-[hsl(var(--sprouttie-ink))]">Scanning for words...</p>
             <p className="text-sm text-slate-500">Detecting Chinese words and generating translations</p>
           </div>
         </motion.div>
@@ -229,7 +229,7 @@ const PhotoScanner = () => {
         >
           {previewUrl && (
             <div className="rounded-2xl overflow-hidden border border-slate-200">
-              <img src={previewUrl} alt="Scanned flashcards" className="w-full max-h-40 object-cover" />
+              <img src={previewUrl} alt="Scanned words" className="w-full max-h-40 object-cover" />
             </div>
           )}
 
