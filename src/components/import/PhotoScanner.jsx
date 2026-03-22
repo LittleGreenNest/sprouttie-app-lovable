@@ -209,7 +209,7 @@ const PhotoScanner = () => {
         >
           {previewUrl && (
             <div className="rounded-2xl overflow-hidden border border-slate-200">
-              <img src={previewUrl} alt="Scanned flashcards" className="w-full max-h-64 object-cover" />
+              <img src={previewUrl} alt="Scanned words" className="w-full max-h-64 object-cover" />
             </div>
           )}
           <div className="flex flex-col items-center gap-3 py-8">
