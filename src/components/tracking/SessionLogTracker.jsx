@@ -749,34 +749,49 @@ const SessionLogTracker = () => {
                 </div>
               </div>
               
-              {/* Words List */}
+              {/* Words List - color-coded by age: orange (oldest) → yellow → green (newest) */}
               <div className="p-4">
                 <div className="flex flex-wrap gap-2">
-                  {words.map(word => (
-                    <div 
-                      key={word.id}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-secondary/50 rounded-full"
-                    >
-                      <span className="text-sm font-medium text-foreground">
-                        {word.front || word.word}
-                      </span>
-                      {word.isOldest && (
-                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">
-                          Oldest
-                        </span>
-                      )}
-                      {word.isNewest && (
-                        <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded">
-                          ✨ New
-                        </span>
-                      )}
-                      {(word.date_introduced || word.created_at) && (
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(word.date_introduced || word.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                  {(() => {
+                    const total = words.length;
+                    const ageStyles = [
+                      { bg: 'rgba(249, 115, 22, 0.15)', border: '1.5px solid rgb(249, 115, 22)', label: '🔥 Oldest', labelColor: 'text-orange-600' },
+                      { bg: 'rgba(245, 158, 11, 0.12)', border: '1.5px solid rgb(245, 158, 11)', label: '#2', labelColor: 'text-amber-600' },
+                      { bg: 'rgba(234, 179, 8, 0.10)', border: '1.5px solid rgb(234, 179, 8)', label: '#3', labelColor: 'text-yellow-600' },
+                      { bg: 'rgba(132, 204, 22, 0.10)', border: '1.5px solid rgb(132, 204, 22)', label: '#4', labelColor: 'text-lime-600' },
+                      { bg: 'rgba(34, 197, 94, 0.12)', border: '1.5px solid rgb(34, 197, 94)', label: '✨ New', labelColor: 'text-green-600' },
+                    ];
+                    const getAge = (idx, count) => {
+                      if (count <= 1) return ageStyles[4];
+                      const step = Math.round((idx / (count - 1)) * 4);
+                      const style = ageStyles[Math.min(step, 4)];
+                      if (idx === 0) return { ...style, label: '🔥 Oldest', labelColor: 'text-orange-600' };
+                      if (idx === count - 1) return { ...style, label: '✨ New', labelColor: 'text-green-600' };
+                      return style;
+                    };
+                    return words.map((word, idx) => {
+                      const age = getAge(idx, total);
+                      return (
+                        <div 
+                          key={word.id}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all"
+                          style={{ backgroundColor: age.bg, border: age.border }}
+                        >
+                          <span className="text-sm font-medium text-foreground">
+                            {word.front || word.word}
+                          </span>
+                          <span className={`text-[10px] font-semibold ${age.labelColor} whitespace-nowrap`}>
+                            {age.label}
+                          </span>
+                          {(word.date_introduced || word.created_at) && (
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(word.date_introduced || word.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
                   {words.length === 0 && (
                     <span className="text-sm text-muted-foreground italic">No words in this set</span>
                   )}
