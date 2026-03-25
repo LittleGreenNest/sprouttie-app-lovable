@@ -87,39 +87,52 @@ const SetAccordion = ({
             <div className="p-4 pt-0 border-t-2 border-[hsl(var(--border))]">
               {/* Words list */}
               <div className="mb-4 flex flex-wrap gap-2">
-                {/* Sort flashcards by created_at so oldest appears first */}
+                {/* Sort flashcards by date_introduced/created_at so oldest appears first */}
                 {(() => {
                   const sortedCards = [...flashcards].sort((a, b) => {
-                    // Sort by when the word was added to THIS set (date_introduced),
-                    // falling back to when it was first created in the system (created_at).
                     const aSetKey = a.date_introduced || a.created_at || '9999-12-31';
                     const bSetKey = b.date_introduced || b.created_at || '9999-12-31';
-
                     const aSetTime = new Date(aSetKey).getTime();
                     const bSetTime = new Date(bSetKey).getTime();
-
                     const safeASetTime = Number.isFinite(aSetTime) ? aSetTime : Number.POSITIVE_INFINITY;
                     const safeBSetTime = Number.isFinite(bSetTime) ? bSetTime : Number.POSITIVE_INFINITY;
-
                     if (safeASetTime !== safeBSetTime) return safeASetTime - safeBSetTime;
-
-                    // If multiple words were introduced on the same day, fall back to created_at
-                    // for a stable, intuitive order.
                     const aCreatedKey = a.created_at || '9999-12-31';
                     const bCreatedKey = b.created_at || '9999-12-31';
                     const aCreatedTime = new Date(aCreatedKey).getTime();
                     const bCreatedTime = new Date(bCreatedKey).getTime();
                     const safeACreatedTime = Number.isFinite(aCreatedTime) ? aCreatedTime : Number.POSITIVE_INFINITY;
                     const safeBCreatedTime = Number.isFinite(bCreatedTime) ? bCreatedTime : Number.POSITIVE_INFINITY;
-
                     if (safeACreatedTime !== safeBCreatedTime) return safeACreatedTime - safeBCreatedTime;
-
                     return String(a.id).localeCompare(String(b.id));
                   });
                   const lastIdx = sortedCards.length - 1;
+                  const total = sortedCards.length;
+
+                  // Age-based color scale: orange (oldest) → yellow → green (newest)
+                  const getAgeColor = (idx, count) => {
+                    if (count <= 1) return { bg: 'rgba(34, 197, 94, 0.12)', border: 'rgb(34, 197, 94)', label: '🌿 Only', labelColor: 'text-green-600' };
+                    const t = idx / (count - 1); // 0 = oldest, 1 = newest
+                    // Interpolate: orange(0) → yellow(0.5) → green(1)
+                    const colors = [
+                      { bg: 'rgba(249, 115, 22, 0.15)', border: 'rgb(249, 115, 22)', label: '🔥 Oldest', labelColor: 'text-orange-600' },
+                      { bg: 'rgba(245, 158, 11, 0.12)', border: 'rgb(245, 158, 11)', label: '2nd', labelColor: 'text-amber-600' },
+                      { bg: 'rgba(234, 179, 8, 0.10)', border: 'rgb(234, 179, 8)', label: '3rd', labelColor: 'text-yellow-600' },
+                      { bg: 'rgba(132, 204, 22, 0.10)', border: 'rgb(132, 204, 22)', label: '4th', labelColor: 'text-lime-600' },
+                      { bg: 'rgba(34, 197, 94, 0.12)', border: 'rgb(34, 197, 94)', label: '✨ Newest', labelColor: 'text-green-600' },
+                    ];
+                    // Map position to one of 5 color stops
+                    const step = Math.round(t * 4);
+                    const color = colors[Math.min(step, 4)];
+                    // Override label for first and last
+                    if (idx === 0) return { ...color, label: '🔥 Oldest', labelColor: 'text-orange-600' };
+                    if (idx === count - 1) return { ...color, label: '✨ Newest', labelColor: 'text-green-600' };
+                    return { ...color, label: `#${idx + 1}`, labelColor: color.labelColor };
+                  };
                   
                   return sortedCards.map((card, idx) => {
                   const isFlashed = flashedWords.has(card.id);
+                  const ageColor = getAgeColor(idx, total);
                   const addedDate = card.created_at ? new Date(card.created_at) : null;
                   const timeAgo = addedDate ? (() => {
                     const now = new Date();
@@ -127,24 +140,21 @@ const SetAccordion = ({
                     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
                     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
                     const diffMins = Math.floor(diffMs / (1000 * 60));
-                    
                     if (diffDays > 0) return `${diffDays}d ago`;
                     if (diffHours > 0) return `${diffHours}h ago`;
                     if (diffMins > 0) return `${diffMins}m ago`;
                     return 'just now';
                   })() : null;
                   
-                  const isOldest = idx === 0;
-                  const isNewest = idx === lastIdx && lastIdx > 0;
-                  
                   return (
                     <div
                       key={card.id}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border-2 transition-all ${
-                        isFlashed 
-                          ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-400' 
-                          : 'bg-[hsl(var(--sprouttie-cream))] border-[hsl(var(--border))]'
-                      }`}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border-2 transition-all`}
+                      style={{
+                        backgroundColor: isFlashed ? undefined : ageColor.bg,
+                        borderColor: isFlashed ? 'rgb(52, 211, 153)' : ageColor.border,
+                        ...(isFlashed ? { background: 'linear-gradient(to bottom right, rgb(236, 253, 245), rgb(209, 250, 229))' } : {}),
+                      }}
                     >
                       {/* Flashed indicator */}
                       <div className="flex-shrink-0">
@@ -153,7 +163,7 @@ const SetAccordion = ({
                             ✓
                           </div>
                         ) : (
-                          <div className="w-3.5 h-3.5 rounded-full border-2 border-gray-300 bg-white" />
+                          <div className="w-3.5 h-3.5 rounded-full border-2 bg-white" style={{ borderColor: ageColor.border }} />
                         )}
                       </div>
                       
@@ -166,12 +176,10 @@ const SetAccordion = ({
                         )}
                       </div>
                       
-                      {isOldest && (
-                        <span className="text-xs text-amber-600" title="Oldest word">🌱</span>
-                      )}
-                      {isNewest && (
-                        <span className="text-xs text-blue-500" title="Newest word">✨</span>
-                      )}
+                      {/* Age position label */}
+                      <span className={`text-[9px] font-semibold ${ageColor.labelColor} whitespace-nowrap`}>
+                        {ageColor.label}
+                      </span>
                       
                       {/* Status pill */}
                       <span className={`text-[9px] px-1.5 py-0.5 font-semibold rounded-full ${
