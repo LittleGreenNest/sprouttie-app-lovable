@@ -65,7 +65,7 @@ If the image doesn't contain any readable text, return { "words": [], "message":
               content: [
                 {
                   type: "text",
-                  text: "Please scan this photo and extract all the Chinese words you can see. This could be flashcards, a toy, a puzzle, a poster, or any object with Chinese text.",
+                  text: "Please scan this photo and extract all the words you can see — both Chinese and English. This could be flashcards, a toy, a puzzle, a poster, or any object with text. For English-only words, provide the Chinese translation too.",
                 },
                 {
                   type: "image_url",
