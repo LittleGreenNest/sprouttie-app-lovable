@@ -24,15 +24,15 @@ serve(async (req) => {
       });
     }
 
-    const systemPrompt = `You are a Chinese word extractor for a bilingual Chinese-English learning app for young children.
+    const systemPrompt = `You are a word extractor for a bilingual Chinese-English learning app for young children.
 
-The user will send you a photo that may contain Chinese words. This could be physical flashcards, educational toys, puzzles, posters, book pages, packaging, or any object with Chinese text on it.
+The user will send you a photo that may contain Chinese words, English words, or both. This could be physical flashcards, educational toys, puzzles, posters, book pages, packaging, or any object with text on it.
 
 Your job:
-1. Detect every distinct Chinese word/phrase visible in the image.
+1. Detect every distinct word/phrase visible in the image — both Chinese AND English.
 2. For each word, provide:
-   - "chinese": the Chinese characters exactly as written
-   - "english": the English translation
+   - "chinese": the Chinese characters (if the word is English-only, provide the Chinese translation)
+   - "english": the English translation (if the word is Chinese-only, provide the English translation; if English, use the word as-is)
    - "pinyin": the Hanyu Pinyin with tone marks (e.g. māo, not mao1)
    - "category": suggest a category from this list: Animals, Food, Vehicles, Household, Nature, Body Parts, Colors, Numbers, Family, Actions, Clothing, Greetings, Fruits, Shapes, Weather, Places, Toys. Pick the best fit.
 
@@ -40,12 +40,13 @@ Return ONLY a JSON object with this structure:
 {
   "words": [
     { "chinese": "猫", "english": "cat", "pinyin": "māo", "category": "Animals" },
+    { "chinese": "干净的衬衫", "english": "clean shirt", "pinyin": "gānjìng de chènshān", "category": "Clothing" },
     ...
   ]
 }
 
 If you cannot read a word clearly, skip it. Do not guess wildly.
-If the image doesn't contain any Chinese text, return { "words": [], "message": "No Chinese words detected in this image." }`;
+If the image doesn't contain any readable text, return { "words": [], "message": "No words detected in this image." }`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -64,7 +65,7 @@ If the image doesn't contain any Chinese text, return { "words": [], "message": 
               content: [
                 {
                   type: "text",
-                  text: "Please scan this photo and extract all the Chinese words you can see. This could be flashcards, a toy, a puzzle, a poster, or any object with Chinese text.",
+                  text: "Please scan this photo and extract all the words you can see — both Chinese and English. This could be flashcards, a toy, a puzzle, a poster, or any object with text. For English-only words, provide the Chinese translation too.",
                 },
                 {
                   type: "image_url",
