@@ -34,13 +34,14 @@ Your job:
    - "chinese": the Chinese characters (if the word is English-only, provide the Chinese translation)
    - "english": the English translation (if the word is Chinese-only, provide the English translation; if English, use the word as-is)
    - "pinyin": the Hanyu Pinyin with tone marks (e.g. māo, not mao1)
-   - "category": suggest a category from this list: Animals, Food, Vehicles, Household, Nature, Body Parts, Colors, Numbers, Family, Actions, Clothing, Greetings, Fruits, Shapes, Weather, Places, Toys. Pick the best fit.
+    - "category": suggest a category from this list: Animals, Food, Vehicles, Household, Nature, Body Parts, Colors, Numbers, Family, Actions, Clothing, Greetings, Fruits, Shapes, Weather, Places, Toys. Pick the best fit.
+    - "originalLanguage": "chinese" if the word was originally in Chinese, "english" if originally in English
 
 Return ONLY a JSON object with this structure:
 {
   "words": [
-    { "chinese": "猫", "english": "cat", "pinyin": "māo", "category": "Animals" },
-    { "chinese": "干净的衬衫", "english": "clean shirt", "pinyin": "gānjìng de chènshān", "category": "Clothing" },
+    { "chinese": "猫", "english": "cat", "pinyin": "māo", "category": "Animals", "originalLanguage": "chinese" },
+    { "chinese": "干净的衬衫", "english": "clean shirt", "pinyin": "gānjìng de chènshān", "category": "Clothing", "originalLanguage": "english" },
     ...
   ]
 }

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Camera, Upload, X, Check, AlertTriangle, Loader2, RotateCcw, Plus } from 'lucide-react';
+import { Camera, Upload, X, Check, AlertTriangle, Loader2, RotateCcw, Plus, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useFlashcards } from '@/context/FlashcardContext';
@@ -12,12 +12,13 @@ const PhotoScanner = () => {
   const navigate = useNavigate();
   const { flashcards, addFlashcard, categories, addCategory } = useFlashcards();
   const fileInputRef = useRef(null);
-  const cameraInputRef = useRef(null);
 
   const [step, setStep] = useState(STEPS.UPLOAD);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [detectedWords, setDetectedWords] = useState([]);
   const [selectedWords, setSelectedWords] = useState({});
+  // Track which language version to save: 'english' keeps EN front, 'chinese' keeps CN front, 'both' saves two cards
+  const [cardLanguage, setCardLanguage] = useState({});
   const [adding, setAdding] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
 
@@ -26,14 +27,12 @@ const PhotoScanner = () => {
   const handleFile = useCallback(async (file) => {
     if (!file) return;
 
-    // Show preview
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
     setStep(STEPS.SCANNING);
     setAiMessage('');
 
     try {
-      // Convert to base64
       const buffer = await file.arrayBuffer();
       const bytes = new Uint8Array(buffer);
       let binary = '';
@@ -55,17 +54,22 @@ const PhotoScanner = () => {
       const words = (data.words || []).map((w, i) => ({
         ...w,
         id: `scan-${i}`,
-        isDuplicate: existingWordsSet.has(w.chinese),
+        isDuplicate: existingWordsSet.has(w.chinese) || existingWordsSet.has(w.english),
+        originalLanguage: w.originalLanguage || 'chinese',
       }));
 
       setDetectedWords(words);
 
-      // Auto-select non-duplicates
+      // Auto-select non-duplicates, set default language based on original
       const sel = {};
+      const lang = {};
       words.forEach(w => {
         if (!w.isDuplicate) sel[w.id] = true;
+        // Default: keep the original language as the flashcard front
+        lang[w.id] = w.originalLanguage === 'english' ? 'english' : 'chinese';
       });
       setSelectedWords(sel);
+      setCardLanguage(lang);
       setStep(STEPS.REVIEW);
     } catch (err) {
       console.error('Scan error:', err);
@@ -76,6 +80,16 @@ const PhotoScanner = () => {
 
   const toggleWord = (id) => {
     setSelectedWords(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const cycleLanguage = (id, e) => {
+    e.stopPropagation();
+    setCardLanguage(prev => {
+      const current = prev[id] || 'chinese';
+      // Cycle: english → chinese → both → english
+      const next = current === 'english' ? 'chinese' : current === 'chinese' ? 'both' : 'english';
+      return { ...prev, [id]: next };
+    });
   };
 
   const handleApprove = async () => {
@@ -90,7 +104,6 @@ const PhotoScanner = () => {
 
     try {
       for (const word of wordsToAdd) {
-        // Ensure category exists
         const catExists = categories.some(
           c => c.name === word.category || c.id === word.category
         );
@@ -98,15 +111,33 @@ const PhotoScanner = () => {
           await addCategory(word.category);
         }
 
-        await addFlashcard(
-          word.chinese,
-          word.category || 'default',
-          word.english || '',
-          word.pinyin || '',
-          'word',
-          null
-        );
-        added++;
+        const lang = cardLanguage[word.id] || 'chinese';
+
+        if (lang === 'english' || lang === 'both') {
+          // English front card: front=English, back=Chinese + pinyin
+          await addFlashcard(
+            word.english,
+            word.category || 'default',
+            `${word.chinese} (${word.pinyin})`,
+            word.pinyin || '',
+            'word',
+            null
+          );
+          added++;
+        }
+
+        if (lang === 'chinese' || lang === 'both') {
+          // Chinese front card: front=Chinese, back=English
+          await addFlashcard(
+            word.chinese,
+            word.category || 'default',
+            word.english || '',
+            word.pinyin || '',
+            'word',
+            null
+          );
+          added++;
+        }
       }
 
       toast.success(`Added ${added} flashcard${added !== 1 ? 's' : ''}! 🎉`);
@@ -124,8 +155,27 @@ const PhotoScanner = () => {
     setPreviewUrl(null);
     setDetectedWords([]);
     setSelectedWords({});
+    setCardLanguage({});
     setAiMessage('');
   };
+
+  const getLangLabel = (lang) => {
+    if (lang === 'english') return 'EN';
+    if (lang === 'both') return 'Both';
+    return 'CN';
+  };
+
+  const getLangColor = (lang) => {
+    if (lang === 'english') return 'bg-blue-100 text-blue-700';
+    if (lang === 'both') return 'bg-purple-100 text-purple-700';
+    return 'bg-red-100 text-red-700';
+  };
+
+  // Count total cards that will be created
+  const totalCardsToAdd = detectedWords.filter(w => selectedWords[w.id]).reduce((sum, w) => {
+    const lang = cardLanguage[w.id] || 'chinese';
+    return sum + (lang === 'both' ? 2 : 1);
+  }, 0);
 
   return (
     <div className="max-w-lg mx-auto pb-8">
@@ -160,32 +210,15 @@ const PhotoScanner = () => {
               </p>
             </div>
 
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={() => cameraInputRef.current?.click()}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[hsl(var(--sprouttie-green))] text-white font-semibold text-sm shadow-sm hover:opacity-90 transition"
-              >
-                <Camera className="w-4 h-4" />
-                Take Photo
-              </button>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition"
-              >
-                <Upload className="w-4 h-4" />
-                Upload
-              </button>
-            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[hsl(var(--sprouttie-green))] text-white font-semibold text-sm shadow-sm hover:opacity-90 transition mx-auto"
+            >
+              <Upload className="w-4 h-4" />
+              Upload or Take Photo
+            </button>
           </div>
 
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={e => handleFile(e.target.files?.[0])}
-          />
           <input
             ref={fileInputRef}
             type="file"
@@ -195,7 +228,7 @@ const PhotoScanner = () => {
           />
 
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-            <strong>Tips:</strong> Use good lighting, avoid shadows. Works best with clear, visible Chinese characters on any surface.
+            <strong>Tips:</strong> Use good lighting, avoid shadows. On iPhone, tap "Upload or Take Photo" then choose "Take Photo" from the menu. Works with Chinese & English text.
           </div>
         </motion.div>
       )}
@@ -215,7 +248,7 @@ const PhotoScanner = () => {
           <div className="flex flex-col items-center gap-3 py-8">
             <Loader2 className="w-10 h-10 text-[hsl(var(--sprouttie-green))] animate-spin" />
             <p className="font-semibold text-[hsl(var(--sprouttie-ink))]">Scanning for words...</p>
-            <p className="text-sm text-slate-500">Detecting Chinese words and generating translations</p>
+            <p className="text-sm text-slate-500">Detecting Chinese & English words and generating translations</p>
           </div>
         </motion.div>
       )}
@@ -243,7 +276,7 @@ const PhotoScanner = () => {
             <div className="text-center py-8 space-y-3">
               <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto" />
               <p className="font-semibold text-[hsl(var(--sprouttie-ink))]">No words detected</p>
-              <p className="text-sm text-slate-500">Try again with better lighting or clearer cards</p>
+              <p className="text-sm text-slate-500">Try again with better lighting or clearer text</p>
               <button onClick={reset} className="text-[hsl(var(--sprouttie-green))] font-semibold text-sm mt-2">
                 Try Again
               </button>
@@ -267,54 +300,76 @@ const PhotoScanner = () => {
                 </button>
               </div>
 
+              {/* Language hint */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-2.5 text-xs text-blue-700">
+                <strong>Tap the language badge</strong> to cycle: <span className="font-semibold">EN</span> (English front) → <span className="font-semibold">CN</span> (Chinese front) → <span className="font-semibold">Both</span> (saves two cards)
+              </div>
+
               <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-                {detectedWords.map(word => (
-                  <motion.div
-                    key={word.id}
-                    layout
-                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
-                      selectedWords[word.id]
-                        ? 'border-[hsl(var(--sprouttie-green)/0.4)] bg-[hsl(var(--sprouttie-green)/0.05)]'
-                        : 'border-slate-100 bg-white'
-                    } ${word.isDuplicate ? 'opacity-70' : ''}`}
-                    onClick={() => toggleWord(word.id)}
-                  >
-                    {/* Checkbox */}
-                    <div
-                      className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition ${
+                {detectedWords.map(word => {
+                  const lang = cardLanguage[word.id] || 'chinese';
+                  return (
+                    <motion.div
+                      key={word.id}
+                      layout
+                      className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
                         selectedWords[word.id]
-                          ? 'bg-[hsl(var(--sprouttie-green))] border-[hsl(var(--sprouttie-green))]'
-                          : 'border-slate-300'
-                      }`}
+                          ? 'border-[hsl(var(--sprouttie-green)/0.4)] bg-[hsl(var(--sprouttie-green)/0.05)]'
+                          : 'border-slate-100 bg-white'
+                      } ${word.isDuplicate ? 'opacity-70' : ''}`}
+                      onClick={() => toggleWord(word.id)}
                     >
-                      {selectedWords[word.id] && <Check className="w-3 h-3 text-white" />}
-                    </div>
+                      {/* Checkbox */}
+                      <div
+                        className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition ${
+                          selectedWords[word.id]
+                            ? 'bg-[hsl(var(--sprouttie-green))] border-[hsl(var(--sprouttie-green))]'
+                            : 'border-slate-300'
+                        }`}
+                      >
+                        {selectedWords[word.id] && <Check className="w-3 h-3 text-white" />}
+                      </div>
 
-                    {/* Word info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-[hsl(var(--sprouttie-ink))]">
-                          {word.chinese}
-                        </span>
-                        {word.isDuplicate && (
-                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                            EXISTS
+                      {/* Word info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-bold text-[hsl(var(--sprouttie-ink))]">
+                            {word.chinese}
                           </span>
-                        )}
+                          {word.originalLanguage === 'english' && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600">
+                              FROM EN
+                            </span>
+                          )}
+                          {word.isDuplicate && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                              EXISTS
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <span>{word.pinyin}</span>
+                          <span>·</span>
+                          <span>{word.english}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <span>{word.pinyin}</span>
-                        <span>·</span>
-                        <span>{word.english}</span>
-                      </div>
-                    </div>
 
-                    {/* Category badge */}
-                    <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-slate-100 text-slate-600 flex-shrink-0">
-                      {word.category}
-                    </span>
-                  </motion.div>
-                ))}
+                      {/* Language toggle badge */}
+                      <button
+                        onClick={(e) => cycleLanguage(word.id, e)}
+                        className={`text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0 transition-colors ${getLangColor(lang)}`}
+                        title="Tap to change: EN / CN / Both"
+                      >
+                        {getLangLabel(lang)}
+                      </button>
+
+                      {/* Category badge */}
+                      <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-slate-100 text-slate-600 flex-shrink-0">
+                        {word.category}
+                      </span>
+                    </motion.div>
+                  );
+                })}
               </div>
 
               {/* Action buttons */}
@@ -328,7 +383,7 @@ const PhotoScanner = () => {
                 </button>
                 <button
                   onClick={handleApprove}
-                  disabled={adding || Object.values(selectedWords).filter(Boolean).length === 0}
+                  disabled={adding || totalCardsToAdd === 0}
                   className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[hsl(var(--sprouttie-green))] text-white font-semibold text-sm shadow-sm hover:opacity-90 transition disabled:opacity-50"
                 >
                   {adding ? (
@@ -336,7 +391,7 @@ const PhotoScanner = () => {
                   ) : (
                     <Plus className="w-4 h-4" />
                   )}
-                  Add {Object.values(selectedWords).filter(Boolean).length} Cards
+                  Add {totalCardsToAdd} Card{totalCardsToAdd !== 1 ? 's' : ''}
                 </button>
               </div>
             </>
