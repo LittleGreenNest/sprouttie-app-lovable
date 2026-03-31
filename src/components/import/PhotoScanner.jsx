@@ -136,7 +136,7 @@ const PhotoScanner = () => {
         </div>
         <div>
           <h2 className="text-lg font-bold text-[hsl(var(--sprouttie-ink))]">Scan Words</h2>
-          <p className="text-xs text-slate-500">Snap a photo of flashcards, toys, or anything with Chinese words</p>
+          <p className="text-xs text-slate-500">Snap a photo of flashcards, toys, or anything with Chinese or English words</p>
         </div>
       </div>
 
