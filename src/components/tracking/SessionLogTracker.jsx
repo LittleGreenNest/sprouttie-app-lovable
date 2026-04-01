@@ -702,7 +702,7 @@ const SessionLogTracker = () => {
               className="bg-card rounded-xl border border-border overflow-hidden"
             >
               {/* Set Header */}
-              <div className="flex items-center justify-between p-4 border-b border-border bg-secondary/30">
+              <div className="flex items-center justify-between p-4 border-b border-border bg-white">
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full ${setColor} flex items-center justify-center text-white font-bold`}>
                     {setIndex + 1}
