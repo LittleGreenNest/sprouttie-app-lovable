@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { useFlashcards } from '../context/FlashcardContext';
 import { getFlashcardStatsByCategory } from '../utils/supabaseApi';
-import { LayoutGrid, List, ChevronDown, ChevronUp, Download, Upload, FileSpreadsheet } from 'lucide-react';
+import { LayoutGrid, List, ChevronDown, ChevronUp, Download, Upload, FileSpreadsheet, AlignJustify, Grid3X3 } from 'lucide-react';
 import SearchFilterBar from './all-words/SearchFilterBar';
 import GlobalProgressBar from './all-words/GlobalProgressBar';
 import CategoryCard from './all-words/CategoryCard';
