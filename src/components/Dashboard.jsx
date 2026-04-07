@@ -314,6 +314,9 @@ one,yī,一,Numbers`;
         <CSVImport onClose={() => setShowCSVImport(false)} />
       )}
 
+      {/* This Week Flow */}
+      <ThisWeekFlow show={showThisWeek} onClose={() => setShowThisWeek(false)} />
+
       {/* Header Section */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
