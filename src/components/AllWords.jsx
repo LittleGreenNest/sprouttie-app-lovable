@@ -12,6 +12,7 @@ import StatsSummary from './all-words/StatsSummary';
 import { useAllWordsUIState } from '../hooks/useAllWordsUIState';
 import { generateCSVExport, downloadCSVFile } from '../utils/flashcardExport';
 import CSVImport from './import/CSVImport';
+import GridView from './all-words/GridView';
 
 const AllWords = () => {
   const { currentUser, plan: userPlan } = useAuth(); // Use plan from AuthContext - no extra fetch
