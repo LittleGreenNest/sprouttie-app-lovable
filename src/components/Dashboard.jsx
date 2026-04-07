@@ -14,6 +14,8 @@ import MilestoneModal from './gamification/MilestoneModal';
 import MilestonesListModal from './gamification/MilestonesListModal';
 import FlashedWordsGrid from './tracking/FlashedWordsGrid';
 import CSVImport from './CSVImport';
+import ThisWeekCard from './thisweek/ThisWeekCard';
+import ThisWeekFlow from './thisweek/ThisWeekFlow';
 import { checkForNewMilestone } from '../utils/milestones';
 import { getEncouragement } from '../utils/encouragements';
 import { useAccessibility, useSkipLinks } from '../hooks/useAccessibility';
@@ -35,6 +37,7 @@ const Dashboard = () => {
   const [achievedMilestones, setAchievedMilestones] = useState([]);
   const [encouragement, setEncouragement] = useState(null);
   const [showCSVImport, setShowCSVImport] = useState(false);
+  const [showThisWeek, setShowThisWeek] = useState(false);
   const [trackingData, setTrackingData] = useState([]);
   
   const [stats, setStats] = useState({
@@ -311,6 +314,9 @@ one,yī,一,Numbers`;
         <CSVImport onClose={() => setShowCSVImport(false)} />
       )}
 
+      {/* This Week Flow */}
+      <ThisWeekFlow show={showThisWeek} onClose={() => setShowThisWeek(false)} />
+
       {/* Header Section */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
@@ -355,6 +361,9 @@ one,yī,一,Numbers`;
           </motion.button>
         </div>
       </motion.div>
+
+      {/* This Week Card */}
+      <ThisWeekCard onOpen={() => setShowThisWeek(true)} />
       
       {/* Progress Hero - Words Learned & Current Streak */}
       <ProgressHero stats={stats} progressPercent={progressPercent} />

@@ -538,6 +538,36 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_logs: {
+        Row: {
+          content: string
+          context: string | null
+          created_at: string
+          id: string
+          log_type: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          content: string
+          context?: string | null
+          created_at?: string
+          id?: string
+          log_type: string
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          content?: string
+          context?: string | null
+          created_at?: string
+          id?: string
+          log_type?: string
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
       word_plans: {
         Row: {
           created_at: string
