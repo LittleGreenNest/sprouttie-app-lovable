@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import { ChevronLeft, ChevronRight, Pencil, Check, Plus, X, Sparkles } from 'lucide-react';
 import SortableWordList from './SortableWordList';
 import UpgradeBanner from './UpgradeBanner';
+import SetTimeline from './SetTimeline';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const SessionLogTracker = () => {
