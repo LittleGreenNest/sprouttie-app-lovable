@@ -45,6 +45,7 @@ const SessionLogTracker = () => {
   
   // Backlog/recommended words
   const [backlogWords, setBacklogWords] = useState([]);
+  const [expandedSetTab, setExpandedSetTab] = useState({}); // { [setId]: 'words' | 'timeline' }
 
   const dateString = useMemo(() => selectedDate.toISOString().split('T')[0], [selectedDate]);
   
