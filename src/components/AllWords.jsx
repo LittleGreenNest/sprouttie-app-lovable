@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { useFlashcards } from '../context/FlashcardContext';
 import { getFlashcardStatsByCategory } from '../utils/supabaseApi';
-import { LayoutGrid, List, ChevronDown, ChevronUp, Download, Upload, FileSpreadsheet } from 'lucide-react';
+import { LayoutGrid, List, ChevronDown, ChevronUp, Download, Upload, FileSpreadsheet, AlignJustify, Grid3X3 } from 'lucide-react';
 import SearchFilterBar from './all-words/SearchFilterBar';
 import GlobalProgressBar from './all-words/GlobalProgressBar';
 import CategoryCard from './all-words/CategoryCard';
@@ -12,6 +12,7 @@ import StatsSummary from './all-words/StatsSummary';
 import { useAllWordsUIState } from '../hooks/useAllWordsUIState';
 import { generateCSVExport, downloadCSVFile } from '../utils/flashcardExport';
 import CSVImport from './import/CSVImport';
+import GridView from './all-words/GridView';
 
 const AllWords = () => {
   const { currentUser, plan: userPlan } = useAuth(); // Use plan from AuthContext - no extra fetch
@@ -27,6 +28,9 @@ const AllWords = () => {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [dbFlashcardsRaw, setDbFlashcardsRaw] = useState([]);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem('allWords_viewMode') || 'list';
+  });
 
   // Initialize UI state management (must be before any conditional returns)
   const uiState = useAllWordsUIState(flashcardsByCategory, allCategories);
@@ -244,7 +248,7 @@ const AllWords = () => {
         <div>
           <h1 className="text-3xl font-bold text-slate-800 mb-1">All Words</h1>
           <p className="text-sm text-slate-500">
-            {uiState.isCompact ? 'Compact view for quick scanning' : 'Browse and manage your flashcard collection'}
+            {viewMode === 'grid' ? 'Vocabulary wall — dense & scannable' : uiState.isCompact ? 'Compact view for quick scanning' : 'Browse and manage your flashcard collection'}
           </p>
         </div>
         
@@ -270,22 +274,52 @@ const AllWords = () => {
             <FileSpreadsheet className="w-4 h-4" />
             <span className="hidden sm:inline">Export</span>
           </button>
+
+          {viewMode === 'list' && (
+            <>
+              <button
+                onClick={uiState.isCompact ? uiState.expandAll : uiState.collapseAll}
+                className="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-1"
+              >
+                {uiState.expandedCategories.size > 0 ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                <span className="hidden sm:inline">{uiState.expandedCategories.size > 0 ? 'Collapse' : 'Expand'}</span>
+              </button>
+              
+              <button
+                onClick={() => uiState.setIsCompact(!uiState.isCompact)}
+                className="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-1.5"
+              >
+                {uiState.isCompact ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
+                <span className="hidden sm:inline">{uiState.isCompact ? 'Full' : 'Compact'}</span>
+              </button>
+            </>
+          )}
           
-          <button
-            onClick={uiState.isCompact ? uiState.expandAll : uiState.collapseAll}
-            className="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-1"
-          >
-            {uiState.expandedCategories.size > 0 ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            <span className="hidden sm:inline">{uiState.expandedCategories.size > 0 ? 'Collapse' : 'Expand'}</span>
-          </button>
-          
-          <button
-            onClick={() => uiState.setIsCompact(!uiState.isCompact)}
-            className="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-1.5"
-          >
-            {uiState.isCompact ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
-            <span className="hidden sm:inline">{uiState.isCompact ? 'Full' : 'Compact'}</span>
-          </button>
+          {/* List / Grid view toggle */}
+          <div className="flex items-center rounded-md overflow-hidden border border-slate-200">
+            <button
+              onClick={() => { setViewMode('list'); localStorage.setItem('allWords_viewMode', 'list'); }}
+              className="p-2"
+              style={{
+                backgroundColor: viewMode === 'list' ? '#2D6A4F' : 'transparent',
+                color: viewMode === 'list' ? '#fff' : '#9CA3AF',
+              }}
+              title="List view"
+            >
+              <AlignJustify className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => { setViewMode('grid'); localStorage.setItem('allWords_viewMode', 'grid'); }}
+              className="p-2"
+              style={{
+                backgroundColor: viewMode === 'grid' ? '#2D6A4F' : 'transparent',
+                color: viewMode === 'grid' ? '#fff' : '#9CA3AF',
+              }}
+              title="Grid view"
+            >
+              <Grid3X3 className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -311,26 +345,38 @@ const AllWords = () => {
           {/* Global Progress Bar */}
           <GlobalProgressBar flashedCount={flashedWords} totalCount={totalWords} />
 
-          {/* Category Cards */}
-          <div className={uiState.isCompact ? 'space-y-2' : 'space-y-4'}>
-            <AnimatePresence mode="popLayout">
-              {uiState.filteredAndSortedCategories.map((category, idx) => (
-                <CategoryCard
-                  key={category}
-                  category={category}
-                  words={flashcardsByCategory[category]}
-                  flashedIds={flashedEver}
-                  isExpanded={uiState.expandedCategories.has(category)}
-                  onToggle={() => uiState.toggleCategory(category)}
-                  isCompact={uiState.isCompact}
-                  onEditCard={handleEditClick}
-                  filteredWords={uiState.getFilteredWords(flashcardsByCategory[category])}
-                  index={idx}
-                  userPlan={userPlan}
-                />
-              ))}
-            </AnimatePresence>
-          </div>
+          {/* Category Cards / Grid View */}
+          {viewMode === 'grid' ? (
+            <GridView
+              categories={uiState.filteredAndSortedCategories}
+              flashcardsByCategory={flashcardsByCategory}
+              flashedIds={flashedEver}
+              getFilteredWords={uiState.getFilteredWords}
+              searchQuery={uiState.query}
+              sets={sets}
+              onEditCard={handleEditClick}
+            />
+          ) : (
+            <div className={uiState.isCompact ? 'space-y-2' : 'space-y-4'}>
+              <AnimatePresence mode="popLayout">
+                {uiState.filteredAndSortedCategories.map((category, idx) => (
+                  <CategoryCard
+                    key={category}
+                    category={category}
+                    words={flashcardsByCategory[category]}
+                    flashedIds={flashedEver}
+                    isExpanded={uiState.expandedCategories.has(category)}
+                    onToggle={() => uiState.toggleCategory(category)}
+                    isCompact={uiState.isCompact}
+                    onEditCard={handleEditClick}
+                    filteredWords={uiState.getFilteredWords(flashcardsByCategory[category])}
+                    index={idx}
+                    userPlan={userPlan}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
 
           {/* Summary Stats */}
           <StatsSummary
