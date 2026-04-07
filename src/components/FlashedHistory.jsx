@@ -24,6 +24,7 @@ const FlashedHistory = () => {
   const { currentUser } = useAuth();
   const [sessionHistory, setSessionHistory] = useState([]);
   const [allTrackingData, setAllTrackingData] = useState([]);
+  const [spokenWordsByDate, setSpokenWordsByDate] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -87,6 +88,27 @@ const FlashedHistory = () => {
       (flashcards || []).forEach(card => {
         flashcardMap[card.id] = card;
       });
+
+      // Fetch spoken words for the month to populate "Words Logged" column
+      const { data: spokenWords } = await supabase
+        .from('spoken_words')
+        .select('id, word, created_at, started_saying_at')
+        .eq('user_id', currentUser.id)
+        .gte('started_saying_at', startDateStr)
+        .lte('started_saying_at', endDateStr + 'T23:59:59');
+
+      // Group spoken words by date
+      const swByDate = {};
+      (spokenWords || []).forEach(sw => {
+        const date = sw.started_saying_at?.split('T')[0];
+        if (!date) return;
+        if (!swByDate[date]) swByDate[date] = { total: 0, newCount: 0 };
+        swByDate[date].total++;
+        // Check if this word was first logged on this date (i.e., created_at matches started_saying_at date)
+        const createdDate = sw.created_at?.split('T')[0];
+        if (createdDate === date) swByDate[date].newCount++;
+      });
+      setSpokenWordsByDate(swByDate);
 
       // Group by date to create session history
       const sessionsByDate = {};
@@ -198,14 +220,21 @@ const FlashedHistory = () => {
   }, [sessionHistory, allTrackingData, selectedMonth]);
 
   const exportToCSV = () => {
-    const headers = ['Date', 'Sets Used', 'Flashcards', 'Engagement', 'Notes'];
-    const rows = sessionHistory.map(s => [
-      s.date, 
-      s.setsUsed.join(', ') || '-', 
-      s.flashcardCount, 
-      s.avgEngagement || '-', 
-      s.notes || '-'
-    ]);
+    const headers = ['Date', 'Sets Used', 'Flashcards', 'Words Logged', 'Engagement', 'Notes'];
+    const rows = sessionHistory.map(s => {
+      const sw = spokenWordsByDate[s.date];
+      const wordsLogged = sw && sw.total > 0
+        ? (sw.newCount > 0 ? `${sw.total} (${sw.newCount} new)` : `${sw.total}`)
+        : '-';
+      return [
+        s.date, 
+        s.setsUsed.join(', ') || '-', 
+        s.flashcardCount,
+        wordsLogged,
+        s.avgEngagement || '-', 
+        s.notes || '-'
+      ];
+    });
     const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -278,6 +307,9 @@ const FlashedHistory = () => {
                   Flashcards
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Words Logged
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Engagement
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -291,7 +323,7 @@ const FlashedHistory = () => {
             <tbody className="divide-y divide-border">
               {sessionHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
                     No tracking data found for this user yet.
                   </td>
                 </tr>
@@ -315,6 +347,22 @@ const FlashedHistory = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-foreground font-medium">
                       {session.flashcardCount}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      {(() => {
+                        const sw = spokenWordsByDate[session.date];
+                        if (!sw || sw.total === 0) return <span className="text-muted-foreground">–</span>;
+                        return (
+                          <span className="text-foreground font-medium">
+                            {sw.newCount > 0 && sw.newCount < sw.total
+                              ? `${sw.total} words (${sw.newCount} new)`
+                              : sw.newCount === sw.total
+                                ? `${sw.total} new`
+                                : `${sw.total} words`
+                            }
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       {session.avgEngagement ? (
