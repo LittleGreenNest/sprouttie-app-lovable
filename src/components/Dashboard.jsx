@@ -16,6 +16,7 @@ import FlashedWordsGrid from './tracking/FlashedWordsGrid';
 import CSVImport from './CSVImport';
 import ThisWeekCard from './thisweek/ThisWeekCard';
 import ThisWeekFlow from './thisweek/ThisWeekFlow';
+import ReflectionReminder from './dashboard/ReflectionReminder';
 import { checkForNewMilestone } from '../utils/milestones';
 import { getEncouragement } from '../utils/encouragements';
 import { useAccessibility, useSkipLinks } from '../hooks/useAccessibility';
