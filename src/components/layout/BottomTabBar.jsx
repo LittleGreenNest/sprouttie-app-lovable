@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, CalendarCheck, Layers, BookOpen, MoreHorizontal, X, History, ListChecks, MessageCircle, Headphones, CalendarDays, Camera } from 'lucide-react';
+import { LayoutDashboard, CalendarCheck, Sprout, BookOpen, MoreHorizontal, X, History, ListChecks, CalendarDays, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PRIMARY_TABS = [
   { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
   { id: 'daily-tracking', label: 'Log', icon: CalendarCheck },
-  { id: 'manage-flashcards', label: 'Cards', icon: Layers },
+  { id: 'words', label: 'Words', icon: Sprout },
   { id: 'book-recommendations', label: 'Books', icon: BookOpen },
 ];
 
@@ -14,7 +14,6 @@ const MORE_TABS = [
   { id: 'word-planner', label: 'Word Planner', icon: CalendarDays },
   { id: 'flashed-history', label: 'Flashed History', icon: History },
   { id: 'all-words', label: 'All Words', icon: ListChecks },
-  { id: 'spoken-words', label: 'Words Said', icon: MessageCircle },
   { id: 'scan-flashcards', label: 'Scan Cards', icon: Camera },
 ];
 
