@@ -28,6 +28,9 @@ const AllWords = () => {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [dbFlashcardsRaw, setDbFlashcardsRaw] = useState([]);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem('allWords_viewMode') || 'list';
+  });
 
   // Initialize UI state management (must be before any conditional returns)
   const uiState = useAllWordsUIState(flashcardsByCategory, allCategories);
