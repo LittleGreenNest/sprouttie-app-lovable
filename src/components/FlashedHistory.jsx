@@ -220,14 +220,21 @@ const FlashedHistory = () => {
   }, [sessionHistory, allTrackingData, selectedMonth]);
 
   const exportToCSV = () => {
-    const headers = ['Date', 'Sets Used', 'Flashcards', 'Engagement', 'Notes'];
-    const rows = sessionHistory.map(s => [
-      s.date, 
-      s.setsUsed.join(', ') || '-', 
-      s.flashcardCount, 
-      s.avgEngagement || '-', 
-      s.notes || '-'
-    ]);
+    const headers = ['Date', 'Sets Used', 'Flashcards', 'Words Logged', 'Engagement', 'Notes'];
+    const rows = sessionHistory.map(s => {
+      const sw = spokenWordsByDate[s.date];
+      const wordsLogged = sw && sw.total > 0
+        ? (sw.newCount > 0 ? `${sw.total} (${sw.newCount} new)` : `${sw.total}`)
+        : '-';
+      return [
+        s.date, 
+        s.setsUsed.join(', ') || '-', 
+        s.flashcardCount,
+        wordsLogged,
+        s.avgEngagement || '-', 
+        s.notes || '-'
+      ];
+    });
     const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
