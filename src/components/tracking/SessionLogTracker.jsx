@@ -550,6 +550,19 @@ const SessionLogTracker = () => {
     const currentSet = sets.find(s => s.id === editingSetId);
     if (!currentSet) return;
     
+    // Write date_retired before removing from set
+    if (currentUser) {
+      try {
+        await supabase
+          .from('flashcards')
+          .update({ date_retired: new Date().toISOString().split('T')[0], card_status: 'retired' })
+          .eq('id', wordId)
+          .eq('user_id', currentUser.id);
+      } catch (err) {
+        console.error('Error writing date_retired:', err);
+      }
+    }
+    
     const currentIds = currentSet.flashcardIds || [];
     await updateSetFlashcards(editingSetId, currentIds.filter(id => id !== wordId));
     toast.success('Word removed from set');
