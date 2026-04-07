@@ -177,7 +177,7 @@ const SetTimeline = ({ setId, currentWords = [] }) => {
               </div>
 
               {/* Content */}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 ml-3">
                 <div className="text-[13px] font-semibold text-[#1F2937] truncate">
                   {entry.word}
                   {entry.secondary && (
