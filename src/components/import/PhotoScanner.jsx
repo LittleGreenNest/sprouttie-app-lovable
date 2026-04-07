@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Camera, Upload, X, Check, AlertTriangle, Loader2, RotateCcw, Plus, Globe } from 'lucide-react';
+import { Camera, Upload, X, Check, AlertTriangle, Loader2, RotateCcw, Plus, Globe, ScanText, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useFlashcards } from '@/context/FlashcardContext';
@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
 const STEPS = { UPLOAD: 'upload', SCANNING: 'scanning', REVIEW: 'review', DONE: 'done' };
+const MODES = { TEXT: 'text', IDENTIFY: 'identify' };
 
 const PhotoScanner = () => {
   const navigate = useNavigate();
