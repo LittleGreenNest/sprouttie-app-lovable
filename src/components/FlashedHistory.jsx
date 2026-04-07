@@ -24,6 +24,7 @@ const FlashedHistory = () => {
   const { currentUser } = useAuth();
   const [sessionHistory, setSessionHistory] = useState([]);
   const [allTrackingData, setAllTrackingData] = useState([]);
+  const [spokenWordsByDate, setSpokenWordsByDate] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
