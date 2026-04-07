@@ -199,17 +199,50 @@ const PhotoScanner = () => {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-4"
         >
+          {/* Mode toggle */}
+          <div className="flex bg-slate-100 rounded-xl p-1">
+            <button
+              onClick={() => setScanMode(MODES.TEXT)}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                scanMode === MODES.TEXT
+                  ? 'bg-white text-[hsl(var(--sprouttie-ink))] shadow-sm'
+                  : 'text-slate-500'
+              }`}
+            >
+              <ScanText className="w-4 h-4" />
+              Scan Text
+            </button>
+            <button
+              onClick={() => setScanMode(MODES.IDENTIFY)}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                scanMode === MODES.IDENTIFY
+                  ? 'bg-white text-[hsl(var(--sprouttie-ink))] shadow-sm'
+                  : 'text-slate-500'
+              }`}
+            >
+              <Eye className="w-4 h-4" />
+              What's this?
+            </button>
+          </div>
+
           {/* 3-step explainer strip */}
           <div className="flex items-center justify-between gap-2 bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
-            {[
-              { emoji: '📸', label: 'Lay cards out flat' },
-              { emoji: '🔍', label: 'We read the characters' },
-              { emoji: '✅', label: 'Added to your set instantly' },
-            ].map((step, i) => (
+            {(scanMode === MODES.TEXT
+              ? [
+                  { emoji: '📸', label: 'Lay cards out flat' },
+                  { emoji: '🔍', label: 'We read the characters' },
+                  { emoji: '✅', label: 'Added to your set instantly' },
+                ]
+              : [
+                  { emoji: '📸', label: 'Snap any object' },
+                  { emoji: '🧠', label: 'AI identifies it' },
+                  { emoji: '✅', label: 'Get the Chinese word' },
+                ]
+            ).map((s, i) => (
               <React.Fragment key={i}>
                 <div className="flex flex-col items-center text-center flex-1 gap-1.5">
-                  <span className="text-2xl">{step.emoji}</span>
-                  <span className="text-[11px] font-medium text-slate-600 leading-tight">{step.label}</span>
+                  <span className="text-2xl">{s.emoji}</span>
+                  <span className="text-[11px] font-medium text-slate-600 leading-tight">{s.label}</span>
                 </div>
                 {i < 2 && <div className="w-4 h-px bg-slate-200 flex-shrink-0" />}
               </React.Fragment>
