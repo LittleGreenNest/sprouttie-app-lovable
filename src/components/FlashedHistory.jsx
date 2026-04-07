@@ -342,6 +342,22 @@ const FlashedHistory = () => {
                       {session.flashcardCount}
                     </td>
                     <td className="px-6 py-4 text-sm">
+                      {(() => {
+                        const sw = spokenWordsByDate[session.date];
+                        if (!sw || sw.total === 0) return <span className="text-muted-foreground">–</span>;
+                        return (
+                          <span className="text-foreground font-medium">
+                            {sw.newCount > 0 && sw.newCount < sw.total
+                              ? `${sw.total} words (${sw.newCount} new)`
+                              : sw.newCount === sw.total
+                                ? `${sw.total} new`
+                                : `${sw.total} words`
+                            }
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
                       {session.avgEngagement ? (
                         <span className="inline-flex items-center gap-1">
                           <span className="text-amber-600">⭐</span>
