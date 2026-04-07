@@ -36,8 +36,10 @@ const Profile = lazy(() => import('./components/user/Profile'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const SessionLogTracker = lazy(() => import('./components/tracking/SessionLogTracker'));
 const FlashcardManager = lazy(() => import('./components/FlashcardManager'));
+const WordsPage = lazy(() => import('./components/WordsPage'));
 const AllWords = lazy(() => import('./components/AllWords'));
 const SpokenWords = lazy(() => import('./components/SpokenWords'));
+
 const Plans = lazy(() => import('./components/subscription/Plans'));
 const PrintFlashcards = lazy(() => import('./components/PrintFlashcards'));
 const FlashedHistory = lazy(() => import('./components/FlashedHistory'));
