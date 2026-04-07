@@ -37,6 +37,7 @@ const Dashboard = () => {
   const [achievedMilestones, setAchievedMilestones] = useState([]);
   const [encouragement, setEncouragement] = useState(null);
   const [showCSVImport, setShowCSVImport] = useState(false);
+  const [showThisWeek, setShowThisWeek] = useState(false);
   const [trackingData, setTrackingData] = useState([]);
   
   const [stats, setStats] = useState({
