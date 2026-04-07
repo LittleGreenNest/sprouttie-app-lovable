@@ -251,14 +251,23 @@ const PhotoScanner = () => {
 
           <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center space-y-4 bg-slate-50/50">
             <div className="w-16 h-16 rounded-full bg-[hsl(var(--sprouttie-green)/0.1)] flex items-center justify-center mx-auto">
-              <Camera className="w-8 h-8 text-[hsl(var(--sprouttie-green))]" />
+              {scanMode === MODES.IDENTIFY
+                ? <Eye className="w-8 h-8 text-[hsl(var(--sprouttie-green))]" />
+                : <Camera className="w-8 h-8 text-[hsl(var(--sprouttie-green))]" />
+              }
             </div>
             <div>
               <p className="font-semibold text-[hsl(var(--sprouttie-ink))]">
-                Snap anything with Chinese or English words
+                {scanMode === MODES.IDENTIFY
+                  ? "Snap a photo of any object"
+                  : "Snap anything with Chinese or English words"
+                }
               </p>
               <p className="text-sm text-slate-500 mt-1">
-                Flashcards, toys, posters, books — we'll detect and translate up to 20 words at once
+                {scanMode === MODES.IDENTIFY
+                  ? "Point at a toy, fruit, animal — we'll tell you the Chinese word"
+                  : "Flashcards, toys, posters, books — we'll detect and translate up to 20 words at once"
+                }
               </p>
             </div>
 
