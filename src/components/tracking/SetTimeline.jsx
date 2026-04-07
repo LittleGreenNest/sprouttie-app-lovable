@@ -129,10 +129,11 @@ const SetTimeline = ({ setId, currentWords = [] }) => {
 
   return (
     <div className="max-h-[280px] overflow-y-auto pr-1">
-      <div className="relative">
-        {/* Vertical timeline line */}
+      <div className="relative pl-[60px]">
+        {/* Vertical timeline line — positioned on the left edge of content */}
         <div 
-          className="absolute left-[52px] top-0 bottom-0 w-[2px] bg-[#E5E7EB]" 
+          className="absolute top-2 bottom-2 w-[2px] bg-[#D1D5DB] rounded-full" 
+          style={{ left: '55px' }}
         />
 
         {timelineEntries.map((entry, idx) => {
@@ -154,9 +155,9 @@ const SetTimeline = ({ setId, currentWords = [] }) => {
           }
 
           return (
-            <div key={entry.id} className="flex items-start gap-3 py-2 relative">
-              {/* Date column */}
-              <div className="w-[44px] flex-shrink-0 text-right">
+            <div key={entry.id} className="flex items-start py-2.5 relative">
+              {/* Date column — absolutely positioned to the left */}
+              <div className="absolute left-[-56px] w-[48px] text-right top-2.5">
                 <div className="text-[11px] font-medium text-[#374151] leading-tight">
                   {formatShortDate(entry.date)}
                 </div>
@@ -165,10 +166,13 @@ const SetTimeline = ({ setId, currentWords = [] }) => {
                 </div>
               </div>
 
-              {/* Timeline node */}
-              <div className="relative flex-shrink-0 w-[16px] flex items-center justify-center z-10 mt-1">
-                <div className="w-[6px] h-[6px] rounded-full bg-[#E5E7EB] border-2 border-white" 
-                  style={{ boxShadow: '0 0 0 2px #E5E7EB' }}
+              {/* Timeline node — sits exactly on the line */}
+              <div 
+                className="absolute flex items-center justify-center z-10"
+                style={{ left: '-8px', top: '12px' }}
+              >
+                <div 
+                  className="w-[10px] h-[10px] rounded-full bg-white border-[2.5px] border-[#9CA3AF]"
                 />
               </div>
 
