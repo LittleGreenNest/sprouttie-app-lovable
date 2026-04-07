@@ -323,7 +323,7 @@ const FlashedHistory = () => {
             <tbody className="divide-y divide-border">
               {sessionHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
                     No tracking data found for this user yet.
                   </td>
                 </tr>
