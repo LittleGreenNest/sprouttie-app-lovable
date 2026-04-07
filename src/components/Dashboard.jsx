@@ -366,6 +366,9 @@ one,yī,一,Numbers`;
       {/* This Week Card */}
       <ThisWeekCard onOpen={() => setShowThisWeek(true)} />
       
+      {/* Reflection Reminder — shows Fri–Sun if no reflection logged */}
+      <ReflectionReminder onOpenThisWeek={() => setShowThisWeek(true)} />
+      
       {/* Progress Hero - Words Learned & Current Streak */}
       <ProgressHero stats={stats} progressPercent={progressPercent} />
       
