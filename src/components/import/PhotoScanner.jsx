@@ -197,6 +197,23 @@ const PhotoScanner = () => {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-4"
         >
+          {/* 3-step explainer strip */}
+          <div className="flex items-center justify-between gap-2 bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+            {[
+              { emoji: '📸', label: 'Lay cards out flat' },
+              { emoji: '🔍', label: 'We read the characters' },
+              { emoji: '✅', label: 'Added to your set instantly' },
+            ].map((step, i) => (
+              <React.Fragment key={i}>
+                <div className="flex flex-col items-center text-center flex-1 gap-1.5">
+                  <span className="text-2xl">{step.emoji}</span>
+                  <span className="text-[11px] font-medium text-slate-600 leading-tight">{step.label}</span>
+                </div>
+                {i < 2 && <div className="w-4 h-px bg-slate-200 flex-shrink-0" />}
+              </React.Fragment>
+            ))}
+          </div>
+
           <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center space-y-4 bg-slate-50/50">
             <div className="w-16 h-16 rounded-full bg-[hsl(var(--sprouttie-green)/0.1)] flex items-center justify-center mx-auto">
               <Camera className="w-8 h-8 text-[hsl(var(--sprouttie-green))]" />
@@ -206,7 +223,7 @@ const PhotoScanner = () => {
                 Snap anything with Chinese or English words
               </p>
               <p className="text-sm text-slate-500 mt-1">
-                Flashcards, toys, posters, books — we'll detect and translate the words
+                Flashcards, toys, posters, books — we'll detect and translate up to 20 words at once
               </p>
             </div>
 
@@ -228,7 +245,7 @@ const PhotoScanner = () => {
           />
 
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-            <strong>Tips:</strong> Use good lighting, avoid shadows. On iPhone, tap "Upload or Take Photo" then choose "Take Photo" from the menu. Works with Chinese & English text.
+            <strong>Tip:</strong> Use good lighting and lay items flat. On iPhone, tap the button then choose "Take Photo". Works with up to 20 items at once.
           </div>
         </motion.div>
       )}
