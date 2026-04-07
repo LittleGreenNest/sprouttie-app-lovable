@@ -248,7 +248,7 @@ const AllWords = () => {
         <div>
           <h1 className="text-3xl font-bold text-slate-800 mb-1">All Words</h1>
           <p className="text-sm text-slate-500">
-            {uiState.isCompact ? 'Compact view for quick scanning' : 'Browse and manage your flashcard collection'}
+            {viewMode === 'grid' ? 'Vocabulary wall — dense & scannable' : uiState.isCompact ? 'Compact view for quick scanning' : 'Browse and manage your flashcard collection'}
           </p>
         </div>
         
@@ -274,22 +274,52 @@ const AllWords = () => {
             <FileSpreadsheet className="w-4 h-4" />
             <span className="hidden sm:inline">Export</span>
           </button>
+
+          {viewMode === 'list' && (
+            <>
+              <button
+                onClick={uiState.isCompact ? uiState.expandAll : uiState.collapseAll}
+                className="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-1"
+              >
+                {uiState.expandedCategories.size > 0 ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                <span className="hidden sm:inline">{uiState.expandedCategories.size > 0 ? 'Collapse' : 'Expand'}</span>
+              </button>
+              
+              <button
+                onClick={() => uiState.setIsCompact(!uiState.isCompact)}
+                className="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-1.5"
+              >
+                {uiState.isCompact ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
+                <span className="hidden sm:inline">{uiState.isCompact ? 'Full' : 'Compact'}</span>
+              </button>
+            </>
+          )}
           
-          <button
-            onClick={uiState.isCompact ? uiState.expandAll : uiState.collapseAll}
-            className="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-1"
-          >
-            {uiState.expandedCategories.size > 0 ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            <span className="hidden sm:inline">{uiState.expandedCategories.size > 0 ? 'Collapse' : 'Expand'}</span>
-          </button>
-          
-          <button
-            onClick={() => uiState.setIsCompact(!uiState.isCompact)}
-            className="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-1.5"
-          >
-            {uiState.isCompact ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
-            <span className="hidden sm:inline">{uiState.isCompact ? 'Full' : 'Compact'}</span>
-          </button>
+          {/* List / Grid view toggle */}
+          <div className="flex items-center rounded-md overflow-hidden border border-slate-200">
+            <button
+              onClick={() => { setViewMode('list'); localStorage.setItem('allWords_viewMode', 'list'); }}
+              className="p-2"
+              style={{
+                backgroundColor: viewMode === 'list' ? '#2D6A4F' : 'transparent',
+                color: viewMode === 'list' ? '#fff' : '#9CA3AF',
+              }}
+              title="List view"
+            >
+              <AlignJustify className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => { setViewMode('grid'); localStorage.setItem('allWords_viewMode', 'grid'); }}
+              className="p-2"
+              style={{
+                backgroundColor: viewMode === 'grid' ? '#2D6A4F' : 'transparent',
+                color: viewMode === 'grid' ? '#fff' : '#9CA3AF',
+              }}
+              title="Grid view"
+            >
+              <Grid3X3 className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
