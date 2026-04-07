@@ -36,8 +36,10 @@ const Profile = lazy(() => import('./components/user/Profile'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const SessionLogTracker = lazy(() => import('./components/tracking/SessionLogTracker'));
 const FlashcardManager = lazy(() => import('./components/FlashcardManager'));
+const WordsPage = lazy(() => import('./components/WordsPage'));
 const AllWords = lazy(() => import('./components/AllWords'));
 const SpokenWords = lazy(() => import('./components/SpokenWords'));
+
 const Plans = lazy(() => import('./components/subscription/Plans'));
 const PrintFlashcards = lazy(() => import('./components/PrintFlashcards'));
 const FlashedHistory = lazy(() => import('./components/FlashedHistory'));
@@ -118,9 +120,10 @@ const AppContent = () => {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/daily-tracking" element={<SessionLogTracker />} />
             <Route path="/flashed-history" element={<FlashedHistory />} />
+            <Route path="/words" element={<WordsPage />} />
             <Route path="/all-words" element={<AllWords />} />
-            <Route path="/spoken-words" element={<SpokenWords />} />
-            <Route path="/manage-flashcards" element={<FlashcardManager />} />
+            <Route path="/spoken-words" element={<Navigate to="/words" replace />} />
+            <Route path="/manage-flashcards" element={<Navigate to="/words" replace />} />
             <Route path="/tracker-mockup" element={<FlashingTrackerMockup />} />
             <Route path="/garden-guide" element={<GardenGuide />} />
             
