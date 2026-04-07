@@ -16,6 +16,7 @@ import FlashedWordsGrid from './tracking/FlashedWordsGrid';
 import CSVImport from './CSVImport';
 import ThisWeekCard from './thisweek/ThisWeekCard';
 import ThisWeekFlow from './thisweek/ThisWeekFlow';
+import ReflectionReminder from './dashboard/ReflectionReminder';
 import { checkForNewMilestone } from '../utils/milestones';
 import { getEncouragement } from '../utils/encouragements';
 import { useAccessibility, useSkipLinks } from '../hooks/useAccessibility';
@@ -364,6 +365,9 @@ one,yī,一,Numbers`;
 
       {/* This Week Card */}
       <ThisWeekCard onOpen={() => setShowThisWeek(true)} />
+      
+      {/* Reflection Reminder — shows Fri–Sun if no reflection logged */}
+      <ReflectionReminder onOpenThisWeek={() => setShowThisWeek(true)} />
       
       {/* Progress Hero - Words Learned & Current Streak */}
       <ProgressHero stats={stats} progressPercent={progressPercent} />
