@@ -44,7 +44,7 @@ const PhotoScanner = () => {
       const base64 = btoa(binary);
 
       const { data, error } = await supabase.functions.invoke('scan-flashcards', {
-        body: { imageBase64: base64, mimeType: file.type || 'image/jpeg' },
+        body: { imageBase64: base64, mimeType: file.type || 'image/jpeg', mode: scanMode === MODES.IDENTIFY ? 'identify' : 'text' },
       });
 
       if (error) throw error;
