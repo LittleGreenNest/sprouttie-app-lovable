@@ -361,6 +361,9 @@ one,yī,一,Numbers`;
           </motion.button>
         </div>
       </motion.div>
+
+      {/* This Week Card */}
+      <ThisWeekCard onOpen={() => setShowThisWeek(true)} />
       
       {/* Progress Hero - Words Learned & Current Streak */}
       <ProgressHero stats={stats} progressPercent={progressPercent} />
