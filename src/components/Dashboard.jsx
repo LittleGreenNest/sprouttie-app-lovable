@@ -14,6 +14,8 @@ import MilestoneModal from './gamification/MilestoneModal';
 import MilestonesListModal from './gamification/MilestonesListModal';
 import FlashedWordsGrid from './tracking/FlashedWordsGrid';
 import CSVImport from './CSVImport';
+import ThisWeekCard from './thisweek/ThisWeekCard';
+import ThisWeekFlow from './thisweek/ThisWeekFlow';
 import { checkForNewMilestone } from '../utils/milestones';
 import { getEncouragement } from '../utils/encouragements';
 import { useAccessibility, useSkipLinks } from '../hooks/useAccessibility';
