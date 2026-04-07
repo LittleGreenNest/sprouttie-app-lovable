@@ -345,26 +345,38 @@ const AllWords = () => {
           {/* Global Progress Bar */}
           <GlobalProgressBar flashedCount={flashedWords} totalCount={totalWords} />
 
-          {/* Category Cards */}
-          <div className={uiState.isCompact ? 'space-y-2' : 'space-y-4'}>
-            <AnimatePresence mode="popLayout">
-              {uiState.filteredAndSortedCategories.map((category, idx) => (
-                <CategoryCard
-                  key={category}
-                  category={category}
-                  words={flashcardsByCategory[category]}
-                  flashedIds={flashedEver}
-                  isExpanded={uiState.expandedCategories.has(category)}
-                  onToggle={() => uiState.toggleCategory(category)}
-                  isCompact={uiState.isCompact}
-                  onEditCard={handleEditClick}
-                  filteredWords={uiState.getFilteredWords(flashcardsByCategory[category])}
-                  index={idx}
-                  userPlan={userPlan}
-                />
-              ))}
-            </AnimatePresence>
-          </div>
+          {/* Category Cards / Grid View */}
+          {viewMode === 'grid' ? (
+            <GridView
+              categories={uiState.filteredAndSortedCategories}
+              flashcardsByCategory={flashcardsByCategory}
+              flashedIds={flashedEver}
+              getFilteredWords={uiState.getFilteredWords}
+              searchQuery={uiState.query}
+              sets={sets}
+              onEditCard={handleEditClick}
+            />
+          ) : (
+            <div className={uiState.isCompact ? 'space-y-2' : 'space-y-4'}>
+              <AnimatePresence mode="popLayout">
+                {uiState.filteredAndSortedCategories.map((category, idx) => (
+                  <CategoryCard
+                    key={category}
+                    category={category}
+                    words={flashcardsByCategory[category]}
+                    flashedIds={flashedEver}
+                    isExpanded={uiState.expandedCategories.has(category)}
+                    onToggle={() => uiState.toggleCategory(category)}
+                    isCompact={uiState.isCompact}
+                    onEditCard={handleEditClick}
+                    filteredWords={uiState.getFilteredWords(flashcardsByCategory[category])}
+                    index={idx}
+                    userPlan={userPlan}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
 
           {/* Summary Stats */}
           <StatsSummary
