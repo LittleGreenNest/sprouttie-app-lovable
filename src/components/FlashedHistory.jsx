@@ -89,6 +89,27 @@ const FlashedHistory = () => {
         flashcardMap[card.id] = card;
       });
 
+      // Fetch spoken words for the month to populate "Words Logged" column
+      const { data: spokenWords } = await supabase
+        .from('spoken_words')
+        .select('id, word, created_at, started_saying_at')
+        .eq('user_id', currentUser.id)
+        .gte('started_saying_at', startDateStr)
+        .lte('started_saying_at', endDateStr + 'T23:59:59');
+
+      // Group spoken words by date
+      const swByDate = {};
+      (spokenWords || []).forEach(sw => {
+        const date = sw.started_saying_at?.split('T')[0];
+        if (!date) return;
+        if (!swByDate[date]) swByDate[date] = { total: 0, newCount: 0 };
+        swByDate[date].total++;
+        // Check if this word was first logged on this date (i.e., created_at matches started_saying_at date)
+        const createdDate = sw.created_at?.split('T')[0];
+        if (createdDate === date) swByDate[date].newCount++;
+      });
+      setSpokenWordsByDate(swByDate);
+
       // Group by date to create session history
       const sessionsByDate = {};
       (trackingData || []).forEach(record => {
