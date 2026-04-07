@@ -6,25 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
-
-    const { imageBase64, mimeType } = await req.json();
-
-    if (!imageBase64) {
-      return new Response(JSON.stringify({ error: "No image provided" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const systemPrompt = `You are a word extractor for a bilingual Chinese-English learning app for young children.
+const TEXT_SYSTEM_PROMPT = `You are a word extractor for a bilingual Chinese-English learning app for young children.
 
 The user will send you a photo that may contain Chinese words, English words, or both. This could be physical flashcards, educational toys, puzzles, posters, book pages, packaging, or any object with text on it.
 
@@ -40,14 +22,64 @@ Your job:
 Return ONLY a JSON object with this structure:
 {
   "words": [
-    { "chinese": "猫", "english": "cat", "pinyin": "māo", "category": "Animals", "originalLanguage": "chinese" },
-    { "chinese": "干净的衬衫", "english": "clean shirt", "pinyin": "gānjìng de chènshān", "category": "Clothing", "originalLanguage": "english" },
-    ...
+    { "chinese": "猫", "english": "cat", "pinyin": "māo", "category": "Animals", "originalLanguage": "chinese" }
   ]
 }
 
 If you cannot read a word clearly, skip it. Do not guess wildly.
 If the image doesn't contain any readable text, return { "words": [], "message": "No words detected in this image." }`;
+
+const IDENTIFY_SYSTEM_PROMPT = `You are an object identifier for a bilingual Chinese-English learning app for young children (toddlers aged 1-4).
+
+The user will send you a photo of an object, toy, animal, food, or scene. Your job is to identify the main objects visible and return vocabulary words a parent would teach a toddler.
+
+Rules:
+- Be specific but age-appropriate: "basketball" not "ball", "fire truck" not "vehicle", "banana" not "yellow fruit"
+- If you see a specific type (e.g. golden retriever), also return the general word (e.g. dog)
+- Include color or size descriptors only when they're the defining feature (e.g. "yellow duck")
+- For toys/stuffed animals, identify what they represent (e.g. a stuffed bear → "bear")
+- Return 1-5 words per image depending on what's visible
+- Focus on the most prominent/important objects
+
+For each object, provide:
+- "chinese": the Chinese characters
+- "english": the English word a parent would use
+- "pinyin": Hanyu Pinyin with tone marks (e.g. māo, not mao1)
+- "category": suggest from: Animals, Food, Vehicles, Household, Nature, Body Parts, Colors, Numbers, Family, Actions, Clothing, Fruits, Shapes, Weather, Places, Toys
+- "originalLanguage": always "identified" for object recognition
+
+Return ONLY a JSON object:
+{
+  "words": [
+    { "chinese": "篮球", "english": "basketball", "pinyin": "lánqiú", "category": "Toys", "originalLanguage": "identified" }
+  ]
+}
+
+If you cannot identify anything meaningful, return { "words": [], "message": "Could not identify objects in this image. Try a clearer photo." }`;
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    const { imageBase64, mimeType, mode } = await req.json();
+
+    if (!imageBase64) {
+      return new Response(JSON.stringify({ error: "No image provided" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const isIdentifyMode = mode === "identify";
+    const systemPrompt = isIdentifyMode ? IDENTIFY_SYSTEM_PROMPT : TEXT_SYSTEM_PROMPT;
+    const userText = isIdentifyMode
+      ? "Please look at this photo and identify the main objects, animals, or items visible. Return the Chinese word, pinyin, and English for each."
+      : "Please scan this photo and extract all the words you can see — both Chinese and English. This could be flashcards, a toy, a puzzle, a poster, or any object with text. For English-only words, provide the Chinese translation too.";
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -64,10 +96,7 @@ If the image doesn't contain any readable text, return { "words": [], "message":
             {
               role: "user",
               content: [
-                {
-                  type: "text",
-                  text: "Please scan this photo and extract all the words you can see — both Chinese and English. This could be flashcards, a toy, a puzzle, a poster, or any object with text. For English-only words, provide the Chinese translation too.",
-                },
+                { type: "text", text: userText },
                 {
                   type: "image_url",
                   image_url: {
@@ -102,7 +131,6 @@ If the image doesn't contain any readable text, return { "words": [], "message":
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
 
-    // Extract JSON from the response (handle markdown code blocks)
     let jsonStr = content;
     const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (jsonMatch) {
