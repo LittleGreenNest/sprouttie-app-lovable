@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import { ChevronLeft, ChevronRight, Pencil, Check, Plus, X, Sparkles } from 'lucide-react';
 import SortableWordList from './SortableWordList';
 import UpgradeBanner from './UpgradeBanner';
+import SetTimeline from './SetTimeline';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const SessionLogTracker = () => {
@@ -44,6 +45,7 @@ const SessionLogTracker = () => {
   
   // Backlog/recommended words
   const [backlogWords, setBacklogWords] = useState([]);
+  const [expandedSetTab, setExpandedSetTab] = useState({}); // { [setId]: 'words' | 'timeline' }
 
   const dateString = useMemo(() => selectedDate.toISOString().split('T')[0], [selectedDate]);
   
@@ -548,6 +550,19 @@ const SessionLogTracker = () => {
     const currentSet = sets.find(s => s.id === editingSetId);
     if (!currentSet) return;
     
+    // Write date_retired before removing from set
+    if (currentUser) {
+      try {
+        await supabase
+          .from('flashcards')
+          .update({ date_retired: new Date().toISOString().split('T')[0], card_status: 'retired' })
+          .eq('id', wordId)
+          .eq('user_id', currentUser.id);
+      } catch (err) {
+        console.error('Error writing date_retired:', err);
+      }
+    }
+    
     const currentIds = currentSet.flashcardIds || [];
     await updateSetFlashcards(editingSetId, currentIds.filter(id => id !== wordId));
     toast.success('Word removed from set');
@@ -749,54 +764,81 @@ const SessionLogTracker = () => {
                 </div>
               </div>
               
-              {/* Words List - color-coded by age: orange (oldest) → yellow → green (newest) */}
-              <div className="p-4">
-                <div className="flex flex-wrap gap-2">
-                  {(() => {
-                    const total = words.length;
-                    const ageStyles = [
-                      { bg: 'rgba(249, 115, 22, 0.15)', border: '1.5px solid rgb(249, 115, 22)', label: '🔥 Oldest', labelColor: 'text-orange-600' },
-                      { bg: 'rgba(245, 158, 11, 0.12)', border: '1.5px solid rgb(245, 158, 11)', label: '#2', labelColor: 'text-amber-600' },
-                      { bg: 'rgba(234, 179, 8, 0.10)', border: '1.5px solid rgb(234, 179, 8)', label: '#3', labelColor: 'text-yellow-600' },
-                      { bg: 'rgba(132, 204, 22, 0.10)', border: '1.5px solid rgb(132, 204, 22)', label: '#4', labelColor: 'text-lime-600' },
-                      { bg: 'rgba(34, 197, 94, 0.12)', border: '1.5px solid rgb(34, 197, 94)', label: '✨ New', labelColor: 'text-green-600' },
-                    ];
-                    const getAge = (idx, count) => {
-                      if (count <= 1) return ageStyles[4];
-                      const step = Math.round((idx / (count - 1)) * 4);
-                      const style = ageStyles[Math.min(step, 4)];
-                      if (idx === 0) return { ...style, label: '🔥 Oldest', labelColor: 'text-orange-600' };
-                      if (idx === count - 1) return { ...style, label: '✨ New', labelColor: 'text-green-600' };
-                      return style;
-                    };
-                    return words.map((word, idx) => {
-                      const age = getAge(idx, total);
-                      return (
-                        <div 
-                          key={word.id}
-                          className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all"
-                          style={{ backgroundColor: age.bg, border: age.border }}
-                        >
-                          <span className="text-sm font-medium text-foreground">
-                            {word.front || word.word}
-                          </span>
-                          <span className={`text-[10px] font-semibold ${age.labelColor} whitespace-nowrap`}>
-                            {age.label}
-                          </span>
-                          {(word.date_introduced || word.created_at) && (
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(word.date_introduced || word.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    });
-                  })()}
-                  {words.length === 0 && (
-                    <span className="text-sm text-muted-foreground italic">No words in this set</span>
-                  )}
-                </div>
+              {/* Tab switcher: Words / Timeline */}
+              <div className="px-4 pt-3 pb-1 flex items-center gap-2">
+                {['words', 'timeline'].map(tab => {
+                  const active = (expandedSetTab[set.id] || 'words') === tab;
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setExpandedSetTab(prev => ({ ...prev, [set.id]: tab }))}
+                      className="text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors"
+                      style={{
+                        backgroundColor: active ? '#2D6A4F' : 'transparent',
+                        color: active ? '#fff' : '#9CA3AF',
+                      }}
+                    >
+                      {tab === 'words' ? 'Words' : 'Timeline'}
+                    </button>
+                  );
+                })}
               </div>
+
+              {(expandedSetTab[set.id] || 'words') === 'words' ? (
+                /* Words List - color-coded by age: orange (oldest) → yellow → green (newest) */
+                <div className="p-4 pt-2">
+                  <div className="flex flex-wrap gap-2">
+                    {(() => {
+                      const total = words.length;
+                      const ageStyles = [
+                        { bg: 'rgba(249, 115, 22, 0.15)', border: '1.5px solid rgb(249, 115, 22)', label: '🔥 Oldest', labelColor: 'text-orange-600' },
+                        { bg: 'rgba(245, 158, 11, 0.12)', border: '1.5px solid rgb(245, 158, 11)', label: '#2', labelColor: 'text-amber-600' },
+                        { bg: 'rgba(234, 179, 8, 0.10)', border: '1.5px solid rgb(234, 179, 8)', label: '#3', labelColor: 'text-yellow-600' },
+                        { bg: 'rgba(132, 204, 22, 0.10)', border: '1.5px solid rgb(132, 204, 22)', label: '#4', labelColor: 'text-lime-600' },
+                        { bg: 'rgba(34, 197, 94, 0.12)', border: '1.5px solid rgb(34, 197, 94)', label: '✨ New', labelColor: 'text-green-600' },
+                      ];
+                      const getAge = (idx, count) => {
+                        if (count <= 1) return ageStyles[4];
+                        const step = Math.round((idx / (count - 1)) * 4);
+                        const style = ageStyles[Math.min(step, 4)];
+                        if (idx === 0) return { ...style, label: '🔥 Oldest', labelColor: 'text-orange-600' };
+                        if (idx === count - 1) return { ...style, label: '✨ New', labelColor: 'text-green-600' };
+                        return style;
+                      };
+                      return words.map((word, idx) => {
+                        const age = getAge(idx, total);
+                        return (
+                          <div 
+                            key={word.id}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all"
+                            style={{ backgroundColor: age.bg, border: age.border }}
+                          >
+                            <span className="text-sm font-medium text-foreground">
+                              {word.front || word.word}
+                            </span>
+                            <span className={`text-[10px] font-semibold ${age.labelColor} whitespace-nowrap`}>
+                              {age.label}
+                            </span>
+                            {(word.date_introduced || word.created_at) && (
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(word.date_introduced || word.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
+                    {words.length === 0 && (
+                      <span className="text-sm text-muted-foreground italic">No words in this set</span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* Timeline view */
+                <div className="p-4 pt-2">
+                  <SetTimeline setId={set.id} currentWords={words} />
+                </div>
+              )}
               
               {/* Edit Panel */}
               <AnimatePresence>
