@@ -16,7 +16,7 @@ const TIME_LABELS = { '1-2': '1–2 minutes', '3-5': '3–5 minutes', '5-10': '5
 const Profile = () => {
   const { currentUser, profile, refreshProfile, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(currentUser?.name || '');
+  const [name, setName] = useState(currentUser?.user_metadata?.name || '');
   const [email, setEmail] = useState(currentUser?.email || '');
   const [userPlan, setUserPlan] = useState(null);
   const [planLoading, setPlanLoading] = useState(true);
@@ -136,13 +136,23 @@ const Profile = () => {
     }
   };
 
-  // Handle profile update (mock for now)
-  const handleUpdateProfile = (e) => {
+  // Handle profile update — persist name to Supabase auth + profiles
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    // In a real app, this would call an API endpoint
-    console.log('Profile update:', { name, email });
-    setIsEditing(false);
-    // For now, we'll just update the local display
+    try {
+      // Update Supabase auth user metadata
+      const { error: authErr } = await supabase.auth.updateUser({
+        data: { name }
+      });
+      if (authErr) throw authErr;
+
+      // Also update the profiles table email if needed
+      await refreshProfile(currentUser);
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Failed to update profile:', err);
+      alert('Failed to save — please try again');
+    }
   };
 
   // Handle plan changes
@@ -344,7 +354,7 @@ const Profile = () => {
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Full name</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {currentUser?.name || 'Not provided'}
+                  {currentUser?.user_metadata?.name || 'Not provided'}
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -356,8 +366,8 @@ const Profile = () => {
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Account created</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {currentUser?.createdAt 
-                    ? new Date(currentUser.createdAt).toLocaleDateString() 
+                  {currentUser?.created_at 
+                    ? new Date(currentUser.created_at).toLocaleDateString() 
                     : 'Unknown'}
                 </dd>
               </div>
