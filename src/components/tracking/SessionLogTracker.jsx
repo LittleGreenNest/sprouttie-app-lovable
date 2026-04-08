@@ -446,7 +446,7 @@ const SessionLogTracker = () => {
   }
 
   return (
-    <div className="max-w-lg mx-auto pb-24" style={{ background: '#FAFAF8', minHeight: '100vh' }}>
+    <div className="max-w-lg mx-auto pb-36">
       {/* Section 1: Date Header */}
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '0.5px solid #E5E7EB' }}>
         <div className="flex items-center gap-2">
@@ -897,11 +897,11 @@ const SessionLogTracker = () => {
 
       {/* Section 4: Fixed Save Button */}
       <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
+        position: 'fixed', bottom: 'calc(60px + env(safe-area-inset-bottom, 0px))', left: 0, right: 0,
         padding: '12px 16px',
-        background: '#FAFAF8',
+        background: 'hsl(var(--background))',
         borderTop: '0.5px solid #D1D5DB',
-        zIndex: 30
+        zIndex: 25
       }}>
         <button
           onClick={hasAnyRoundChecked ? saveEngagementData : undefined}
