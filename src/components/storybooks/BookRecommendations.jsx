@@ -348,7 +348,7 @@ const BookRecommendations = () => {
               <Book className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-foreground">AI Book Recommendations</h2>
+              <h2 className="text-xl font-semibold text-foreground">Book Recommendations</h2>
               <p className="text-sm text-muted-foreground">
                 Based on {flashedWords.length} flashcard words and {spokenWords.length} spoken words
                 {profile?.child_age_band && (
