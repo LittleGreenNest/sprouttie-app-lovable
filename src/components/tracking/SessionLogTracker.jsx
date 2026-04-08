@@ -169,37 +169,26 @@ const SessionLogTracker = () => {
 
     try {
       if (isCurrentlyChecked) {
-        const notesPattern = JSON.stringify({ setId, round });
-        const { data: toDelete, error: fetchErr } = await supabase
-          .from('daily_tracking')
-          .select('id')
-          .eq('user_id', currentUser.id)
-          .eq('date', dateString)
-          .eq('status', 'flashed')
-          .eq('notes', notesPattern);
-        if (fetchErr) throw fetchErr;
-        if (toDelete && toDelete.length > 0) {
-          const { error: deleteErr } = await supabase
-            .from('daily_tracking')
-            .delete()
-            .in('id', toDelete.map(r => r.id));
-          if (deleteErr) throw deleteErr;
-        }
-        await supabase
+        // Delete all tracking rows for this set+round on this date
+        const { error: deleteErr } = await supabase
           .from('daily_tracking')
           .delete()
           .eq('user_id', currentUser.id)
           .eq('date', dateString)
           .eq('flashed_by', `${setId}:${round}`);
+        if (deleteErr) throw deleteErr;
       } else {
         if (!sessionOccurred) await recordSessionOccurred();
         const cardsToInsert = setFlashcards.length > 0 ? setFlashcards : [{ id: `set-${setId}-sentinel` }];
+        // Use a round-specific flashcard_id to avoid unique constraint violations
+        // when the same card is flashed across multiple rounds on the same date
         const inserts = cardsToInsert.map(card => ({
           user_id: currentUser.id,
-          flashcard_id: card.id,
+          flashcard_id: `${card.id}:R${round}`,
           date: dateString,
           status: 'flashed',
           flashed_at: new Date().toISOString(),
+          flashed_by: `${setId}:${round}`,
           notes: JSON.stringify({ setId, round })
         }));
         const { error } = await supabase.from('daily_tracking').insert(inserts);
