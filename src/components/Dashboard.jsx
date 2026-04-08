@@ -110,29 +110,16 @@ const Dashboard = () => {
   const fullDate = today.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
-    <div className="min-h-screen pb-28" style={{ background: '#FAFAF8' }}>
+    <div className="pb-28">
       {/* This Week Flow modal */}
       <ThisWeekFlow show={showThisWeek} onClose={() => setShowThisWeek(false)} />
 
-      {/* 1. Header Bar */}
-      <div className="flex items-center justify-between px-5" style={{ height: 52 }}>
-        <div className="flex items-center gap-2">
-          <span style={{ fontSize: 15, fontWeight: 500, color: '#1F2937' }}>🌱 Sprouttie</span>
-        </div>
-        <div
-          className="flex items-center justify-center rounded-full"
-          style={{ width: 32, height: 32, background: '#D8F3DC', fontSize: 13, fontWeight: 500, color: '#2D6A4F' }}
-        >
-          {firstName.charAt(0).toUpperCase()}
-        </div>
-      </div>
-
       {/* 2. Greeting + Date */}
-      <div className="px-5 pt-2 pb-4">
-        <h1 style={{ fontSize: 20, fontWeight: 500, color: '#1F2937', margin: 0 }}>
+      <div className="pt-2 pb-4">
+        <h1 className="text-xl font-medium text-[hsl(var(--sprouttie-ink))] m-0">
           Hi {firstName} 👋
         </h1>
-        <p style={{ fontSize: 13, fontWeight: 400, color: '#6B7280', marginTop: 2 }}>
+        <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">
           {dayName} · {monthDay}
         </p>
       </div>
