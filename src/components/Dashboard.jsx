@@ -116,10 +116,10 @@ const Dashboard = () => {
 
       {/* 2. Greeting + Date */}
       <div className="pt-2 pb-4">
-        <h1 style={{ fontSize: 20, fontWeight: 500, color: '#1F2937', margin: 0 }}>
+        <h1 className="text-xl font-medium text-[hsl(var(--sprouttie-ink))] m-0">
           Hi {firstName} 👋
         </h1>
-        <p style={{ fontSize: 13, fontWeight: 400, color: '#6B7280', marginTop: 2 }}>
+        <p className="text-[13px] text-[hsl(var(--muted-foreground))] mt-0.5">
           {dayName} · {monthDay}
         </p>
       </div>
