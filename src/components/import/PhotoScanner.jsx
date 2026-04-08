@@ -229,7 +229,7 @@ const PhotoScanner = () => {
           <div className="flex items-center justify-between gap-2 bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
             {(scanMode === MODES.TEXT
               ? [
-                  { emoji: '📸', label: 'Lay cards out flat' },
+                  { emoji: '📸', label: 'Take a photo of anything that has words' },
                   { emoji: '🔍', label: 'We read the characters' },
                   { emoji: '✅', label: 'Added to your set instantly' },
                 ]
