@@ -29,34 +29,79 @@ const PhotoScanner = () => {
 
   const existingWordsSet = new Set(flashcards.map(fc => fc.word || fc.front));
 
+  const pdfPageToBase64 = async (page) => {
+    const scale = 2;
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    return dataUrl.split(',')[1]; // return base64 only
+  };
+
+  const scanImage = async (base64, mimeType) => {
+    const { data, error } = await supabase.functions.invoke('scan-flashcards', {
+      body: { imageBase64: base64, mimeType, mode: scanMode === MODES.IDENTIFY ? 'identify' : 'text' },
+    });
+    if (error) throw error;
+    return data;
+  };
+
   const handleFile = useCallback(async (file) => {
     if (!file) return;
 
+    const isPdf = file.type === 'application/pdf';
     const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
+    setPreviewUrl(isPdf ? null : url);
     setStep(STEPS.SCANNING);
     setAiMessage('');
+    setScanningProgress(isPdf ? 'Loading PDF...' : '');
 
     try {
-      const buffer = await file.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      let binary = '';
-      for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64 = btoa(binary);
+      let allWords = [];
+      let message = '';
 
-      const { data, error } = await supabase.functions.invoke('scan-flashcards', {
-        body: { imageBase64: base64, mimeType: file.type || 'image/jpeg', mode: scanMode === MODES.IDENTIFY ? 'identify' : 'text' },
+      if (isPdf) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const totalPages = Math.min(pdf.numPages, 10); // cap at 10 pages
+
+        for (let i = 1; i <= totalPages; i++) {
+          setScanningProgress(`Scanning page ${i} of ${totalPages}...`);
+          const page = await pdf.getPage(i);
+          const base64 = await pdfPageToBase64(page);
+          const data = await scanImage(base64, 'image/jpeg');
+          if (data.message && !message) message = data.message;
+          if (data.words?.length) {
+            allWords.push(...data.words);
+          }
+        }
+      } else {
+        const buffer = await file.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64 = btoa(binary);
+        const data = await scanImage(base64, file.type || 'image/jpeg');
+        if (data.message) message = data.message;
+        allWords = data.words || [];
+      }
+
+      if (message) setAiMessage(message);
+
+      // Deduplicate by chinese character
+      const seen = new Set();
+      const uniqueWords = allWords.filter(w => {
+        if (seen.has(w.chinese)) return false;
+        seen.add(w.chinese);
+        return true;
       });
 
-      if (error) throw error;
-
-      if (data.message) {
-        setAiMessage(data.message);
-      }
-
-      const words = (data.words || []).map((w, i) => ({
+      const words = uniqueWords.map((w, i) => ({
         ...w,
         id: `scan-${i}`,
         isDuplicate: existingWordsSet.has(w.chinese) || existingWordsSet.has(w.english),
@@ -65,12 +110,10 @@ const PhotoScanner = () => {
 
       setDetectedWords(words);
 
-      // Auto-select non-duplicates, set default language based on original
       const sel = {};
       const lang = {};
       words.forEach(w => {
         if (!w.isDuplicate) sel[w.id] = true;
-        // Default: keep the original language as the flashcard front
         lang[w.id] = w.originalLanguage === 'english' ? 'english' : 'chinese';
       });
       setSelectedWords(sel);
@@ -78,10 +121,12 @@ const PhotoScanner = () => {
       setStep(STEPS.REVIEW);
     } catch (err) {
       console.error('Scan error:', err);
-      toast.error('Failed to scan image. Please try again.');
+      toast.error(isPdf ? 'Failed to scan PDF. Please try again.' : 'Failed to scan image. Please try again.');
       setStep(STEPS.UPLOAD);
+    } finally {
+      setScanningProgress('');
     }
-  }, [existingWordsSet]);
+  }, [existingWordsSet, scanMode]);
 
   const toggleWord = (id) => {
     setSelectedWords(prev => ({ ...prev, [id]: !prev[id] }));
