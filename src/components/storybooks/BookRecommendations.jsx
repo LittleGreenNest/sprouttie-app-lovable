@@ -107,7 +107,7 @@ const BookCard = ({ book, index, feedback, onFeedback }) => (
 
     <div className="p-4 space-y-3">
       <a
-        href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&i=stripbooks`}
+        href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title)}&i=stripbooks`}
         target="_blank"
         rel="noopener noreferrer"
         className="block group"
