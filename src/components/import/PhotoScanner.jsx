@@ -26,6 +26,7 @@ const PhotoScanner = () => {
   const [adding, setAdding] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
   const [scanMode, setScanMode] = useState(MODES.TEXT);
+  const [scanningProgress, setScanningProgress] = useState('');
 
   const existingWordsSet = new Set(flashcards.map(fc => fc.word || fc.front));
 
