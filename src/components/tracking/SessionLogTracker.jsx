@@ -894,16 +894,16 @@ const SessionLogTracker = () => {
         zIndex: 25
       }}>
         <button
-          onClick={hasAnyRoundChecked ? saveEngagementData : undefined}
-          disabled={saving || !hasAnyRoundChecked}
+          onClick={hasAnyData ? saveEngagementData : undefined}
+          disabled={saving || !hasAnyData}
           className="w-full transition-colors"
           style={{
             borderRadius: '10px', padding: '14px',
             fontSize: '15px', fontWeight: 500,
-            background: saveFlash ? '#1B4332' : hasAnyRoundChecked ? '#2D6A4F' : 'transparent',
-            border: hasAnyRoundChecked ? 'none' : '1px solid #D1D5DB',
-            color: hasAnyRoundChecked ? '#fff' : '#9CA3AF',
-            cursor: hasAnyRoundChecked ? 'pointer' : 'default',
+            background: saveFlash ? '#1B4332' : hasAnyData ? '#2D6A4F' : 'transparent',
+            border: hasAnyData ? 'none' : '1px solid #D1D5DB',
+            color: hasAnyData ? '#fff' : '#9CA3AF',
+            cursor: hasAnyData ? 'pointer' : 'default',
             opacity: saving ? 0.7 : 1
           }}
         >
