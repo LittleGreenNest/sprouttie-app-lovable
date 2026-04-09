@@ -141,12 +141,16 @@ const Profile = () => {
     e.preventDefault();
     try {
       // Update Supabase auth user metadata
-      const { error: authErr } = await supabase.auth.updateUser({
+      const { data: updatedAuth, error: authErr } = await supabase.auth.updateUser({
         data: { name }
       });
       if (authErr) throw authErr;
 
-      // Also update the profiles table email if needed
+      // Re-sync name state from the updated user to ensure UI reflects the change
+      if (updatedAuth?.user?.user_metadata?.name) {
+        setName(updatedAuth.user.user_metadata.name);
+      }
+
       await refreshProfile(currentUser);
       setIsEditing(false);
     } catch (err) {
