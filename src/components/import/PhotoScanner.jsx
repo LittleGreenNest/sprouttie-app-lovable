@@ -340,7 +340,7 @@ const PhotoScanner = () => {
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
             {scanMode === MODES.IDENTIFY
               ? <><strong>Tip:</strong> Get close to the object with good lighting. Works best with single items — toys, fruit, animals, household objects.</>
-              : <><strong>Tip:</strong> Use good lighting and lay items flat. On iPhone, tap the button then choose "Take Photo". Works with up to 20 items at once.</>
+              : <><strong>Tip:</strong> Use good lighting and lay items flat. You can also upload a PDF (up to 10 pages). Works with up to 20 items at once.</>
             }
           </div>
         </motion.div>
