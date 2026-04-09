@@ -1,5 +1,6 @@
 // App.js - Main Application File with Lazy Loading for Performance
 import React, { Suspense, lazy } from 'react';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import './App.css';
@@ -97,9 +98,11 @@ const AppContent = () => {
   // Show onboarding if user hasn't completed it yet
   if (currentUser && profile && !profile.onboarding_completed) {
     return (
+      <ErrorBoundary>
       <Suspense fallback={<LoadingSpinner />}>
         <PersonaliseFlow onComplete={() => refreshProfile(currentUser)} />
       </Suspense>
+      </ErrorBoundary>
     );
   }
 
@@ -109,6 +112,7 @@ const AppContent = () => {
       <BottomTabBar />
 
       {/* Active Tab Content with Suspense for lazy loading */}
+      <ErrorBoundary>
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           {/* Protected routes (must be logged in) */}
@@ -142,6 +146,7 @@ const AppContent = () => {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Suspense>
+      </ErrorBoundary>
     </div>
   );
 };
@@ -171,6 +176,7 @@ function App() {
       <AuthProvider>
         <div className="min-h-screen bg-[hsl(var(--background))]">
           <Navbar />
+          <ErrorBoundary>
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
               {/* Public routes - NO FlashcardProvider needed */}
@@ -196,6 +202,7 @@ function App() {
               <Route path="/*" element={<AuthenticatedApp />} />
             </Routes>
           </Suspense>
+          </ErrorBoundary>
           
           
           {/* Toast Container for notifications */}
