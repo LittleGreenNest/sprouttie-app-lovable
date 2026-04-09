@@ -364,7 +364,7 @@ const PhotoScanner = () => {
               {scanMode === MODES.IDENTIFY ? 'Identifying objects...' : 'Scanning for words...'}
             </p>
             <p className="text-sm text-slate-500">
-              {scanMode === MODES.IDENTIFY ? 'Looking at the photo and finding the Chinese words' : 'Detecting Chinese & English words and generating translations'}
+              {scanningProgress || (scanMode === MODES.IDENTIFY ? 'Looking at the photo and finding the Chinese words' : 'Detecting Chinese & English words and generating translations')}
             </p>
           </div>
         </motion.div>
