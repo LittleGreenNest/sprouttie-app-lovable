@@ -332,7 +332,7 @@ const PhotoScanner = () => {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,application/pdf"
             className="hidden"
             onChange={e => handleFile(e.target.files?.[0])}
           />
