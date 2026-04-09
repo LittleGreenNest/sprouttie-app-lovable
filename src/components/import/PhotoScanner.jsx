@@ -325,7 +325,7 @@ const PhotoScanner = () => {
               className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[hsl(var(--sprouttie-green))] text-white font-semibold text-sm shadow-sm hover:opacity-90 transition mx-auto"
             >
               <Upload className="w-4 h-4" />
-              Upload or Take Photo
+              Upload Photo or PDF
             </button>
           </div>
 
