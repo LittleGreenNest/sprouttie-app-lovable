@@ -323,13 +323,18 @@ const SessionLogTracker = () => {
   const getRecommendedWords = () => {
     if (!editingSetId) return [];
     const wordsInSets = new Set();
+    const wordTextsInSets = new Set();
     sets.forEach(set => {
-      getFlashcardsForSet(set.id).forEach(card => wordsInSets.add(card.id));
+      getFlashcardsForSet(set.id).forEach(card => {
+        wordsInSets.add(card.id);
+        if (card.front) wordTextsInSets.add(card.front.toLowerCase());
+      });
     });
     const currentSetCards = getFlashcardsForSet(editingSetId);
     const setCategories = new Set(currentSetCards.map(c => c.folder).filter(Boolean));
     const backlogFlashcardMatches = [];
     backlogWords.forEach(bp => {
+      if (wordTextsInSets.has(bp.word.toLowerCase())) return;
       const matchingCard = flashcards.find(
         f => f.front?.toLowerCase() === bp.word.toLowerCase() && !wordsInSets.has(f.id)
       );
@@ -341,6 +346,7 @@ const SessionLogTracker = () => {
     if (setCategories.size > 0) {
       flashcards.forEach(card => {
         if (wordsInSets.has(card.id) || backlogFlashcardMatches.some(b => b.id === card.id)) return;
+        if (card.front && wordTextsInSets.has(card.front.toLowerCase())) return;
         if (setCategories.has(card.folder)) {
           categoryMatches.push({ ...card, _source: 'category', _reason: `Same category · ${card.folder}` });
         }
