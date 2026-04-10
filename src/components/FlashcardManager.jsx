@@ -45,7 +45,10 @@ const FlashcardManager = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const aiTimeoutRef = useRef(null);
   
-  // Input mode: 'chinese' (default) or 'english'
+  // Card language: 'zh' (Chinese) or 'en' (English)
+  const [cardLanguage, setCardLanguage] = useState('zh');
+  
+  // Input mode: 'chinese' (default) or 'english' — only for CN cards
   const [inputMode, setInputMode] = useState('chinese');
   const [englishInput, setEnglishInput] = useState('');
 

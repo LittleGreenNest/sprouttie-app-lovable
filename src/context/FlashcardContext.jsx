@@ -321,7 +321,7 @@ export const FlashcardProvider = ({ children }) => {
   };
   
   // Flashcard CRUD operations - Now saves to Supabase
-  const addFlashcard = async (word, categoryId, english = '', pinyin = '', cardType = 'word', phraseGroup = null) => {
+  const addFlashcard = async (word, categoryId, english = '', pinyin = '', cardType = 'word', phraseGroup = null, cardLanguage = 'zh') => {
     const categoryName = categories.find(c => c.id === categoryId)?.name || categoryId;
     
     if (currentUser?.id) {
@@ -339,6 +339,7 @@ export const FlashcardProvider = ({ children }) => {
             mastery_level: 0,
             review_count: 0,
             active_day_count: 0,
+            card_language: cardLanguage,
           })
           .select()
           .single();
