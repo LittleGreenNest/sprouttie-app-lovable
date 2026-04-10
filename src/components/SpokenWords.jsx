@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Trash2, Calendar, Video, Square, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Calendar, Video, Square, X, ChevronDown, ChevronUp, Upload } from 'lucide-react';
+import VideoWordExtractor from './spoken-words/VideoWordExtractor';
 import { toast } from 'react-toastify';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 
@@ -354,6 +355,7 @@ const SpokenWords = () => {
   const { currentUser } = useAuth();
   const [spokenWords, setSpokenWords] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showVideoExtractor, setShowVideoExtractor] = useState(false);
 
   useEffect(() => {
     if (currentUser) fetchSpokenWords();
@@ -467,7 +469,20 @@ const SpokenWords = () => {
 
         {/* Header */}
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-foreground">Words Your Child Is Saying</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-foreground">Words Your Child Is Saying</h1>
+            <button
+              onClick={() => setShowVideoExtractor(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border transition-colors"
+              style={{
+                background: '#F0F7F4', borderColor: '#C6E6D4',
+                color: '#2D6A4F'
+              }}
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Video
+            </button>
+          </div>
           <p className="text-sm text-muted-foreground">
             A gentle record of what you notice — not a test, just observations.
           </p>
@@ -475,6 +490,14 @@ const SpokenWords = () => {
             ← swipe cards to change stage →
           </p>
         </div>
+
+        {/* Video Word Extractor Modal */}
+        {showVideoExtractor && (
+          <VideoWordExtractor
+            onWordsExtracted={fetchSpokenWords}
+            onClose={() => setShowVideoExtractor(false)}
+          />
+        )}
 
         {/* Summary pills */}
         {totalWords > 0 && (

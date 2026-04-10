@@ -1,0 +1,348 @@
+import React, { useState, useRef } from 'react';
+import { Upload, X, Check, Loader2, AlertCircle, Video } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '../../context/AuthContext';
+import { toast } from 'react-toastify';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+
+const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
+  const { currentUser } = useAuth();
+  const fileInputRef = useRef(null);
+
+  const [step, setStep] = useState('upload'); // 'upload' | 'processing' | 'review'
+  const [videoFile, setVideoFile] = useState(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
+  const [extractedWords, setExtractedWords] = useState([]);
+  const [selectedWords, setSelectedWords] = useState(new Set());
+  const [processing, setProcessing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('Video must be under 20MB. Try trimming a shorter clip.');
+      return;
+    }
+
+    if (!file.type.startsWith('video/')) {
+      toast.error('Please select a video file.');
+      return;
+    }
+
+    setVideoFile(file);
+    setVideoPreviewUrl(URL.createObjectURL(file));
+    setError(null);
+  };
+
+  const handleProcess = async () => {
+    if (!videoFile || !currentUser) return;
+
+    setProcessing(true);
+    setStep('processing');
+    setError(null);
+
+    try {
+      // 1. Upload video to storage
+      const ext = videoFile.name.split('.').pop() || 'mp4';
+      const filePath = `${currentUser.id}/${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('spoken-word-videos')
+        .upload(filePath, videoFile, { contentType: videoFile.type });
+
+      if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
+
+      // 2. Call edge function to extract words
+      const { data, error: fnError } = await supabase.functions.invoke('extract-words-from-video', {
+        body: { videoPath: filePath },
+      });
+
+      if (fnError) throw new Error(fnError.message || 'Failed to process video');
+      if (data?.error) throw new Error(data.error);
+
+      const words = data?.words || [];
+
+      if (words.length === 0) {
+        setError('No words detected in the video. Try a clearer recording with less background noise.');
+        setStep('upload');
+        return;
+      }
+
+      setExtractedWords(words);
+      // Pre-select high/medium confidence words
+      setSelectedWords(new Set(
+        words
+          .filter(w => w.confidence !== 'low')
+          .map((_, i) => i)
+      ));
+      setStep('review');
+    } catch (err) {
+      console.error('Video processing error:', err);
+      setError(err.message || 'Failed to process video');
+      setStep('upload');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const toggleWord = (index) => {
+    setSelectedWords(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
+  const handleSaveWords = async () => {
+    if (!currentUser || selectedWords.size === 0) return;
+
+    setSaving(true);
+    try {
+      const wordsToSave = extractedWords
+        .filter((_, i) => selectedWords.has(i))
+        .map(w => ({
+          user_id: currentUser.id,
+          word: w.word,
+          word_stage: 'new',
+          notes: w.language !== 'en' ? `Language: ${w.language}` : null,
+        }));
+
+      const { error: insertError } = await supabase
+        .from('spoken_words')
+        .insert(wordsToSave);
+
+      if (insertError) throw insertError;
+
+      toast.success(`${wordsToSave.length} word${wordsToSave.length !== 1 ? 's' : ''} added! 🌱`);
+      onWordsExtracted?.();
+      onClose();
+    } catch (err) {
+      console.error('Save error:', err);
+      toast.error('Failed to save words');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confidenceColor = {
+    high: { bg: '#D1FAE5', text: '#065F46', border: '#A7F3D0' },
+    medium: { bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' },
+    low: { bg: '#FEE2E2', text: '#991B1B', border: '#FECACA' },
+  };
+
+  const langLabel = { en: 'EN', zh: '中文', other: 'Other' };
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ y: '100%' }}
+          animate={{ y: 0 }}
+          exit={{ y: '100%' }}
+          transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+          className="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md max-h-[85vh] overflow-hidden"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100">
+            <h3 className="text-base font-bold text-[hsl(var(--sprouttie-ink))]">
+              {step === 'upload' && '📹 Upload a Video'}
+              {step === 'processing' && '🔍 Listening...'}
+              {step === 'review' && '✅ Review Words'}
+            </h3>
+            <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100">
+              <X className="w-5 h-5 text-slate-400" />
+            </button>
+          </div>
+
+          <div className="overflow-y-auto" style={{ maxHeight: 'calc(85vh - 60px)' }}>
+            {/* UPLOAD STEP */}
+            {step === 'upload' && (
+              <div className="p-5 space-y-4">
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                  Upload a short video of your child speaking. Our AI will listen and extract the words they say — in any language.
+                </p>
+
+                {error && (
+                  <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
+                    <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                )}
+
+                {!videoFile ? (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full flex flex-col items-center justify-center gap-3 py-10 border-2 border-dashed border-slate-200 rounded-2xl hover:border-[hsl(var(--sprouttie-green))] transition-colors"
+                  >
+                    <div className="w-14 h-14 rounded-full bg-[hsl(var(--sprouttie-green)/0.1)] flex items-center justify-center">
+                      <Upload className="w-6 h-6 text-[hsl(var(--sprouttie-green-dark))]" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-[hsl(var(--sprouttie-ink))]">Tap to upload video</p>
+                      <p className="text-xs text-slate-400 mt-1">MP4, MOV · max 20MB</p>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="relative rounded-2xl overflow-hidden bg-black">
+                      <video
+                        src={videoPreviewUrl}
+                        controls
+                        className="w-full max-h-48 object-contain"
+                      />
+                      <button
+                        onClick={() => {
+                          setVideoFile(null);
+                          setVideoPreviewUrl(null);
+                        }}
+                        className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={handleProcess}
+                      className="w-full py-3 rounded-xl font-medium text-white text-sm"
+                      style={{ background: '#2D6A4F' }}
+                    >
+                      🎧 Extract Words from Video
+                    </button>
+                  </div>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </div>
+            )}
+
+            {/* PROCESSING STEP */}
+            {step === 'processing' && (
+              <div className="p-8 flex flex-col items-center gap-4 text-center">
+                <div className="w-16 h-16 rounded-full bg-[hsl(var(--sprouttie-green)/0.1)] flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 text-[hsl(var(--sprouttie-green-dark))] animate-spin" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-[hsl(var(--sprouttie-ink))]">
+                    Listening to your video...
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    This may take 15–30 seconds
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* REVIEW STEP */}
+            {step === 'review' && (
+              <div className="p-5 space-y-4">
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                  We detected <strong>{extractedWords.length}</strong> word{extractedWords.length !== 1 ? 's' : ''}. 
+                  Tap to select/deselect, then save.
+                </p>
+
+                <div className="space-y-2">
+                  {extractedWords.map((word, i) => {
+                    const selected = selectedWords.has(i);
+                    const colors = confidenceColor[word.confidence] || confidenceColor.medium;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => toggleWord(i)}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left"
+                        style={{
+                          background: selected ? '#F0F7F4' : '#fff',
+                          borderColor: selected ? '#52B788' : '#E5E7EB',
+                        }}
+                      >
+                        {/* Checkbox */}
+                        <div
+                          className="w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+                          style={{
+                            borderColor: selected ? '#52B788' : '#D1D5DB',
+                            background: selected ? '#52B788' : 'transparent',
+                          }}
+                        >
+                          {selected && <Check className="w-3 h-3 text-white" />}
+                        </div>
+
+                        {/* Word */}
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium text-[hsl(var(--sprouttie-ink))]">
+                            {word.word}
+                          </span>
+                          {word.notes && (
+                            <p className="text-xs text-slate-400 truncate">{word.notes}</p>
+                          )}
+                        </div>
+
+                        {/* Language badge */}
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                          style={{ background: '#F1F5F9', color: '#64748B' }}
+                        >
+                          {langLabel[word.language] || word.language}
+                        </span>
+
+                        {/* Confidence badge */}
+                        <span
+                          className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                          style={{ background: colors.bg, color: colors.text, border: `1px solid ${colors.border}` }}
+                        >
+                          {word.confidence}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-2 pb-4">
+                  <button
+                    onClick={() => {
+                      setStep('upload');
+                      setExtractedWords([]);
+                    }}
+                    className="flex-1 py-3 rounded-xl text-sm font-medium border border-slate-200 text-slate-600"
+                  >
+                    Try Again
+                  </button>
+                  <button
+                    onClick={handleSaveWords}
+                    disabled={saving || selectedWords.size === 0}
+                    className="flex-1 py-3 rounded-xl text-sm font-medium text-white"
+                    style={{
+                      background: selectedWords.size > 0 ? '#2D6A4F' : '#D1D5DB',
+                      opacity: saving ? 0.7 : 1,
+                    }}
+                  >
+                    {saving ? 'Saving...' : `Add ${selectedWords.size} Word${selectedWords.size !== 1 ? 's' : ''}`}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+export default VideoWordExtractor;
