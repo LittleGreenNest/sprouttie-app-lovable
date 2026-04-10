@@ -44,6 +44,10 @@ const FlashcardManager = () => {
   // AI auto-fill state
   const [aiLoading, setAiLoading] = useState(false);
   const aiTimeoutRef = useRef(null);
+  
+  // Input mode: 'chinese' (default) or 'english'
+  const [inputMode, setInputMode] = useState('chinese');
+  const [englishInput, setEnglishInput] = useState('');
 
   // Message state
   const [message, setMessage] = useState({ text: '', type: '' });
@@ -54,14 +58,12 @@ const FlashcardManager = () => {
     setTimeout(() => setMessage({ text: '', type: '' }), 3000);
   };
 
-  // AI auto-fill: debounce Chinese word input
+  // AI auto-fill: debounce Chinese word input → English + Pinyin
   const handleWordChange = (value) => {
     setNewFlashcardWord(value);
     
-    // Clear previous timeout
     if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
     
-    // Check if input looks like Chinese characters
     const hasChinese = /[\u4e00-\u9fff]/.test(value.trim());
     if (!hasChinese || value.trim().length === 0) return;
     
@@ -71,13 +73,36 @@ const FlashcardManager = () => {
         const { data, error } = await supabase.functions.invoke('translate-word', {
           body: { word: value.trim() },
         });
-        
         if (error) throw error;
-        
         if (data?.english) setNewFlashcardEnglish(data.english);
         if (data?.pinyin) setNewFlashcardPinyin(data.pinyin);
       } catch (err) {
         console.error('AI auto-fill error:', err);
+      } finally {
+        setAiLoading(false);
+      }
+    }, 800);
+  };
+
+  // AI auto-fill: debounce English input → Chinese + Pinyin
+  const handleEnglishInputChange = (value) => {
+    setEnglishInput(value);
+    
+    if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+    if (!value.trim() || value.trim().length < 2) return;
+    
+    setAiLoading(true);
+    aiTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('translate-word', {
+          body: { word: value.trim(), direction: 'en-to-zh' },
+        });
+        if (error) throw error;
+        if (data?.chinese) setNewFlashcardWord(data.chinese);
+        if (data?.pinyin) setNewFlashcardPinyin(data.pinyin);
+        if (data?.english) setNewFlashcardEnglish(data.english);
+      } catch (err) {
+        console.error('AI English→Chinese error:', err);
       } finally {
         setAiLoading(false);
       }
@@ -267,6 +292,7 @@ const FlashcardManager = () => {
     setNewFlashcardPinyin('');
     setNewCardType('word');
     setNewPhraseGroup('');
+    setEnglishInput('');
 
     showMessage(`${newCardType === 'phrase' ? 'Phrase' : 'Flashcard'} added successfully`);
   };
@@ -521,10 +547,66 @@ const FlashcardManager = () => {
                 </div>
               </div>
 
-              {/* Main Text Field */}
+              {/* Input Mode Toggle */}
               <div>
-              <label className="block text-sm font-medium mb-1">
-                  {newCardType === 'word' ? 'Word' : 'Phrase'}
+                <label className="block text-sm font-medium mb-2">Input Language</label>
+                <div className="inline-flex items-center rounded-full bg-slate-100 p-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => { setInputMode('chinese'); setEnglishInput(''); }}
+                    className={`px-3 py-1.5 rounded-full transition ${
+                      inputMode === 'chinese' 
+                        ? 'bg-white shadow-sm font-semibold text-slate-900' 
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    🇨🇳 Type in Chinese
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInputMode('english')}
+                    className={`px-3 py-1.5 rounded-full transition ${
+                      inputMode === 'english' 
+                        ? 'bg-white shadow-sm font-semibold text-slate-900' 
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    🇬🇧 Type in English
+                  </button>
+                </div>
+              </div>
+
+              {/* English Input (when in English mode) */}
+              {inputMode === 'english' && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Type in English
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder={newCardType === 'word' ? 'e.g. dog, cat, water' : 'e.g. drink water, sit down'}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      value={englishInput}
+                      onChange={(e) => handleEnglishInputChange(e.target.value)}
+                    />
+                    {aiLoading && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-600 animate-pulse">
+                        ✨ Translating...
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    AI will auto-fill the Chinese word, pinyin & meaning below (Singapore Mandarin)
+                  </p>
+                </div>
+              )}
+
+              {/* Main Chinese Text Field */}
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {newCardType === 'word' ? 'Chinese Word' : 'Chinese Phrase'}
+                  {inputMode === 'english' && <span className="text-xs text-slate-400 ml-1">(auto-filled)</span>}
                 </label>
                 <div className="relative">
                   <input
@@ -535,13 +617,13 @@ const FlashcardManager = () => {
                     onChange={(e) => handleWordChange(e.target.value)}
                     required
                   />
-                  {aiLoading && (
+                  {aiLoading && inputMode === 'chinese' && (
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-600 animate-pulse">
                       ✨ AI filling...
                     </span>
                   )}
                 </div>
-                {newCardType === 'phrase' && (
+                {newCardType === 'phrase' && inputMode === 'chinese' && (
                   <p className="text-xs text-slate-500 mt-1">
                     Short toddler phrases like "喝水", "坐下", "我们走走"
                   </p>
