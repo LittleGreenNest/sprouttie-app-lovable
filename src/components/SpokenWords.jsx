@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Trash2, Calendar, Video, Square, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Calendar, Video, Square, X, ChevronDown, ChevronUp, Upload } from 'lucide-react';
+import VideoWordExtractor from './spoken-words/VideoWordExtractor';
 import { toast } from 'react-toastify';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 
