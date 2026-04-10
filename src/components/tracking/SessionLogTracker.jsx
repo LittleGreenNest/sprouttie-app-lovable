@@ -1012,12 +1012,12 @@ const SessionLogTracker = () => {
                   { id: 'cooking', label: '🍳 Cooking' },
                   { id: 'screen', label: '📺 Screen Time' },
                 ].map(({ id, label }) => {
-                  const selected = activities.includes(id);
+                  const selected = activities.some(a => a.id === id);
                   return (
                     <button
                       key={id}
                       onClick={() => setActivities(prev =>
-                        selected ? prev.filter(a => a !== id) : [...prev, id]
+                        selected ? prev.filter(a => a.id !== id) : [...prev, { id, note: '' }]
                       )}
                       style={{
                         fontSize: '12px', fontWeight: 500,
@@ -1033,6 +1033,43 @@ const SessionLogTracker = () => {
                   );
                 })}
               </div>
+
+              {/* Notes for selected activities */}
+              {activities.length > 0 && (
+                <div className="mt-3 flex flex-col gap-2">
+                  {activities.map((activity) => {
+                    const activityLabel = {
+                      art: '🎨 Art', puzzles: '🧩 Puzzles', songs: '🎵 Songs', reading: '📖 Reading',
+                      outdoor: '🏃 Outdoor', roleplay: '🎭 Role Play', cooking: '🍳 Cooking', screen: '📺 Screen Time'
+                    }[activity.id] || activity.id;
+                    return (
+                      <div key={activity.id} style={{
+                        background: '#F8FBF9', borderRadius: '8px', padding: '8px 10px',
+                        border: '0.5px solid #C6E6D4'
+                      }}>
+                        <p style={{ fontSize: '11px', fontWeight: 600, color: '#374151', marginBottom: '4px' }}>
+                          {activityLabel}
+                        </p>
+                        <input
+                          type="text"
+                          value={activity.note || ''}
+                          onChange={(e) => setActivities(prev =>
+                            prev.map(a => a.id === activity.id ? { ...a, note: e.target.value } : a)
+                          )}
+                          placeholder="What did you do? (optional)"
+                          style={{
+                            width: '100%', border: '0.5px solid #D1D5DB', borderRadius: '6px',
+                            padding: '6px 10px', fontSize: '12px', outline: 'none', color: '#1F2937',
+                            background: '#fff'
+                          }}
+                          onFocus={(e) => e.target.style.borderColor = '#52B788'}
+                          onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         )}
