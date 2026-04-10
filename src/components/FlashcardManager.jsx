@@ -261,9 +261,44 @@ const FlashcardManager = () => {
   // Handlers for Flashcards
   const handleAddFlashcard = (e) => {
     e.preventDefault();
+    
+    if (cardLanguage === 'en') {
+      // English card: front = english word, back = description/hint
+      if (!newFlashcardEnglish.trim() || !newFlashcardCategory) return;
+      
+      const existingCard = flashcards.find(
+        card => card.word.toLowerCase().trim() === newFlashcardEnglish.toLowerCase().trim()
+      );
+      if (existingCard) {
+        const existingCategory = categories.find(c => c.id === existingCard.categoryId);
+        const targetCategory = categories.find(c => c.id === newFlashcardCategory);
+        const isSameCategory = existingCard.categoryId === newFlashcardCategory;
+        const msg = isSameCategory
+          ? `"${newFlashcardEnglish}" already exists in "${existingCategory?.name || 'Unknown'}". Do you want to add it again?`
+          : `"${newFlashcardEnglish}" already exists in "${existingCategory?.name || 'Unknown'}". Do you still want to add it to "${targetCategory?.name || 'Unknown'}"?`;
+        if (!window.confirm(msg)) return;
+      }
+      
+      addFlashcard(
+        newFlashcardEnglish,
+        newFlashcardCategory,
+        newFlashcardPinyin, // used as description/hint for EN cards
+        '',
+        newCardType,
+        newCardType === 'phrase' ? newPhraseGroup : null,
+        'en'
+      );
+      setNewFlashcardEnglish('');
+      setNewFlashcardPinyin('');
+      setNewCardType('word');
+      setNewPhraseGroup('');
+      showMessage(`English ${newCardType === 'phrase' ? 'phrase' : 'card'} added successfully`);
+      return;
+    }
+    
+    // Chinese card (existing logic)
     if (!newFlashcardWord.trim() || !newFlashcardCategory) return;
     
-    // Check for duplicate word
     const existingCard = flashcards.find(
       card => card.word.toLowerCase().trim() === newFlashcardWord.toLowerCase().trim()
     );
@@ -288,7 +323,8 @@ const FlashcardManager = () => {
       newFlashcardEnglish, 
       newFlashcardPinyin,
       newCardType,
-      newCardType === 'phrase' ? newPhraseGroup : null
+      newCardType === 'phrase' ? newPhraseGroup : null,
+      'zh'
     );
     setNewFlashcardWord('');
     setNewFlashcardEnglish('');
