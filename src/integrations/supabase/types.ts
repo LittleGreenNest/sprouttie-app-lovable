@@ -186,6 +186,7 @@ export type Database = {
         Row: {
           active_day_count: number | null
           back: string
+          card_language: string
           card_status: string | null
           card_type: string
           created_at: string | null
@@ -206,6 +207,7 @@ export type Database = {
         Insert: {
           active_day_count?: number | null
           back: string
+          card_language?: string
           card_status?: string | null
           card_type?: string
           created_at?: string | null
@@ -226,6 +228,7 @@ export type Database = {
         Update: {
           active_day_count?: number | null
           back?: string
+          card_language?: string
           card_status?: string | null
           card_type?: string
           created_at?: string | null
