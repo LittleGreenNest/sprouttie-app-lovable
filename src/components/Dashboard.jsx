@@ -27,6 +27,8 @@ const Dashboard = () => {
   const [plannedWordCount, setPlannedWordCount] = useState(0);
   const [savedBookCount, setSavedBookCount] = useState(0);
   const [tipIndex, setTipIndex] = useState(0);
+  const [weeklyBooks, setWeeklyBooks] = useState([]);
+  const [weeklyActivities, setWeeklyActivities] = useState([]);
 
   // Rotate tip daily based on day-of-year
   useEffect(() => {
@@ -46,16 +48,33 @@ const Dashboard = () => {
     const thirtyAgoStr = thirtyAgo.toISOString().split('T')[0];
 
     const fetchAll = async () => {
-      const [trackingRes, spokenRes, plansRes, booksRes] = await Promise.all([
+      const [trackingRes, spokenRes, plansRes, booksRes, sessionsRes] = await Promise.all([
         supabase.from('daily_tracking').select('*').eq('user_id', uid).gte('date', thirtyAgoStr).order('date', { ascending: false }),
         supabase.from('spoken_words').select('*').eq('user_id', uid),
         supabase.from('word_plans').select('id').eq('user_id', uid).gte('planned_week_start', getWeekStart()),
         supabase.from('recommended_books').select('id').eq('user_id', uid),
+        supabase.from('daily_flashing_sessions').select('books_read, activities, session_date').eq('user_id', uid).gte('session_date', getWeekStart()),
       ]);
       setTrackingData(trackingRes.data || []);
       setSpokenWords(spokenRes.data || []);
       setPlannedWordCount((plansRes.data || []).length);
       setSavedBookCount((booksRes.data || []).length);
+
+      // Aggregate weekly books & activities
+      const sessions = sessionsRes.data || [];
+      const allBooks = sessions.flatMap(s => s.books_read || []);
+      const uniqueBooks = [...new Set(allBooks)];
+      setWeeklyBooks(uniqueBooks);
+
+      const activityMap = {};
+      sessions.forEach(s => {
+        (s.activities || []).forEach(a => {
+          const act = typeof a === 'string' ? { id: a } : a;
+          if (!activityMap[act.id]) activityMap[act.id] = 0;
+          activityMap[act.id]++;
+        });
+      });
+      setWeeklyActivities(Object.entries(activityMap).map(([id, count]) => ({ id, count })));
     };
     fetchAll();
   }, [currentUser?.id]);
@@ -247,6 +266,63 @@ const Dashboard = () => {
           })}
         </div>
       </button>
+
+      {/* 6.5. WEEKLY SUMMARY CARD */}
+      {(weeklyBooks.length > 0 || weeklyActivities.length > 0) && (
+        <div
+          className="mx-4 mb-3"
+          style={{
+            background: 'white', border: '0.5px solid #E5E7EB', borderRadius: 16,
+            padding: '16px 18px'
+          }}
+        >
+          <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.06em', color: '#9CA3AF', textTransform: 'uppercase', marginBottom: 10 }}>
+            THIS WEEK'S HIGHLIGHTS
+          </p>
+
+          {weeklyBooks.length > 0 && (
+            <div style={{ marginBottom: weeklyActivities.length > 0 ? 12 : 0 }}>
+              <p style={{ fontSize: 12, fontWeight: 500, color: '#374151', marginBottom: 6 }}>
+                📖 Books read · {weeklyBooks.length}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {weeklyBooks.map((book, i) => (
+                  <span key={i} style={{
+                    fontSize: 11, background: '#F0F7F4', color: '#1F2937',
+                    padding: '3px 10px', borderRadius: 12, border: '0.5px solid #C6E6D4'
+                  }}>
+                    {book}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {weeklyActivities.length > 0 && (
+            <div>
+              <p style={{ fontSize: 12, fontWeight: 500, color: '#374151', marginBottom: 6 }}>
+                🎯 Activities · {weeklyActivities.reduce((s, a) => s + a.count, 0)} sessions
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {weeklyActivities.map(({ id, count }) => {
+                  const label = {
+                    art: '🎨 Art', puzzles: '🧩 Puzzles', songs: '🎵 Songs', reading: '📖 Reading',
+                    outdoor: '🏃 Outdoor', roleplay: '🎭 Role Play', cooking: '🍳 Cooking', screen: '📺 Screen'
+                  }[id] || id;
+                  return (
+                    <span key={id} style={{
+                      fontSize: 11, background: '#FFFBEB', color: '#92400E',
+                      padding: '3px 10px', borderRadius: 12, border: '0.5px solid #FDE68A'
+                    }}>
+                      {label} × {count}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 7. TODAY'S TIP ROW */}
       <button
