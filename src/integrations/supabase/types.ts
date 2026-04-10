@@ -103,7 +103,7 @@ export type Database = {
       }
       daily_flashing_sessions: {
         Row: {
-          activities: string[] | null
+          activities: Json | null
           books_read: string[] | null
           cards_introduced: number | null
           cards_retired: number | null
@@ -115,7 +115,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          activities?: string[] | null
+          activities?: Json | null
           books_read?: string[] | null
           cards_introduced?: number | null
           cards_retired?: number | null
@@ -127,7 +127,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          activities?: string[] | null
+          activities?: Json | null
           books_read?: string[] | null
           cards_introduced?: number | null
           cards_retired?: number | null
