@@ -58,14 +58,12 @@ const FlashcardManager = () => {
     setTimeout(() => setMessage({ text: '', type: '' }), 3000);
   };
 
-  // AI auto-fill: debounce Chinese word input
+  // AI auto-fill: debounce Chinese word input → English + Pinyin
   const handleWordChange = (value) => {
     setNewFlashcardWord(value);
     
-    // Clear previous timeout
     if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
     
-    // Check if input looks like Chinese characters
     const hasChinese = /[\u4e00-\u9fff]/.test(value.trim());
     if (!hasChinese || value.trim().length === 0) return;
     
@@ -75,13 +73,36 @@ const FlashcardManager = () => {
         const { data, error } = await supabase.functions.invoke('translate-word', {
           body: { word: value.trim() },
         });
-        
         if (error) throw error;
-        
         if (data?.english) setNewFlashcardEnglish(data.english);
         if (data?.pinyin) setNewFlashcardPinyin(data.pinyin);
       } catch (err) {
         console.error('AI auto-fill error:', err);
+      } finally {
+        setAiLoading(false);
+      }
+    }, 800);
+  };
+
+  // AI auto-fill: debounce English input → Chinese + Pinyin
+  const handleEnglishInputChange = (value) => {
+    setEnglishInput(value);
+    
+    if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+    if (!value.trim() || value.trim().length < 2) return;
+    
+    setAiLoading(true);
+    aiTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('translate-word', {
+          body: { word: value.trim(), direction: 'en-to-zh' },
+        });
+        if (error) throw error;
+        if (data?.chinese) setNewFlashcardWord(data.chinese);
+        if (data?.pinyin) setNewFlashcardPinyin(data.pinyin);
+        if (data?.english) setNewFlashcardEnglish(data.english);
+      } catch (err) {
+        console.error('AI English→Chinese error:', err);
       } finally {
         setAiLoading(false);
       }
