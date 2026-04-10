@@ -52,7 +52,7 @@ const SessionLogTracker = () => {
   const [moreOpen, setMoreOpen] = useState(false);
   const [booksRead, setBooksRead] = useState([]);
   const [bookInput, setBookInput] = useState('');
-  const [activities, setActivities] = useState([]);
+  const [activities, setActivities] = useState([]); // [{ id: string, note?: string }]
 
   const dateString = useMemo(() => selectedDate.toISOString().split('T')[0], [selectedDate]);
 
