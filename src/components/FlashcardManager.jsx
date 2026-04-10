@@ -442,6 +442,7 @@ const FlashcardManager = () => {
           </svg>
           Import from CSV
         </button>
+        </div>
       </div>
       
       {/* Notification Message */}
