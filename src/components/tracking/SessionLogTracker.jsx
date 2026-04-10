@@ -129,7 +129,13 @@ const SessionLogTracker = () => {
       setSessionOccurred(sessionData?.session_occurred || false);
       if (sessionData?.notes) setNotes(sessionData.notes);
       setBooksRead(sessionData?.books_read || []);
-      setActivities(sessionData?.activities || []);
+      // Parse activities - handle both old string[] format and new {id, note}[] format
+      const rawActivities = sessionData?.activities || [];
+      if (Array.isArray(rawActivities)) {
+        setActivities(rawActivities.map(a => typeof a === 'string' ? { id: a } : a));
+      } else {
+        setActivities([]);
+      }
 
       setRoundTracking(tracking);
       setEngagement(loadedEngagement);
