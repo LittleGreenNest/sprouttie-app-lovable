@@ -128,6 +128,8 @@ const SessionLogTracker = () => {
 
       setSessionOccurred(sessionData?.session_occurred || false);
       if (sessionData?.notes) setNotes(sessionData.notes);
+      setBooksRead(sessionData?.books_read || []);
+      setActivities(sessionData?.activities || []);
 
       setRoundTracking(tracking);
       setEngagement(loadedEngagement);
@@ -244,13 +246,15 @@ const SessionLogTracker = () => {
         .eq('session_date', dateString)
         .maybeSingle();
       if (existing) {
-        await supabase.from('daily_flashing_sessions').update({ notes }).eq('id', existing.id);
+        await supabase.from('daily_flashing_sessions').update({ notes, books_read: booksRead, activities }).eq('id', existing.id);
       } else {
         await supabase.from('daily_flashing_sessions').insert({
           user_id: currentUser.id,
           session_date: dateString,
           session_occurred: Object.values(roundTracking).some(v => v),
-          notes
+          notes,
+          books_read: booksRead,
+          activities
         });
       }
       if (engagement || peakTime) {
