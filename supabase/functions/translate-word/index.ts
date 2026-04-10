@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { word } = await req.json();
+    const { word, direction } = await req.json();
     if (!word || !word.trim()) {
       return new Response(JSON.stringify({ error: "No word provided" }), {
         status: 400,
@@ -25,6 +25,58 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Determine translation direction
+    const isEnglishToChinese = direction === "en-to-zh";
+
+    const systemPrompt = isEnglishToChinese
+      ? `You are an English-to-Chinese translation assistant for Singapore Mandarin (simplified Chinese). Given an English word or phrase, return ONLY a JSON object with three fields:
+- "chinese": the simplified Chinese characters (use Singapore/SEA Mandarin terms where applicable, e.g. 巴刹 for market, 德士 for taxi)
+- "pinyin": the pinyin with tone marks (e.g. "māo" not "mao1")
+- "english": echo back the English input (cleaned up if needed)
+Return ONLY the JSON object, no markdown, no explanation.`
+      : `You are a Chinese-English translation assistant. Given a Chinese word or phrase, return ONLY a JSON object with two fields:
+- "english": the English meaning (concise, 1-5 words)
+- "pinyin": the pinyin with tone marks (e.g. "māo" not "mao1")
+If the input is Mandarin Chinese, translate it. If it's not Chinese, still try your best.
+Return ONLY the JSON object, no markdown, no explanation.`;
+
+    const toolParams = isEnglishToChinese
+      ? {
+          type: "object",
+          properties: {
+            chinese: {
+              type: "string",
+              description:
+                "Simplified Chinese characters (Singapore Mandarin preferred)",
+            },
+            pinyin: {
+              type: "string",
+              description: "Pinyin with tone marks, e.g. māo, not mao1",
+            },
+            english: {
+              type: "string",
+              description: "The English input echoed back",
+            },
+          },
+          required: ["chinese", "pinyin", "english"],
+          additionalProperties: false,
+        }
+      : {
+          type: "object",
+          properties: {
+            english: {
+              type: "string",
+              description: "English meaning, concise 1-5 words",
+            },
+            pinyin: {
+              type: "string",
+              description: "Pinyin with tone marks, e.g. māo, not mao1",
+            },
+          },
+          required: ["english", "pinyin"],
+          additionalProperties: false,
+        };
+
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
@@ -36,43 +88,18 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "google/gemini-2.5-flash-lite",
           messages: [
-            {
-              role: "system",
-              content: `You are a Chinese-English translation assistant. Given a Chinese word or phrase, return ONLY a JSON object with two fields:
-- "english": the English meaning (concise, 1-5 words)
-- "pinyin": the pinyin with tone marks (e.g. "māo" not "mao1")
-
-If the input is Mandarin Chinese, translate it. If it's not Chinese, still try your best.
-Return ONLY the JSON object, no markdown, no explanation.`,
-            },
-            {
-              role: "user",
-              content: word.trim(),
-            },
+            { role: "system", content: systemPrompt },
+            { role: "user", content: word.trim() },
           ],
           tools: [
             {
               type: "function",
               function: {
                 name: "provide_translation",
-                description:
-                  "Provide the English meaning and pinyin for a Chinese word",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    english: {
-                      type: "string",
-                      description: "English meaning, concise 1-5 words",
-                    },
-                    pinyin: {
-                      type: "string",
-                      description:
-                        "Pinyin with tone marks, e.g. māo, not mao1",
-                    },
-                  },
-                  required: ["english", "pinyin"],
-                  additionalProperties: false,
-                },
+                description: isEnglishToChinese
+                  ? "Provide the Chinese characters, pinyin, and English for an English word"
+                  : "Provide the English meaning and pinyin for a Chinese word",
+                parameters: toolParams,
               },
             },
           ],
@@ -120,7 +147,9 @@ Return ONLY the JSON object, no markdown, no explanation.`,
 
     // Fallback: try to parse from content
     const content = data.choices?.[0]?.message?.content || "";
-    const parsed = JSON.parse(content.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
+    const parsed = JSON.parse(
+      content.replace(/```json?\n?/g, "").replace(/```/g, "").trim()
+    );
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
