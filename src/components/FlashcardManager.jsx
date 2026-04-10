@@ -44,6 +44,10 @@ const FlashcardManager = () => {
   // AI auto-fill state
   const [aiLoading, setAiLoading] = useState(false);
   const aiTimeoutRef = useRef(null);
+  
+  // Input mode: 'chinese' (default) or 'english'
+  const [inputMode, setInputMode] = useState('chinese');
+  const [englishInput, setEnglishInput] = useState('');
 
   // Message state
   const [message, setMessage] = useState({ text: '', type: '' });
