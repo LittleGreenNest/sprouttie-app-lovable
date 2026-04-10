@@ -292,6 +292,7 @@ const FlashcardManager = () => {
     setNewFlashcardPinyin('');
     setNewCardType('word');
     setNewPhraseGroup('');
+    setEnglishInput('');
 
     showMessage(`${newCardType === 'phrase' ? 'Phrase' : 'Flashcard'} added successfully`);
   };
