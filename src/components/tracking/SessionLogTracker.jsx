@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
 import { useFlashcards } from '../../context/FlashcardContext';
 import { toast } from 'react-toastify';
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronRight as ChevronRightIcon, Pencil, Check, Plus, X, Sparkles, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronRight as ChevronRightIcon, Pencil, Check, Plus, X, Sparkles, FileText, BookOpen, Tag } from 'lucide-react';
 import SortableWordList from './SortableWordList';
 import SetTimeline from './SetTimeline';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -47,6 +47,12 @@ const SessionLogTracker = () => {
   const [sessionOccurred, setSessionOccurred] = useState(false);
   const [backlogWords, setBacklogWords] = useState([]);
   const [toggling, setToggling] = useState(false);
+
+  // "More about today" state
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [booksRead, setBooksRead] = useState([]);
+  const [bookInput, setBookInput] = useState('');
+  const [activities, setActivities] = useState([]);
 
   const dateString = useMemo(() => selectedDate.toISOString().split('T')[0], [selectedDate]);
 
