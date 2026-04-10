@@ -68,7 +68,7 @@ const SessionLogTracker = () => {
   }, [selectedDate]);
 
   const hasAnyRoundChecked = completedSessions > 0;
-  const hasAnyData = hasAnyRoundChecked || engagement || peakTime || notes.trim().length > 0;
+  const hasAnyData = hasAnyRoundChecked || engagement || peakTime || notes.trim().length > 0 || booksRead.length > 0 || activities.length > 0;
 
   useEffect(() => {
     if (currentUser) {
