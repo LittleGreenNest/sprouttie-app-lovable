@@ -518,35 +518,6 @@ const FlashcardManager = () => {
           <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5">
             <h3 className="text-lg font-semibold mb-4">Add New Card</h3>
             <form onSubmit={handleAddFlashcard} className="space-y-4">
-              {/* Card Type Toggle */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Card Type</label>
-                <div className="inline-flex items-center rounded-full bg-slate-100 p-1 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setNewCardType('word')}
-                    className={`px-3 py-1.5 rounded-full transition ${
-                      newCardType === 'word' 
-                        ? 'bg-white shadow-sm font-semibold text-slate-900' 
-                        : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    Single Word
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewCardType('phrase')}
-                    className={`px-3 py-1.5 rounded-full transition ${
-                      newCardType === 'phrase' 
-                        ? 'bg-white shadow-sm font-semibold text-slate-900' 
-                        : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    Phrase / Sentence
-                  </button>
-                </div>
-              </div>
-
               {/* Input Mode Toggle */}
               <div>
                 <label className="block text-sm font-medium mb-2">Input Language</label>
@@ -572,6 +543,35 @@ const FlashcardManager = () => {
                     }`}
                   >
                     🇬🇧 Type in English
+                  </button>
+                </div>
+              </div>
+
+              {/* Card Type Toggle */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Card Type</label>
+                <div className="inline-flex items-center rounded-full bg-slate-100 p-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setNewCardType('word')}
+                    className={`px-3 py-1.5 rounded-full transition ${
+                      newCardType === 'word' 
+                        ? 'bg-white shadow-sm font-semibold text-slate-900' 
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    Single Word
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewCardType('phrase')}
+                    className={`px-3 py-1.5 rounded-full transition ${
+                      newCardType === 'phrase' 
+                        ? 'bg-white shadow-sm font-semibold text-slate-900' 
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    Phrase / Sentence
                   </button>
                 </div>
               </div>
