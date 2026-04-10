@@ -27,6 +27,8 @@ const Dashboard = () => {
   const [plannedWordCount, setPlannedWordCount] = useState(0);
   const [savedBookCount, setSavedBookCount] = useState(0);
   const [tipIndex, setTipIndex] = useState(0);
+  const [weeklyBooks, setWeeklyBooks] = useState([]);
+  const [weeklyActivities, setWeeklyActivities] = useState([]);
 
   // Rotate tip daily based on day-of-year
   useEffect(() => {
@@ -46,16 +48,33 @@ const Dashboard = () => {
     const thirtyAgoStr = thirtyAgo.toISOString().split('T')[0];
 
     const fetchAll = async () => {
-      const [trackingRes, spokenRes, plansRes, booksRes] = await Promise.all([
+      const [trackingRes, spokenRes, plansRes, booksRes, sessionsRes] = await Promise.all([
         supabase.from('daily_tracking').select('*').eq('user_id', uid).gte('date', thirtyAgoStr).order('date', { ascending: false }),
         supabase.from('spoken_words').select('*').eq('user_id', uid),
         supabase.from('word_plans').select('id').eq('user_id', uid).gte('planned_week_start', getWeekStart()),
         supabase.from('recommended_books').select('id').eq('user_id', uid),
+        supabase.from('daily_flashing_sessions').select('books_read, activities, session_date').eq('user_id', uid).gte('session_date', getWeekStart()),
       ]);
       setTrackingData(trackingRes.data || []);
       setSpokenWords(spokenRes.data || []);
       setPlannedWordCount((plansRes.data || []).length);
       setSavedBookCount((booksRes.data || []).length);
+
+      // Aggregate weekly books & activities
+      const sessions = sessionsRes.data || [];
+      const allBooks = sessions.flatMap(s => s.books_read || []);
+      const uniqueBooks = [...new Set(allBooks)];
+      setWeeklyBooks(uniqueBooks);
+
+      const activityMap = {};
+      sessions.forEach(s => {
+        (s.activities || []).forEach(a => {
+          const act = typeof a === 'string' ? { id: a } : a;
+          if (!activityMap[act.id]) activityMap[act.id] = 0;
+          activityMap[act.id]++;
+        });
+      });
+      setWeeklyActivities(Object.entries(activityMap).map(([id, count]) => ({ id, count })));
     };
     fetchAll();
   }, [currentUser?.id]);
