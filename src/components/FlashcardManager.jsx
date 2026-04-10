@@ -1,9 +1,11 @@
 // components/FlashcardManager.js
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useFlashcards } from '../context/FlashcardContext';
 import { supabase } from '@/integrations/supabase/client';
 import CSVImport from './CSVImport';
 import PrintFlashcards from './PrintFlashcards';
+import { History } from 'lucide-react';
 
 const FlashcardManager = () => {
   const { 
