@@ -1,11 +1,14 @@
 // components/FlashcardManager.js
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useFlashcards } from '../context/FlashcardContext';
 import { supabase } from '@/integrations/supabase/client';
 import CSVImport from './CSVImport';
 import PrintFlashcards from './PrintFlashcards';
+import { History } from 'lucide-react';
 
 const FlashcardManager = () => {
+  const navigate = useNavigate();
   const { 
     categories,
     setCategories,
@@ -389,8 +392,16 @@ const FlashcardManager = () => {
         </div>
       )}
 
-      {/* Import/Export Buttons */}
-      <div className="flex justify-end mb-4 space-x-3">
+      {/* Flashed History + Import/Export Buttons */}
+      <div className="flex justify-between items-center mb-4">
+        <button
+          onClick={() => navigate('/flashed-history')}
+          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--sprouttie-ink))] bg-white border border-[hsl(var(--border))] rounded-xl hover:border-[hsl(var(--sprouttie-green))] transition-colors"
+        >
+          <History className="w-4 h-4" />
+          Flashed History
+        </button>
+        <div className="flex space-x-3">
         <button
           onClick={handleExportFlashcards}
           className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
@@ -431,6 +442,7 @@ const FlashcardManager = () => {
           </svg>
           Import from CSV
         </button>
+        </div>
       </div>
       
       {/* Notification Message */}
