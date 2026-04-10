@@ -557,185 +557,324 @@ const FlashcardManager = () => {
           <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5">
             <h3 className="text-lg font-semibold mb-4">Add New Card</h3>
             <form onSubmit={handleAddFlashcard} className="space-y-4">
-              {/* Input Mode Toggle */}
+              {/* Card Language Toggle (top-level) */}
               <div>
-                <label className="block text-sm font-medium mb-2">Input Language</label>
+                <label className="block text-sm font-medium mb-2">Flashcard Language</label>
                 <div className="inline-flex items-center rounded-full bg-slate-100 p-1 text-xs">
                   <button
                     type="button"
-                    onClick={() => { setInputMode('chinese'); setEnglishInput(''); }}
+                    onClick={() => { setCardLanguage('zh'); }}
                     className={`px-3 py-1.5 rounded-full transition ${
-                      inputMode === 'chinese' 
+                      cardLanguage === 'zh' 
                         ? 'bg-white shadow-sm font-semibold text-slate-900' 
                         : 'text-slate-500 hover:text-slate-700'
                     }`}
                   >
-                    🇨🇳 Type in Chinese
+                    🇨🇳 Chinese Card
                   </button>
                   <button
                     type="button"
-                    onClick={() => setInputMode('english')}
+                    onClick={() => { setCardLanguage('en'); setInputMode('chinese'); setEnglishInput(''); }}
                     className={`px-3 py-1.5 rounded-full transition ${
-                      inputMode === 'english' 
+                      cardLanguage === 'en' 
                         ? 'bg-white shadow-sm font-semibold text-slate-900' 
                         : 'text-slate-500 hover:text-slate-700'
                     }`}
                   >
-                    🇬🇧 Type in English
+                    🇬🇧 English Card
                   </button>
                 </div>
               </div>
 
-              {/* Card Type Toggle */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Card Type</label>
-                <div className="inline-flex items-center rounded-full bg-slate-100 p-1 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setNewCardType('word')}
-                    className={`px-3 py-1.5 rounded-full transition ${
-                      newCardType === 'word' 
-                        ? 'bg-white shadow-sm font-semibold text-slate-900' 
-                        : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    Single Word
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewCardType('phrase')}
-                    className={`px-3 py-1.5 rounded-full transition ${
-                      newCardType === 'phrase' 
-                        ? 'bg-white shadow-sm font-semibold text-slate-900' 
-                        : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    Phrase / Sentence
-                  </button>
-                </div>
-              </div>
+              {/* ===== ENGLISH CARD FORM ===== */}
+              {cardLanguage === 'en' && (
+                <>
+                  {/* Card Type Toggle */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Card Type</label>
+                    <div className="inline-flex items-center rounded-full bg-slate-100 p-1 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setNewCardType('word')}
+                        className={`px-3 py-1.5 rounded-full transition ${
+                          newCardType === 'word' 
+                            ? 'bg-white shadow-sm font-semibold text-slate-900' 
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        Single Word
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewCardType('phrase')}
+                        className={`px-3 py-1.5 rounded-full transition ${
+                          newCardType === 'phrase' 
+                            ? 'bg-white shadow-sm font-semibold text-slate-900' 
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        Phrase / Sentence
+                      </button>
+                    </div>
+                  </div>
 
-              {/* English Input (when in English mode) */}
-              {inputMode === 'english' && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Type in English
-                  </label>
-                  <div className="relative">
+                  {/* English Word */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      {newCardType === 'word' ? 'English Word' : 'English Phrase'}
+                    </label>
                     <input
                       type="text"
                       placeholder={newCardType === 'word' ? 'e.g. dog, cat, water' : 'e.g. drink water, sit down'}
                       className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      value={englishInput}
-                      onChange={(e) => handleEnglishInputChange(e.target.value)}
+                      value={newFlashcardEnglish}
+                      onChange={(e) => setNewFlashcardEnglish(e.target.value)}
+                      required
                     />
-                    {aiLoading && (
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-600 animate-pulse">
-                        ✨ Translating...
-                      </span>
+                  </div>
+
+                  {/* Description / Hint (optional) */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Description / Hint <span className="text-xs text-slate-400">(optional)</span></label>
+                    <input
+                      type="text"
+                      placeholder="e.g. a furry pet that barks"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      value={newFlashcardPinyin}
+                      onChange={(e) => setNewFlashcardPinyin(e.target.value)}
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      Add a hint or description to help your child remember this word
+                    </p>
+                  </div>
+
+                  {/* Phrase Group - only for phrases */}
+                  {newCardType === 'phrase' && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Phrase Group (optional)</label>
+                      <input
+                        type="text"
+                        placeholder="Daily Routine, Actions, Feelings"
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        value={newPhraseGroup}
+                        onChange={(e) => setNewPhraseGroup(e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  {/* Category */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Category</label>
+                    <select
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      value={newFlashcardCategory}
+                      onChange={(e) => setNewFlashcardCategory(e.target.value)}
+                      required
+                    >
+                      <option value="">Select a category</option>
+                      {categories.map(category => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button 
+                      type="submit"
+                      className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition"
+                    >
+                      Add {newCardType === 'phrase' ? 'Phrase' : 'Card'}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* ===== CHINESE CARD FORM (existing) ===== */}
+              {cardLanguage === 'zh' && (
+                <>
+                  {/* Input Mode Toggle */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Input Language</label>
+                    <div className="inline-flex items-center rounded-full bg-slate-100 p-1 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => { setInputMode('chinese'); setEnglishInput(''); }}
+                        className={`px-3 py-1.5 rounded-full transition ${
+                          inputMode === 'chinese' 
+                            ? 'bg-white shadow-sm font-semibold text-slate-900' 
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        🇨🇳 Type in Chinese
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInputMode('english')}
+                        className={`px-3 py-1.5 rounded-full transition ${
+                          inputMode === 'english' 
+                            ? 'bg-white shadow-sm font-semibold text-slate-900' 
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        🇬🇧 Type in English
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Card Type Toggle */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Card Type</label>
+                    <div className="inline-flex items-center rounded-full bg-slate-100 p-1 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setNewCardType('word')}
+                        className={`px-3 py-1.5 rounded-full transition ${
+                          newCardType === 'word' 
+                            ? 'bg-white shadow-sm font-semibold text-slate-900' 
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        Single Word
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewCardType('phrase')}
+                        className={`px-3 py-1.5 rounded-full transition ${
+                          newCardType === 'phrase' 
+                            ? 'bg-white shadow-sm font-semibold text-slate-900' 
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        Phrase / Sentence
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* English Input (when in English mode) */}
+                  {inputMode === 'english' && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Type in English
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder={newCardType === 'word' ? 'e.g. dog, cat, water' : 'e.g. drink water, sit down'}
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          value={englishInput}
+                          onChange={(e) => handleEnglishInputChange(e.target.value)}
+                        />
+                        {aiLoading && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-600 animate-pulse">
+                            ✨ Translating...
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        AI will auto-fill the Chinese word, pinyin & meaning below (Singapore Mandarin)
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Main Chinese Text Field */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      {newCardType === 'word' ? 'Chinese Word' : 'Chinese Phrase'}
+                      {inputMode === 'english' && <span className="text-xs text-slate-400 ml-1">(auto-filled)</span>}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder={newCardType === 'word' ? '狗' : '喝水, 坐下, 我们走走'}
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        value={newFlashcardWord}
+                        onChange={(e) => handleWordChange(e.target.value)}
+                        required
+                      />
+                      {aiLoading && inputMode === 'chinese' && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-600 animate-pulse">
+                          ✨ AI filling...
+                        </span>
+                      )}
+                    </div>
+                    {newCardType === 'phrase' && inputMode === 'chinese' && (
+                      <p className="text-xs text-slate-500 mt-1">
+                        Short toddler phrases like "喝水", "坐下", "我们走走"
+                      </p>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    AI will auto-fill the Chinese word, pinyin & meaning below (Singapore Mandarin)
-                  </p>
-                </div>
-              )}
 
-              {/* Main Chinese Text Field */}
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  {newCardType === 'word' ? 'Chinese Word' : 'Chinese Phrase'}
-                  {inputMode === 'english' && <span className="text-xs text-slate-400 ml-1">(auto-filled)</span>}
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder={newCardType === 'word' ? '狗' : '喝水, 坐下, 我们走走'}
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    value={newFlashcardWord}
-                    onChange={(e) => handleWordChange(e.target.value)}
-                    required
-                  />
-                  {aiLoading && inputMode === 'chinese' && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-600 animate-pulse">
-                      ✨ AI filling...
-                    </span>
+                  {/* English Meaning */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">English Meaning</label>
+                    <input
+                      type="text"
+                      placeholder={newCardType === 'word' ? 'dog' : 'drink water, sit down, let\'s go for a walk'}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      value={newFlashcardEnglish}
+                      onChange={(e) => setNewFlashcardEnglish(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Pinyin */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Pinyin</label>
+                    <input
+                      type="text"
+                      placeholder="Pinyin"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      value={newFlashcardPinyin}
+                      onChange={(e) => setNewFlashcardPinyin(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Phrase Group - only for phrases */}
+                  {newCardType === 'phrase' && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Phrase Group (optional)</label>
+                      <input
+                        type="text"
+                        placeholder="Daily Routine, Actions, Feelings"
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        value={newPhraseGroup}
+                        onChange={(e) => setNewPhraseGroup(e.target.value)}
+                      />
+                      <p className="text-xs text-slate-500 mt-1">
+                        Group related phrases together for easier organization
+                      </p>
+                    </div>
                   )}
-                </div>
-                {newCardType === 'phrase' && inputMode === 'chinese' && (
-                  <p className="text-xs text-slate-500 mt-1">
-                    Short toddler phrases like "喝水", "坐下", "我们走走"
-                  </p>
-                )}
-              </div>
 
-              {/* English Meaning */}
-              <div>
-                <label className="block text-sm font-medium mb-1">English Meaning</label>
-                <input
-                  type="text"
-                  placeholder={newCardType === 'word' ? 'dog' : 'drink water, sit down, let\'s go for a walk'}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  value={newFlashcardEnglish}
-                  onChange={(e) => setNewFlashcardEnglish(e.target.value)}
-                />
-              </div>
-
-              {/* Pinyin */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Pinyin</label>
-                <input
-                  type="text"
-                  placeholder="Pinyin"
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  value={newFlashcardPinyin}
-                  onChange={(e) => setNewFlashcardPinyin(e.target.value)}
-                />
-              </div>
-
-              {/* Phrase Group - only for phrases */}
-              {newCardType === 'phrase' && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Phrase Group (optional)</label>
-                  <input
-                    type="text"
-                    placeholder="Daily Routine, Actions, Feelings"
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    value={newPhraseGroup}
-                    onChange={(e) => setNewPhraseGroup(e.target.value)}
-                  />
-                  <p className="text-xs text-slate-500 mt-1">
-                    Group related phrases together for easier organization
-                  </p>
-                </div>
+                  {/* Category */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Category</label>
+                    <select
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      value={newFlashcardCategory}
+                      onChange={(e) => setNewFlashcardCategory(e.target.value)}
+                      required
+                    >
+                      <option value="">Select a category</option>
+                      {categories.map(category => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button 
+                      type="submit"
+                      className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition"
+                    >
+                      Add {newCardType === 'phrase' ? 'Phrase' : 'Card'}
+                    </button>
+                  </div>
+                </>
               )}
-
-              {/* Category */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Category</label>
-                <select
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  value={newFlashcardCategory}
-                  onChange={(e) => setNewFlashcardCategory(e.target.value)}
-                  required
-                >
-                  <option value="">Select a category</option>
-                  {categories.map(category => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="flex gap-2">
-                <button 
-                  type="submit"
-                  className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition"
-                >
-                  Add {newCardType === 'phrase' ? 'Phrase' : 'Card'}
-                </button>
-              </div>
             </form>
           </div>
           
