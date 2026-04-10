@@ -901,6 +901,137 @@ const SessionLogTracker = () => {
         )}
       </div>
 
+      {/* Section 3.5: More About Today */}
+      <div className="mx-4 mt-3">
+        <button
+          onClick={() => setMoreOpen(!moreOpen)}
+          className="w-full flex items-center justify-between"
+          style={{
+            background: '#F8FBF9', border: '0.5px solid #C6E6D4',
+            borderRadius: '12px', padding: '12px 14px', cursor: 'pointer'
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-4 h-4" style={{ color: '#9CA3AF' }} />
+            <span style={{ fontSize: '14px', color: '#9CA3AF' }}>More about today</span>
+            {(booksRead.length > 0 || activities.length > 0) && (
+              <span style={{ fontSize: '11px', background: '#D1FAE5', color: '#065F46', padding: '1px 6px', borderRadius: '8px', fontWeight: 500 }}>
+                {booksRead.length + activities.length}
+              </span>
+            )}
+          </div>
+          {moreOpen
+            ? <ChevronDown className="w-4 h-4" style={{ color: '#52B788' }} />
+            : <ChevronRightIcon className="w-4 h-4" style={{ color: '#52B788' }} />
+          }
+        </button>
+
+        {moreOpen && (
+          <div className="mt-2" style={{
+            background: '#fff', border: '0.5px solid #D1D5DB',
+            borderRadius: '12px', overflow: 'hidden'
+          }}>
+            {/* Books read */}
+            <div style={{ padding: '14px 14px 10px' }}>
+              <p style={{ fontSize: '12px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>
+                📖 Books read today
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={bookInput}
+                  onChange={(e) => setBookInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && bookInput.trim()) {
+                      setBooksRead(prev => [...prev, bookInput.trim()]);
+                      setBookInput('');
+                    }
+                  }}
+                  placeholder="Type book title + Enter"
+                  style={{
+                    flex: 1, border: '0.5px solid #D1D5DB', borderRadius: '8px',
+                    padding: '8px 12px', fontSize: '13px', outline: 'none', color: '#1F2937'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#52B788'}
+                  onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
+                />
+                <button
+                  onClick={() => {
+                    if (bookInput.trim()) {
+                      setBooksRead(prev => [...prev, bookInput.trim()]);
+                      setBookInput('');
+                    }
+                  }}
+                  style={{
+                    padding: '8px 12px', borderRadius: '8px',
+                    background: '#52B788', color: '#fff', fontSize: '13px', fontWeight: 500,
+                    border: 'none', cursor: 'pointer'
+                  }}
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+              {booksRead.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {booksRead.map((book, i) => (
+                    <span key={i} className="flex items-center gap-1" style={{
+                      fontSize: '12px', background: '#F0F7F4', color: '#1F2937',
+                      padding: '4px 10px', borderRadius: '16px', border: '0.5px solid #C6E6D4'
+                    }}>
+                      📖 {book}
+                      <button onClick={() => setBooksRead(prev => prev.filter((_, idx) => idx !== i))} style={{ marginLeft: '2px', color: '#9CA3AF', cursor: 'pointer' }}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ height: '0.5px', background: '#E5E7EB', margin: '0 14px' }} />
+
+            {/* Activities */}
+            <div style={{ padding: '10px 14px 14px' }}>
+              <p style={{ fontSize: '12px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>
+                🎯 Activities played
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { id: 'art', label: '🎨 Art' },
+                  { id: 'puzzles', label: '🧩 Puzzles' },
+                  { id: 'songs', label: '🎵 Songs' },
+                  { id: 'reading', label: '📖 Reading' },
+                  { id: 'outdoor', label: '🏃 Outdoor' },
+                  { id: 'roleplay', label: '🎭 Role Play' },
+                  { id: 'cooking', label: '🍳 Cooking' },
+                  { id: 'screen', label: '📺 Screen Time' },
+                ].map(({ id, label }) => {
+                  const selected = activities.includes(id);
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => setActivities(prev =>
+                        selected ? prev.filter(a => a !== id) : [...prev, id]
+                      )}
+                      style={{
+                        fontSize: '12px', fontWeight: 500,
+                        padding: '6px 14px', borderRadius: '20px',
+                        border: selected ? '0.5px solid #52B788' : '0.5px solid #D1D5DB',
+                        background: selected ? '#52B788' : '#fff',
+                        color: selected ? '#fff' : '#6B7280',
+                        cursor: 'pointer', minHeight: '32px'
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Section 4: Fixed Save Button */}
       <div style={{
         position: 'fixed', bottom: 'calc(60px + env(safe-area-inset-bottom, 0px))', left: 0, right: 0,
