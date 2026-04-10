@@ -53,10 +53,10 @@ const Navbar = () => {
                   </button>
                 </div>
 
-                {/* Dropdown menu - ONLY Your Profile and Sign out */}
+                {/* Dropdown menu */}
                 {isProfileDropdownOpen && (
                   <div
-                    className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+                    className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
                     role="menu"
                     aria-orientation="vertical"
                     aria-labelledby="user-menu-button"
@@ -70,6 +70,24 @@ const Navbar = () => {
                       onClick={() => setIsProfileDropdownOpen(false)}
                     >
                       Your Profile
+                    </Link>
+                    <Link
+                      to="/word-planner"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      role="menuitem"
+                      tabIndex="-1"
+                      onClick={() => setIsProfileDropdownOpen(false)}
+                    >
+                      Word Planner
+                    </Link>
+                    <Link
+                      to="/scan-flashcards"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      role="menuitem"
+                      tabIndex="-1"
+                      onClick={() => setIsProfileDropdownOpen(false)}
+                    >
+                      Scan Cards
                     </Link>
                     <button
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -178,6 +196,20 @@ const Navbar = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Your Profile
+              </Link>
+              <Link
+                to="/word-planner"
+                className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Word Planner
+              </Link>
+              <Link
+                to="/scan-flashcards"
+                className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Scan Cards
               </Link>
               <button
                 className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
