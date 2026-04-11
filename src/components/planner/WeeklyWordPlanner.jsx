@@ -33,6 +33,9 @@ const WeeklyWordPlanner = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [userFlashcards, setUserFlashcards] = useState([]);
   const [addingWord, setAddingWord] = useState(null);
+  const [pendingSuggestions, setPendingSuggestions] = useState([]);
+  const [swappingWordId, setSwappingWordId] = useState(null);
+  const [acceptingAll, setAcceptingAll] = useState(false);
 
   function getWeekStart(date) {
     const d = new Date(date);
