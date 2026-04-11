@@ -5,7 +5,7 @@ import { useFlashcards } from '../context/FlashcardContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import ThisWeekFlow from './thisweek/ThisWeekFlow';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify';
 
 // ─── Tip data (pulled from existing TipsCarousel) ───
 const TIPS = [
