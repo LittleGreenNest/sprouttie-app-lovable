@@ -294,13 +294,21 @@ const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
                       <button
                         onClick={() => {
                           setVideoFile(null);
+                          setUploadFile(null);
                           setVideoPreviewUrl(null);
+                          setCompressed(false);
                         }}
                         className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
+
+                    {compressed && (
+                      <p className="text-xs text-[hsl(var(--muted-foreground))] text-center">
+                        ✅ Audio extracted — ready to analyze
+                      </p>
+                    )}
 
                     <button
                       onClick={handleProcess}
@@ -319,6 +327,23 @@ const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
                   onChange={handleFileSelect}
                   className="hidden"
                 />
+              </div>
+            )}
+
+            {/* COMPRESSING STEP */}
+            {step === 'compressing' && (
+              <div className="p-8 flex flex-col items-center gap-4 text-center">
+                <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-[hsl(var(--sprouttie-ink))]">
+                    Extracting audio from video...
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    This keeps only the speech — much smaller file
+                  </p>
+                </div>
               </div>
             )}
 
