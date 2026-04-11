@@ -31,6 +31,7 @@ const Dashboard = () => {
   const [weeklyBooks, setWeeklyBooks] = useState([]);
   const [weeklyActivities, setWeeklyActivities] = useState([]);
   const [pendingSuggestions, setPendingSuggestions] = useState([]);
+  const [autoPilotLoading, setAutoPilotLoading] = useState(false);
 
   // Rotate tip daily based on day-of-year
   useEffect(() => {
@@ -91,27 +92,34 @@ const Dashboard = () => {
     setPendingSuggestions(data || []);
   }, [currentUser?.id]);
 
-  // DEV ONLY — simulate auto-pilot run
+  // DEV ONLY — simulate auto-pilot run (real AI call)
   const simulateAutoPilot = async () => {
-    if (!currentUser?.id) return;
-    const weekStart = getWeekStart();
-    const mockWords = [
-      { word: 'Jump', category: 'Actions', reason: "You've been heavy on Animals — this shifts things into Actions." },
-      { word: 'Banana', category: 'Food', reason: "A favourite snack word that bridges mealtime conversation." },
-      { word: 'Blue', category: 'Colours', reason: "Colour words are great at this age — pairs with objects already learned." },
-      { word: 'Fish', category: 'Animals', reason: "Builds on the animal cluster while adding a new sound pattern." },
-      { word: 'Open', category: 'Actions', reason: "A high-frequency action word your child likely hears every day." },
-    ];
-    // Delete any existing pending for this week first
-    await supabase.from('weekly_suggestions').delete()
-      .eq('user_id', currentUser.id).eq('week_start', weekStart).eq('status', 'pending_review');
-    // Insert mock suggestions
-    const { error } = await supabase.from('weekly_suggestions').insert(
-      mockWords.map(w => ({ user_id: currentUser.id, week_start: weekStart, ...w, status: 'pending_review' }))
-    );
-    if (error) { toast.error('Failed to simulate'); return; }
-    toast.success('Auto-pilot suggestions created!');
-    refreshSuggestions();
+    if (!currentUser?.id || autoPilotLoading) return;
+    setAutoPilotLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-autopilot-suggestions');
+      if (error) throw error;
+      if (data?.error === 'parse_failed') {
+        console.error('AI response parse failed:', data.raw);
+        toast.error("Sprouttie couldn't generate suggestions right now. Try again.");
+        return;
+      }
+      if (data?.error === 'save_failed') {
+        toast.error("Suggestions generated but couldn't be saved. Try again.");
+        return;
+      }
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+      toast.success(`Sprouttie picked ${data?.count || 5} words for you 🌱`);
+      refreshSuggestions();
+    } catch (err) {
+      console.error('Auto-pilot error:', err);
+      toast.error("Sprouttie couldn't generate suggestions right now. Try again.");
+    } finally {
+      setAutoPilotLoading(false);
+    }
   };
 
   // Dismiss all pending suggestions
