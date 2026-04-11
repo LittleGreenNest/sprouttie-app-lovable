@@ -260,7 +260,7 @@ const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
             {step === 'upload' && (
               <div className="p-5 space-y-4">
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Upload a short video of your child speaking. Our AI will listen and extract the words they say — in any language.
+                  Upload a short clip (under 2 minutes is ideal) of your child speaking. Our AI will listen and extract the words they say — in any language.
                 </p>
 
                 {error && (
