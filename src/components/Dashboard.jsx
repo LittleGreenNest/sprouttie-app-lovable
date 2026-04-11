@@ -50,17 +50,19 @@ const Dashboard = () => {
     const thirtyAgoStr = thirtyAgo.toISOString().split('T')[0];
 
     const fetchAll = async () => {
-      const [trackingRes, spokenRes, plansRes, booksRes, sessionsRes] = await Promise.all([
+      const [trackingRes, spokenRes, plansRes, booksRes, sessionsRes, suggestionsRes] = await Promise.all([
         supabase.from('daily_tracking').select('*').eq('user_id', uid).gte('date', thirtyAgoStr).order('date', { ascending: false }),
         supabase.from('spoken_words').select('*').eq('user_id', uid),
         supabase.from('word_plans').select('id').eq('user_id', uid).gte('planned_week_start', getWeekStart()),
         supabase.from('recommended_books').select('id').eq('user_id', uid),
         supabase.from('daily_flashing_sessions').select('books_read, activities, session_date').eq('user_id', uid).gte('session_date', getWeekStart()),
+        supabase.from('weekly_suggestions').select('*').eq('user_id', uid).eq('week_start', getWeekStart()).eq('status', 'pending_review'),
       ]);
       setTrackingData(trackingRes.data || []);
       setSpokenWords(spokenRes.data || []);
       setPlannedWordCount((plansRes.data || []).length);
       setSavedBookCount((booksRes.data || []).length);
+      setPendingSuggestions(suggestionsRes.data || []);
 
       // Aggregate weekly books & activities
       const sessions = sessionsRes.data || [];
