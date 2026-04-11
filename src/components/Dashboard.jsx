@@ -97,7 +97,9 @@ const Dashboard = () => {
     if (!currentUser?.id || autoPilotLoading) return;
     setAutoPilotLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-autopilot-suggestions');
+      const { data, error } = await supabase.functions.invoke('generate-autopilot-suggestions', {
+        body: { weekStart: getWeekStart() }
+      });
       if (error) throw error;
       if (data?.error === 'parse_failed') {
         console.error('AI response parse failed:', data.raw);
