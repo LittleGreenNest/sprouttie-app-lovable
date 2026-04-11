@@ -246,6 +246,7 @@ const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
           <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100">
             <h3 className="text-base font-bold text-[hsl(var(--sprouttie-ink))]">
               {step === 'upload' && '📹 Upload a Video'}
+              {step === 'compressing' && '🗜️ Compressing...'}
               {step === 'processing' && '🔍 Listening...'}
               {step === 'review' && '✅ Review Words'}
             </h3>
