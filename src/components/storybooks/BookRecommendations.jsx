@@ -107,7 +107,7 @@ const BookCard = ({ book, index, feedback, onFeedback }) => (
 
     <div className="p-4 space-y-3">
       <a
-        href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title)}&i=stripbooks`}
+        href={`https://www.amazon.com/s?k=${encodeURIComponent((() => { const m = book.title.match(/\(([^)]+)\)/); const eng = m ? m[1] : book.title.replace(/[^\x00-\x7F]+/g, '').trim(); return eng || book.title; })())}&i=stripbooks`}
         target="_blank"
         rel="noopener noreferrer"
         className="block group"
