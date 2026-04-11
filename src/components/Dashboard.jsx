@@ -254,23 +254,67 @@ const Dashboard = () => {
       {/* 5. THIS WEEK CARD */}
       <div
         className="mx-4 mb-3"
-        style={{ background: 'white', border: '0.5px solid #E5E7EB', borderRadius: 16, padding: '16px 18px' }}
+        style={{ background: pendingSuggestions.length > 0 ? '#EDF7EE' : 'white', border: '0.5px solid #E5E7EB', borderRadius: 16, padding: '16px 18px' }}
       >
-        <div className="flex items-center justify-between">
-          <span style={{ fontSize: 13, fontWeight: 500, color: '#1F2937' }}>This Week</span>
-          <button
-            onClick={() => setShowThisWeek(true)}
-            style={{ fontSize: 12, fontWeight: 500, color: '#2D6A4F', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            Plan →
-          </button>
-        </div>
+        {pendingSuggestions.length > 0 ? (
+          <>
+            {/* Auto-pilot "week is ready" state */}
+            <p style={{ fontSize: 15, fontWeight: 600, color: '#1F2937', margin: 0 }}>
+              🌱 Your week is ready
+            </p>
+            <p style={{ fontSize: 12, color: '#6B7280', marginTop: 4, lineHeight: 1.4 }}>
+              Sprouttie picked {pendingSuggestions.length} words across{' '}
+              {[...new Set(pendingSuggestions.map(s => s.category).filter(Boolean))].join(' and ') || 'mixed categories'}.
+              {' '}Takes 30 seconds to review.
+            </p>
 
-        <div className="flex gap-2 mt-3">
-          <FocusTile emoji="🗣" label="Words" subtext={plannedWordCount > 0 ? `${plannedWordCount} planned` : 'Plan now'} onClick={() => setShowThisWeek(true)} />
-          <FocusTile emoji="📚" label="Books" subtext={savedBookCount > 0 ? `${savedBookCount} saved` : 'Add books'} onClick={() => setShowThisWeek(true)} />
-          <FocusTile emoji="🤝" label="Prompts" subtext="3 tips" onClick={() => setShowThisWeek(true)} />
-        </div>
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => navigate('/word-planner')}
+                className="flex-1 active:scale-[0.98] transition-transform"
+                style={{
+                  background: '#52B788', border: 'none', borderRadius: 10,
+                  padding: '10px 14px', fontSize: 13, fontWeight: 500, color: 'white', cursor: 'pointer'
+                }}
+              >
+                Review & Accept
+              </button>
+              <button
+                onClick={dismissSuggestions}
+                className="flex-1 active:scale-[0.98] transition-transform"
+                style={{
+                  background: 'transparent', border: '1px solid #D1D5DB', borderRadius: 10,
+                  padding: '10px 14px', fontSize: 13, fontWeight: 500, color: '#374151', cursor: 'pointer'
+                }}
+              >
+                Plan manually
+              </button>
+            </div>
+
+            <p style={{ fontSize: 10, color: '#9CA3AF', marginTop: 8, textAlign: 'center' }}>
+              Auto-generated based on {childName}'s profile and history
+            </p>
+          </>
+        ) : (
+          <>
+            {/* Default state */}
+            <div className="flex items-center justify-between">
+              <span style={{ fontSize: 13, fontWeight: 500, color: '#1F2937' }}>This Week</span>
+              <button
+                onClick={() => setShowThisWeek(true)}
+                style={{ fontSize: 12, fontWeight: 500, color: '#2D6A4F', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                Plan →
+              </button>
+            </div>
+
+            <div className="flex gap-2 mt-3">
+              <FocusTile emoji="🗣" label="Words" subtext={plannedWordCount > 0 ? `${plannedWordCount} planned` : 'Plan now'} onClick={() => setShowThisWeek(true)} />
+              <FocusTile emoji="📚" label="Books" subtext={savedBookCount > 0 ? `${savedBookCount} saved` : 'Add books'} onClick={() => setShowThisWeek(true)} />
+              <FocusTile emoji="🤝" label="Prompts" subtext="3 tips" onClick={() => setShowThisWeek(true)} />
+            </div>
+          </>
+        )}
       </div>
 
       {/* 6. FLASHCARD SETS CARD */}
