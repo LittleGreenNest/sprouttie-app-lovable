@@ -31,6 +31,7 @@ const Dashboard = () => {
   const [weeklyBooks, setWeeklyBooks] = useState([]);
   const [weeklyActivities, setWeeklyActivities] = useState([]);
   const [pendingSuggestions, setPendingSuggestions] = useState([]);
+  const [autoPilotLoading, setAutoPilotLoading] = useState(false);
 
   // Rotate tip daily based on day-of-year
   useEffect(() => {
@@ -91,27 +92,34 @@ const Dashboard = () => {
     setPendingSuggestions(data || []);
   }, [currentUser?.id]);
 
-  // DEV ONLY — simulate auto-pilot run
+  // DEV ONLY — simulate auto-pilot run (real AI call)
   const simulateAutoPilot = async () => {
-    if (!currentUser?.id) return;
-    const weekStart = getWeekStart();
-    const mockWords = [
-      { word: 'Jump', category: 'Actions', reason: "You've been heavy on Animals — this shifts things into Actions." },
-      { word: 'Banana', category: 'Food', reason: "A favourite snack word that bridges mealtime conversation." },
-      { word: 'Blue', category: 'Colours', reason: "Colour words are great at this age — pairs with objects already learned." },
-      { word: 'Fish', category: 'Animals', reason: "Builds on the animal cluster while adding a new sound pattern." },
-      { word: 'Open', category: 'Actions', reason: "A high-frequency action word your child likely hears every day." },
-    ];
-    // Delete any existing pending for this week first
-    await supabase.from('weekly_suggestions').delete()
-      .eq('user_id', currentUser.id).eq('week_start', weekStart).eq('status', 'pending_review');
-    // Insert mock suggestions
-    const { error } = await supabase.from('weekly_suggestions').insert(
-      mockWords.map(w => ({ user_id: currentUser.id, week_start: weekStart, ...w, status: 'pending_review' }))
-    );
-    if (error) { toast.error('Failed to simulate'); return; }
-    toast.success('Auto-pilot suggestions created!');
-    refreshSuggestions();
+    if (!currentUser?.id || autoPilotLoading) return;
+    setAutoPilotLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-autopilot-suggestions');
+      if (error) throw error;
+      if (data?.error === 'parse_failed') {
+        console.error('AI response parse failed:', data.raw);
+        toast.error("Sprouttie couldn't generate suggestions right now. Try again.");
+        return;
+      }
+      if (data?.error === 'save_failed') {
+        toast.error("Suggestions generated but couldn't be saved. Try again.");
+        return;
+      }
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+      toast.success(`Sprouttie picked ${data?.count || 5} words for you 🌱`);
+      refreshSuggestions();
+    } catch (err) {
+      console.error('Auto-pilot error:', err);
+      toast.error("Sprouttie couldn't generate suggestions right now. Try again.");
+    } finally {
+      setAutoPilotLoading(false);
+    }
   };
 
   // Dismiss all pending suggestions
@@ -451,14 +459,18 @@ const Dashboard = () => {
       {/* DEV ONLY — Simulate auto-pilot run button for testing */}
       <button
         onClick={simulateAutoPilot}
+        disabled={autoPilotLoading}
         className="mx-4 mb-5 active:scale-[0.98] transition-transform"
         style={{
-          background: '#F3F4F6', border: '1px dashed #D1D5DB', borderRadius: 10,
-          padding: '10px 14px', fontSize: 12, fontWeight: 500, color: '#6B7280',
-          cursor: 'pointer', width: 'calc(100% - 32px)', textAlign: 'center'
+          background: autoPilotLoading ? '#E5E7EB' : '#F3F4F6',
+          border: '1px dashed #D1D5DB', borderRadius: 10,
+          padding: '10px 14px', fontSize: 12, fontWeight: 500,
+          color: autoPilotLoading ? '#9CA3AF' : '#6B7280',
+          cursor: autoPilotLoading ? 'not-allowed' : 'pointer',
+          width: 'calc(100% - 32px)', textAlign: 'center'
         }}
       >
-        🔁 Simulate auto-pilot run
+        {autoPilotLoading ? '🌱 Sprouttie is thinking…' : '🔁 Simulate auto-pilot run'}
       </button>
     </div>
   );
