@@ -447,6 +447,19 @@ const Dashboard = () => {
         </div>
         <ChevronRight size={12} color="#9CA3AF" className="flex-shrink-0" />
       </button>
+
+      {/* DEV ONLY — Simulate auto-pilot run button for testing */}
+      <button
+        onClick={simulateAutoPilot}
+        className="mx-4 mb-5 active:scale-[0.98] transition-transform"
+        style={{
+          background: '#F3F4F6', border: '1px dashed #D1D5DB', borderRadius: 10,
+          padding: '10px 14px', fontSize: 12, fontWeight: 500, color: '#6B7280',
+          cursor: 'pointer', width: 'calc(100% - 32px)', textAlign: 'center'
+        }}
+      >
+        🔁 Simulate auto-pilot run
+      </button>
     </div>
   );
 };
