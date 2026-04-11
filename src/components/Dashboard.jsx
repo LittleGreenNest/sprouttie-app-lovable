@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { useFlashcards } from '../context/FlashcardContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import ThisWeekFlow from './thisweek/ThisWeekFlow';
+import { toast } from 'sonner';
 
 // ─── Tip data (pulled from existing TipsCarousel) ───
 const TIPS = [
@@ -29,6 +30,7 @@ const Dashboard = () => {
   const [tipIndex, setTipIndex] = useState(0);
   const [weeklyBooks, setWeeklyBooks] = useState([]);
   const [weeklyActivities, setWeeklyActivities] = useState([]);
+  const [pendingSuggestions, setPendingSuggestions] = useState([]);
 
   // Rotate tip daily based on day-of-year
   useEffect(() => {
