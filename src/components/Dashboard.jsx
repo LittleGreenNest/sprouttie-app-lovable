@@ -83,6 +83,46 @@ const Dashboard = () => {
     fetchAll();
   }, [currentUser?.id]);
 
+  // Refresh suggestions after simulate or dismiss
+  const refreshSuggestions = useCallback(async () => {
+    if (!currentUser?.id) return;
+    const { data } = await supabase.from('weekly_suggestions').select('*')
+      .eq('user_id', currentUser.id).eq('week_start', getWeekStart()).eq('status', 'pending_review');
+    setPendingSuggestions(data || []);
+  }, [currentUser?.id]);
+
+  // DEV ONLY — simulate auto-pilot run
+  const simulateAutoPilot = async () => {
+    if (!currentUser?.id) return;
+    const weekStart = getWeekStart();
+    const mockWords = [
+      { word: 'Jump', category: 'Actions', reason: "You've been heavy on Animals — this shifts things into Actions." },
+      { word: 'Banana', category: 'Food', reason: "A favourite snack word that bridges mealtime conversation." },
+      { word: 'Blue', category: 'Colours', reason: "Colour words are great at this age — pairs with objects already learned." },
+      { word: 'Fish', category: 'Animals', reason: "Builds on the animal cluster while adding a new sound pattern." },
+      { word: 'Open', category: 'Actions', reason: "A high-frequency action word your child likely hears every day." },
+    ];
+    // Delete any existing pending for this week first
+    await supabase.from('weekly_suggestions').delete()
+      .eq('user_id', currentUser.id).eq('week_start', weekStart).eq('status', 'pending_review');
+    // Insert mock suggestions
+    const { error } = await supabase.from('weekly_suggestions').insert(
+      mockWords.map(w => ({ user_id: currentUser.id, week_start: weekStart, ...w, status: 'pending_review' }))
+    );
+    if (error) { toast.error('Failed to simulate'); return; }
+    toast.success('Auto-pilot suggestions created!');
+    refreshSuggestions();
+  };
+
+  // Dismiss all pending suggestions
+  const dismissSuggestions = async () => {
+    if (!currentUser?.id || pendingSuggestions.length === 0) return;
+    const ids = pendingSuggestions.map(s => s.id);
+    await supabase.from('weekly_suggestions').update({ status: 'dismissed' }).in('id', ids);
+    setPendingSuggestions([]);
+    navigate('/word-planner');
+  };
+
   // ─── Derived data ───
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
