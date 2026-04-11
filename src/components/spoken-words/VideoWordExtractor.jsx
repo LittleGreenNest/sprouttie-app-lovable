@@ -7,27 +7,90 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
+/**
+ * Extract audio from a video file using MediaRecorder.
+ * Returns a Blob (webm/opus) that's typically 1-3MB even for long videos.
+ */
+const extractAudioFromVideo = (file) => {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.muted = false;
+    video.preload = 'auto';
+    video.src = URL.createObjectURL(file);
+
+    video.onloadedmetadata = () => {
+      // Cap at 5 minutes to keep size reasonable
+      const maxDuration = Math.min(video.duration, 300);
+
+      const stream = video.captureStream();
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks.length === 0) {
+        reject(new Error('No audio track found in video'));
+        return;
+      }
+
+      const audioStream = new MediaStream(audioTracks);
+      const recorder = new MediaRecorder(audioStream, {
+        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : 'audio/webm',
+        audioBitsPerSecond: 64000, // 64kbps — plenty for speech
+      });
+
+      const chunks = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorder.onstop = () => {
+        video.pause();
+        URL.revokeObjectURL(video.src);
+        const blob = new Blob(chunks, { type: recorder.mimeType });
+        resolve(blob);
+      };
+
+      recorder.onerror = (e) => reject(e.error || new Error('Recording failed'));
+
+      recorder.start();
+      video.currentTime = 0;
+      video.play().catch(reject);
+
+      // Stop after maxDuration
+      setTimeout(() => {
+        if (recorder.state === 'recording') recorder.stop();
+        video.pause();
+      }, maxDuration * 1000 + 500);
+
+      video.onended = () => {
+        if (recorder.state === 'recording') recorder.stop();
+      };
+    };
+
+    video.onerror = () => {
+      URL.revokeObjectURL(video.src);
+      reject(new Error('Failed to load video'));
+    };
+  });
+};
+
 const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
   const { currentUser } = useAuth();
   const fileInputRef = useRef(null);
 
-  const [step, setStep] = useState('upload'); // 'upload' | 'processing' | 'review'
+  const [step, setStep] = useState('upload'); // 'upload' | 'compressing' | 'processing' | 'review'
   const [videoFile, setVideoFile] = useState(null);
+  const [uploadFile, setUploadFile] = useState(null); // the file we'll actually upload (may be audio-only)
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
   const [extractedWords, setExtractedWords] = useState([]);
   const [selectedWords, setSelectedWords] = useState(new Set());
   const [processing, setProcessing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [compressed, setCompressed] = useState(false);
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error('Video must be under 20MB. Try trimming a shorter clip.');
-      return;
-    }
 
     if (!file.type.startsWith('video/')) {
       toast.error('Please select a video file.');
@@ -37,6 +100,29 @@ const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
     setVideoFile(file);
     setVideoPreviewUrl(URL.createObjectURL(file));
     setError(null);
+    setCompressed(false);
+
+    if (file.size <= MAX_FILE_SIZE) {
+      setUploadFile(file);
+    } else {
+      // Auto-extract audio to shrink below 20MB
+      try {
+        setStep('compressing');
+        const audioBlob = await extractAudioFromVideo(file);
+        const audioFile = new File([audioBlob], `audio_${Date.now()}.webm`, { type: audioBlob.type });
+        setUploadFile(audioFile);
+        setCompressed(true);
+        setStep('upload');
+        toast.info(`Video was ${(file.size / 1024 / 1024).toFixed(0)}MB — extracted audio only (${(audioFile.size / 1024 / 1024).toFixed(1)}MB)`);
+      } catch (err) {
+        console.error('Audio extraction failed:', err);
+        setStep('upload');
+        toast.error('Could not compress video. Try a shorter clip.');
+        setVideoFile(null);
+        setVideoPreviewUrl(null);
+        return;
+      }
+    }
   };
 
   const handleProcess = async () => {
