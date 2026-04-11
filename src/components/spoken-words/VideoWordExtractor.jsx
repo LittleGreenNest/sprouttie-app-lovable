@@ -280,7 +280,7 @@ const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
                     </div>
                     <div className="text-center">
                       <p className="text-sm font-medium text-[hsl(var(--sprouttie-ink))]">Tap to upload video</p>
-                      <p className="text-xs text-slate-400 mt-1">MP4, MOV · max 20MB</p>
+                      <p className="text-xs text-slate-400 mt-1">MP4, MOV · any size (auto-compressed)</p>
                     </div>
                   </button>
                 ) : (
