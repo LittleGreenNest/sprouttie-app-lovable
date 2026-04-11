@@ -383,6 +383,12 @@ const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
                   Tap to select/deselect, then save.
                 </p>
 
+                {videoFile && (
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted)/0.3)] rounded-lg px-3 py-2">
+                    📅 Recorded: {new Date(videoFile.lastModified).toLocaleDateString('en', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                )}
+
                 <div className="space-y-2">
                   {extractedWords.map((word, i) => {
                     const selected = selectedWords.has(i);
