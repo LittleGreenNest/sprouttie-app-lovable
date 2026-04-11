@@ -126,10 +126,19 @@ const WeeklyWordPlanner = () => {
     }
   }, [currentUser, currentWeekStart]);
 
+  // Load pending auto-pilot suggestions
+  const loadPendingSuggestions = useCallback(async () => {
+    if (!currentUser) return;
+    const { data } = await supabase.from('weekly_suggestions').select('*')
+      .eq('user_id', currentUser.id).eq('week_start', formatDate(currentWeekStart)).eq('status', 'pending_review');
+    setPendingSuggestions(data || []);
+  }, [currentUser, currentWeekStart]);
+
   useEffect(() => {
     loadWordPlans();
     loadTrackingData();
-  }, [loadWordPlans, loadTrackingData]);
+    loadPendingSuggestions();
+  }, [loadWordPlans, loadTrackingData, loadPendingSuggestions]);
 
   const getWordStage = (wordText) => {
     const spoken = spokenWords.find(
