@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { useFlashcards } from '../context/FlashcardContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import ThisWeekFlow from './thisweek/ThisWeekFlow';
+import { toast } from 'react-toastify';
 
 // ─── Tip data (pulled from existing TipsCarousel) ───
 const TIPS = [
@@ -29,6 +30,7 @@ const Dashboard = () => {
   const [tipIndex, setTipIndex] = useState(0);
   const [weeklyBooks, setWeeklyBooks] = useState([]);
   const [weeklyActivities, setWeeklyActivities] = useState([]);
+  const [pendingSuggestions, setPendingSuggestions] = useState([]);
 
   // Rotate tip daily based on day-of-year
   useEffect(() => {
@@ -48,17 +50,19 @@ const Dashboard = () => {
     const thirtyAgoStr = thirtyAgo.toISOString().split('T')[0];
 
     const fetchAll = async () => {
-      const [trackingRes, spokenRes, plansRes, booksRes, sessionsRes] = await Promise.all([
+      const [trackingRes, spokenRes, plansRes, booksRes, sessionsRes, suggestionsRes] = await Promise.all([
         supabase.from('daily_tracking').select('*').eq('user_id', uid).gte('date', thirtyAgoStr).order('date', { ascending: false }),
         supabase.from('spoken_words').select('*').eq('user_id', uid),
         supabase.from('word_plans').select('id').eq('user_id', uid).gte('planned_week_start', getWeekStart()),
         supabase.from('recommended_books').select('id').eq('user_id', uid),
         supabase.from('daily_flashing_sessions').select('books_read, activities, session_date').eq('user_id', uid).gte('session_date', getWeekStart()),
+        supabase.from('weekly_suggestions').select('*').eq('user_id', uid).eq('week_start', getWeekStart()).eq('status', 'pending_review'),
       ]);
       setTrackingData(trackingRes.data || []);
       setSpokenWords(spokenRes.data || []);
       setPlannedWordCount((plansRes.data || []).length);
       setSavedBookCount((booksRes.data || []).length);
+      setPendingSuggestions(suggestionsRes.data || []);
 
       // Aggregate weekly books & activities
       const sessions = sessionsRes.data || [];
@@ -78,6 +82,46 @@ const Dashboard = () => {
     };
     fetchAll();
   }, [currentUser?.id]);
+
+  // Refresh suggestions after simulate or dismiss
+  const refreshSuggestions = useCallback(async () => {
+    if (!currentUser?.id) return;
+    const { data } = await supabase.from('weekly_suggestions').select('*')
+      .eq('user_id', currentUser.id).eq('week_start', getWeekStart()).eq('status', 'pending_review');
+    setPendingSuggestions(data || []);
+  }, [currentUser?.id]);
+
+  // DEV ONLY — simulate auto-pilot run
+  const simulateAutoPilot = async () => {
+    if (!currentUser?.id) return;
+    const weekStart = getWeekStart();
+    const mockWords = [
+      { word: 'Jump', category: 'Actions', reason: "You've been heavy on Animals — this shifts things into Actions." },
+      { word: 'Banana', category: 'Food', reason: "A favourite snack word that bridges mealtime conversation." },
+      { word: 'Blue', category: 'Colours', reason: "Colour words are great at this age — pairs with objects already learned." },
+      { word: 'Fish', category: 'Animals', reason: "Builds on the animal cluster while adding a new sound pattern." },
+      { word: 'Open', category: 'Actions', reason: "A high-frequency action word your child likely hears every day." },
+    ];
+    // Delete any existing pending for this week first
+    await supabase.from('weekly_suggestions').delete()
+      .eq('user_id', currentUser.id).eq('week_start', weekStart).eq('status', 'pending_review');
+    // Insert mock suggestions
+    const { error } = await supabase.from('weekly_suggestions').insert(
+      mockWords.map(w => ({ user_id: currentUser.id, week_start: weekStart, ...w, status: 'pending_review' }))
+    );
+    if (error) { toast.error('Failed to simulate'); return; }
+    toast.success('Auto-pilot suggestions created!');
+    refreshSuggestions();
+  };
+
+  // Dismiss all pending suggestions
+  const dismissSuggestions = async () => {
+    if (!currentUser?.id || pendingSuggestions.length === 0) return;
+    const ids = pendingSuggestions.map(s => s.id);
+    await supabase.from('weekly_suggestions').update({ status: 'dismissed' }).in('id', ids);
+    setPendingSuggestions([]);
+    navigate('/word-planner');
+  };
 
   // ─── Derived data ───
   const today = new Date();
@@ -210,23 +254,67 @@ const Dashboard = () => {
       {/* 5. THIS WEEK CARD */}
       <div
         className="mx-4 mb-3"
-        style={{ background: 'white', border: '0.5px solid #E5E7EB', borderRadius: 16, padding: '16px 18px' }}
+        style={{ background: pendingSuggestions.length > 0 ? '#EDF7EE' : 'white', border: '0.5px solid #E5E7EB', borderRadius: 16, padding: '16px 18px' }}
       >
-        <div className="flex items-center justify-between">
-          <span style={{ fontSize: 13, fontWeight: 500, color: '#1F2937' }}>This Week</span>
-          <button
-            onClick={() => setShowThisWeek(true)}
-            style={{ fontSize: 12, fontWeight: 500, color: '#2D6A4F', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            Plan →
-          </button>
-        </div>
+        {pendingSuggestions.length > 0 ? (
+          <>
+            {/* Auto-pilot "week is ready" state */}
+            <p style={{ fontSize: 15, fontWeight: 600, color: '#1F2937', margin: 0 }}>
+              🌱 Your week is ready
+            </p>
+            <p style={{ fontSize: 12, color: '#6B7280', marginTop: 4, lineHeight: 1.4 }}>
+              Sprouttie picked {pendingSuggestions.length} words across{' '}
+              {[...new Set(pendingSuggestions.map(s => s.category).filter(Boolean))].join(' and ') || 'mixed categories'}.
+              {' '}Takes 30 seconds to review.
+            </p>
 
-        <div className="flex gap-2 mt-3">
-          <FocusTile emoji="🗣" label="Words" subtext={plannedWordCount > 0 ? `${plannedWordCount} planned` : 'Plan now'} onClick={() => setShowThisWeek(true)} />
-          <FocusTile emoji="📚" label="Books" subtext={savedBookCount > 0 ? `${savedBookCount} saved` : 'Add books'} onClick={() => setShowThisWeek(true)} />
-          <FocusTile emoji="🤝" label="Prompts" subtext="3 tips" onClick={() => setShowThisWeek(true)} />
-        </div>
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => navigate('/word-planner')}
+                className="flex-1 active:scale-[0.98] transition-transform"
+                style={{
+                  background: '#52B788', border: 'none', borderRadius: 10,
+                  padding: '10px 14px', fontSize: 13, fontWeight: 500, color: 'white', cursor: 'pointer'
+                }}
+              >
+                Review & Accept
+              </button>
+              <button
+                onClick={dismissSuggestions}
+                className="flex-1 active:scale-[0.98] transition-transform"
+                style={{
+                  background: 'transparent', border: '1px solid #D1D5DB', borderRadius: 10,
+                  padding: '10px 14px', fontSize: 13, fontWeight: 500, color: '#374151', cursor: 'pointer'
+                }}
+              >
+                Plan manually
+              </button>
+            </div>
+
+            <p style={{ fontSize: 10, color: '#9CA3AF', marginTop: 8, textAlign: 'center' }}>
+              Auto-generated based on {childName}'s profile and history
+            </p>
+          </>
+        ) : (
+          <>
+            {/* Default state */}
+            <div className="flex items-center justify-between">
+              <span style={{ fontSize: 13, fontWeight: 500, color: '#1F2937' }}>This Week</span>
+              <button
+                onClick={() => setShowThisWeek(true)}
+                style={{ fontSize: 12, fontWeight: 500, color: '#2D6A4F', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                Plan →
+              </button>
+            </div>
+
+            <div className="flex gap-2 mt-3">
+              <FocusTile emoji="🗣" label="Words" subtext={plannedWordCount > 0 ? `${plannedWordCount} planned` : 'Plan now'} onClick={() => setShowThisWeek(true)} />
+              <FocusTile emoji="📚" label="Books" subtext={savedBookCount > 0 ? `${savedBookCount} saved` : 'Add books'} onClick={() => setShowThisWeek(true)} />
+              <FocusTile emoji="🤝" label="Prompts" subtext="3 tips" onClick={() => setShowThisWeek(true)} />
+            </div>
+          </>
+        )}
       </div>
 
       {/* 6. FLASHCARD SETS CARD */}
@@ -358,6 +446,19 @@ const Dashboard = () => {
           </p>
         </div>
         <ChevronRight size={12} color="#9CA3AF" className="flex-shrink-0" />
+      </button>
+
+      {/* DEV ONLY — Simulate auto-pilot run button for testing */}
+      <button
+        onClick={simulateAutoPilot}
+        className="mx-4 mb-5 active:scale-[0.98] transition-transform"
+        style={{
+          background: '#F3F4F6', border: '1px dashed #D1D5DB', borderRadius: 10,
+          padding: '10px 14px', fontSize: 12, fontWeight: 500, color: '#6B7280',
+          cursor: 'pointer', width: 'calc(100% - 32px)', textAlign: 'center'
+        }}
+      >
+        🔁 Simulate auto-pilot run
       </button>
     </div>
   );

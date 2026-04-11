@@ -577,6 +577,39 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_suggestions: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          reason: string | null
+          status: string
+          user_id: string
+          week_start: string
+          word: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          status?: string
+          user_id: string
+          week_start: string
+          word: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          status?: string
+          user_id?: string
+          week_start?: string
+          word?: string
+        }
+        Relationships: []
+      }
       word_plans: {
         Row: {
           created_at: string

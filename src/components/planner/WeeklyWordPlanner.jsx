@@ -33,6 +33,9 @@ const WeeklyWordPlanner = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [userFlashcards, setUserFlashcards] = useState([]);
   const [addingWord, setAddingWord] = useState(null);
+  const [pendingSuggestions, setPendingSuggestions] = useState([]);
+  const [swappingWordId, setSwappingWordId] = useState(null);
+  const [acceptingAll, setAcceptingAll] = useState(false);
 
   function getWeekStart(date) {
     const d = new Date(date);
@@ -123,10 +126,81 @@ const WeeklyWordPlanner = () => {
     }
   }, [currentUser, currentWeekStart]);
 
+  // Load pending auto-pilot suggestions
+  const loadPendingSuggestions = useCallback(async () => {
+    if (!currentUser) return;
+    const { data } = await supabase.from('weekly_suggestions').select('*')
+      .eq('user_id', currentUser.id).eq('week_start', formatDate(currentWeekStart)).eq('status', 'pending_review');
+    setPendingSuggestions(data || []);
+  }, [currentUser, currentWeekStart]);
+
   useEffect(() => {
     loadWordPlans();
     loadTrackingData();
-  }, [loadWordPlans, loadTrackingData]);
+    loadPendingSuggestions();
+  }, [loadWordPlans, loadTrackingData, loadPendingSuggestions]);
+
+  // Hardcoded swap alternatives per category (real logic comes later)
+  const SWAP_ALTERNATIVES = {
+    Actions: ['Run', 'Clap', 'Push', 'Pull', 'Throw'],
+    Food: ['Apple', 'Rice', 'Milk', 'Bread', 'Egg'],
+    Colours: ['Red', 'Green', 'Yellow', 'Pink', 'Orange'],
+    Animals: ['Dog', 'Cat', 'Bird', 'Horse', 'Cow'],
+  };
+
+  const getSwapAlternatives = (category, currentWord) => {
+    const alts = SWAP_ALTERNATIVES[category] || ['Word A', 'Word B', 'Word C'];
+    return alts.filter(w => w.toLowerCase() !== currentWord.toLowerCase()).slice(0, 3);
+  };
+
+  const handleAcceptAll = async () => {
+    if (!currentUser || pendingSuggestions.length === 0) return;
+    setAcceptingAll(true);
+    try {
+      const ids = pendingSuggestions.map(s => s.id);
+      await supabase.from('weekly_suggestions').update({ status: 'accepted' }).in('id', ids);
+
+      // Add each word to backlog (word_plans) and flashcards if needed
+      for (const s of pendingSuggestions) {
+        const existsInBacklog = wordPlans.some(wp => wp.word.toLowerCase() === s.word.toLowerCase());
+        if (!existsInBacklog) {
+          await supabase.from('word_plans').insert({
+            user_id: currentUser.id, word: s.word, theme: s.category || null,
+            planned_week_start: formatDate(currentWeekStart), display_order: wordPlans.length,
+          });
+        }
+        const existsInFlashcards = userFlashcards.some(f => f.front?.toLowerCase() === s.word.toLowerCase());
+        if (!existsInFlashcards) {
+          await supabase.from('flashcards').insert({
+            user_id: currentUser.id, front: s.word, back: '', folder: s.category || 'default',
+            card_type: 'word', card_status: 'waiting',
+          });
+        }
+      }
+      toast.success(`${pendingSuggestions.length} words added to your backlog 🌱`);
+      setPendingSuggestions([]);
+      loadWordPlans();
+      loadTrackingData();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to accept suggestions');
+    } finally {
+      setAcceptingAll(false);
+    }
+  };
+
+  const handleDismissAll = async () => {
+    if (!currentUser || pendingSuggestions.length === 0) return;
+    const ids = pendingSuggestions.map(s => s.id);
+    await supabase.from('weekly_suggestions').update({ status: 'dismissed' }).in('id', ids);
+    setPendingSuggestions([]);
+  };
+
+  const handleSwapWord = async (suggestionId, newWord) => {
+    await supabase.from('weekly_suggestions').update({ word: newWord }).eq('id', suggestionId);
+    setSwappingWordId(null);
+    loadPendingSuggestions();
+  };
 
   const getWordStage = (wordText) => {
     const spoken = spokenWords.find(
@@ -370,6 +444,97 @@ const WeeklyWordPlanner = () => {
           <ChevronRight className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
         </button>
       </div>
+
+      {/* This Week's Plan — auto-pilot review section */}
+      <AnimatePresence>
+        {pendingSuggestions.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl overflow-hidden"
+          >
+            <div className="px-5 py-3 border-b border-[hsl(var(--border))] bg-emerald-50">
+              <div className="flex items-center gap-2">
+                <span>📋</span>
+                <span className="font-semibold text-sm text-emerald-900">This Week's Plan</span>
+              </div>
+              <p className="text-xs text-emerald-700 mt-0.5">Auto-generated · Tap to swap any word</p>
+            </div>
+            <div className="divide-y divide-[hsl(var(--border))]">
+              {pendingSuggestions.map((s) => (
+                <div key={s.id} className="px-5 py-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-[hsl(var(--foreground))]">{s.word}</span>
+                        {s.category && (
+                          <span className="text-xs bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] px-2 py-0.5 rounded-full">
+                            {s.category}
+                          </span>
+                        )}
+                      </div>
+                      {s.reason && (
+                        <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 leading-relaxed italic">
+                          {s.reason}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setSwappingWordId(swappingWordId === s.id ? null : s.id)}
+                      className="flex-shrink-0 text-xs px-3 py-1.5 rounded-lg border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+                    >
+                      Swap
+                    </button>
+                  </div>
+                  {/* Swap bottom sheet */}
+                  <AnimatePresence>
+                    {swappingWordId === s.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-2 pt-2 border-t border-dashed border-[hsl(var(--border))] flex flex-wrap gap-2">
+                          {getSwapAlternatives(s.category, s.word).map(alt => (
+                            <button
+                              key={alt}
+                              onClick={() => handleSwapWord(s.id, alt)}
+                              className="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                            >
+                              {alt}
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </div>
+            <div className="px-5 py-4 border-t border-[hsl(var(--border))] space-y-2">
+              <button
+                onClick={handleAcceptAll}
+                disabled={acceptingAll}
+                className="w-full py-2.5 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {acceptingAll ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>✓ Accept All & Add to Sets</>
+                )}
+              </button>
+              <button
+                onClick={handleDismissAll}
+                className="w-full text-center text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors py-1"
+              >
+                Dismiss — I'll plan manually
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* AI Suggestions Panel */}
       <AnimatePresence>
