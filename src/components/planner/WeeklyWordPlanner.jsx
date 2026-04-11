@@ -35,6 +35,8 @@ const WeeklyWordPlanner = () => {
   const [addingWord, setAddingWord] = useState(null);
   const [pendingSuggestions, setPendingSuggestions] = useState([]);
   const [swappingWordId, setSwappingWordId] = useState(null);
+  const [swapAlternatives, setSwapAlternatives] = useState({});
+  const [loadingSwap, setLoadingSwap] = useState(null);
   const [acceptingAll, setAcceptingAll] = useState(false);
 
   function getWeekStart(date) {
@@ -145,17 +147,21 @@ const WeeklyWordPlanner = () => {
     loadPendingSuggestions();
   }, [loadWordPlans, loadTrackingData, loadPendingSuggestions]);
 
-  // Hardcoded swap alternatives per category (real logic comes later)
-  const SWAP_ALTERNATIVES = {
-    Actions: ['Run', 'Clap', 'Push', 'Pull', 'Throw'],
-    Food: ['Apple', 'Rice', 'Milk', 'Bread', 'Egg'],
-    Colours: ['Red', 'Green', 'Yellow', 'Pink', 'Orange'],
-    Animals: ['Dog', 'Cat', 'Bird', 'Horse', 'Cow'],
-  };
-
-  const getSwapAlternatives = (category, currentWord) => {
-    const alts = SWAP_ALTERNATIVES[category] || ['Word A', 'Word B', 'Word C'];
-    return alts.filter(w => w.toLowerCase() !== currentWord.toLowerCase()).slice(0, 3);
+  const fetchSwapAlternatives = async (suggestionId, word, category) => {
+    if (swapAlternatives[suggestionId]) return; // already loaded
+    setLoadingSwap(suggestionId);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-swap-alternatives', {
+        body: { word, category },
+      });
+      if (error || data?.error) throw new Error(data?.error || 'Failed');
+      setSwapAlternatives(prev => ({ ...prev, [suggestionId]: data.alternatives || [] }));
+    } catch (err) {
+      console.error('Swap alternatives error:', err);
+      toast.error("Couldn't load alternatives. Try again.");
+    } finally {
+      setLoadingSwap(null);
+    }
   };
 
   const handleAcceptAll = async () => {
@@ -486,7 +492,11 @@ const WeeklyWordPlanner = () => {
                       )}
                     </div>
                     <button
-                      onClick={() => setSwappingWordId(swappingWordId === s.id ? null : s.id)}
+                      onClick={() => {
+                        const opening = swappingWordId !== s.id;
+                        setSwappingWordId(opening ? s.id : null);
+                        if (opening) fetchSwapAlternatives(s.id, s.word, s.category);
+                      }}
                       className="flex-shrink-0 text-xs px-3 py-1.5 rounded-lg border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
                     >
                       Swap
@@ -502,15 +512,26 @@ const WeeklyWordPlanner = () => {
                         className="overflow-hidden"
                       >
                         <div className="mt-2 pt-2 border-t border-dashed border-[hsl(var(--border))] flex flex-wrap gap-2">
-                          {getSwapAlternatives(s.category, s.word).map(alt => (
-                            <button
-                              key={alt}
-                              onClick={() => handleSwapWord(s.id, alt)}
-                              className="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
-                            >
-                              {alt}
-                            </button>
-                          ))}
+                          {loadingSwap === s.id ? (
+                            <span className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1.5">
+                              <Loader2 className="w-3 h-3 animate-spin" /> Finding alternatives…
+                            </span>
+                          ) : (swapAlternatives[s.id] || []).length > 0 ? (
+                            (swapAlternatives[s.id]).map(alt => (
+                              <button
+                                key={alt}
+                                onClick={() => {
+                                  handleSwapWord(s.id, alt);
+                                  setSwapAlternatives(prev => { const next = { ...prev }; delete next[s.id]; return next; });
+                                }}
+                                className="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                              >
+                                {alt}
+                              </button>
+                            ))
+                          ) : (
+                            <span className="text-xs text-[hsl(var(--muted-foreground))]">No alternatives found</span>
+                          )}
                         </div>
                       </motion.div>
                     )}
