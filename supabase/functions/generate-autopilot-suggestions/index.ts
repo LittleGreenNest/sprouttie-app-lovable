@@ -188,13 +188,12 @@ You must respond ONLY with a valid JSON array. No preamble, no explanation outsi
     }
 
     // ─── STEP 3: Write to Supabase ───
-    // Calculate Monday of current week
+    // Calculate Monday of current week (UTC-based for consistency)
     const now = new Date();
-    const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    const weekStart = new Date(now.getFullYear(), now.getMonth(), diff)
-      .toISOString()
-      .split("T")[0];
+    const day = now.getUTCDay();
+    const diff = now.getUTCDate() - day + (day === 0 ? -6 : 1);
+    const wsDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), diff));
+    const weekStart = wsDate.toISOString().split("T")[0];
 
     // Delete existing pending suggestions for this week
     await supabase
