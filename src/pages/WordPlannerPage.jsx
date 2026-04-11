@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 /* ─── colour tokens (spec values) ─── */
 const C = {
@@ -29,7 +32,29 @@ const shadow = {
   today:   '0 4px 20px rgba(59,122,87,.22)',
 };
 
-/* ─── tiny helpers ─── */
+/* ─── date helpers ─── */
+const getWeekStart = (date) => {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.getFullYear(), d.getMonth(), diff);
+};
+
+const formatDateStr = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const formatShortDate = (date) => {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${date.getDate()} ${months[date.getMonth()]}`;
+};
+
+const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+/* ─── tiny visual helpers ─── */
 const Pips = ({ filled, total = 5, graduated = false }) => (
   <div style={{ display: 'flex', gap: 3 }}>
     {Array.from({ length: total }).map((_, i) => (
@@ -44,8 +69,7 @@ const Pips = ({ filled, total = 5, graduated = false }) => (
 const Tag = ({ text, bg, color }) => (
   <span style={{
     fontSize: 9, fontFamily: 'Inter', fontWeight: 700, textTransform: 'uppercase',
-    letterSpacing: 0.5, padding: '2px 6px', borderRadius: 3,
-    background: bg, color,
+    letterSpacing: 0.5, padding: '2px 6px', borderRadius: 3, background: bg, color,
   }}>{text}</span>
 );
 
@@ -57,177 +81,94 @@ const SpokenChip = ({ text }) => (
   }}>{text}</span>
 );
 
-/* ─── data ─── */
-const thisWeekSets = [
-  {
-    name: 'Set 1', activeCount: 5, queuedCount: 3,
-    active: [
-      { word: 'Shoe', emoji: '🌱', meta: 'Just entered — 5 days to go', day: 0 },
-      { word: 'Sock', emoji: '🌱', meta: 'Needs 4 more days', day: 1 },
-      { word: 'Hat', emoji: '🌱', meta: 'Needs 3 more days', day: 2 },
-      { word: 'Red car', emoji: '🌱', meta: 'Needs 2 more days', day: 3, phrase: true },
-      { word: 'Cup', emoji: '🌱', meta: "Almost done — graduates after tomorrow's flash", day: 4 },
-    ],
-    aiContext: (
-      <>Alexander is saying <SpokenChip text="Big truck" /> and <SpokenChip text="Yellow bus" /> — the next words build the Mandarin for vehicles he's already talking about in English.</>
-    ),
-    queued: [
-      { rank: 1, word: 'Truck', tags: ['Next to enter', 'Vehicles'], ai: "He says 'Big truck' in English — flashing stabilises it in Mandarin." },
-      { rank: 2, word: 'Bus', tags: ['Vehicles'], ai: "Pairs with 'Yellow bus' — builds the Mandarin bridge for a word he loves." },
-      { rank: 3, word: 'Car', tags: ['Vehicles'], ai: "Completes the vehicle cluster and reinforces 'Red car' phrase." },
-    ],
-  },
-  {
-    name: 'Set 2', activeCount: 5, queuedCount: 3,
-    active: [
-      { word: 'Lamp', emoji: '🌱', meta: 'Just entered — 5 days to go', day: 0 },
-      { word: 'Table', emoji: '🌱', meta: 'Needs 4 more days', day: 1 },
-      { word: 'Chair', emoji: '🌱', meta: 'Needs 3 more days', day: 2 },
-      { word: 'Bird', emoji: '🌱', meta: 'Needs 2 more days', day: 3 },
-      { word: 'Shoes', emoji: '🌱', meta: "Almost done — graduates after tomorrow's flash", day: 4 },
-    ],
-    aiContext: (
-      <>Alexander is saying <SpokenChip text="Go there" /> and <SpokenChip text="Put back" /> — this set shifts toward action words to match what he's already using.</>
-    ),
-    queued: [
-      { rank: 1, word: 'Go', tags: ['Next to enter', 'Actions'], ai: "He says 'Go there' — flashing builds the Mandarin for something he already uses." },
-      { rank: 2, word: 'Put', tags: ['Actions'], ai: "He says 'Put back' — another active word worth stabilising in Mandarin." },
-      { rank: 3, word: 'See', tags: ['Actions'], ai: "'I see a bus' — a core action verb already in his spontaneous speech." },
-    ],
-  },
-  {
-    name: 'Set 3', activeCount: 5, queuedCount: 3,
-    active: [
-      { word: 'Bed', emoji: '🌱', meta: 'Just entered — 5 days to go', day: 0 },
-      { word: 'Door', emoji: '🌱', meta: 'Needs 4 more days', day: 1 },
-      { word: 'Boat', emoji: '🌱', meta: 'Needs 3 more days', day: 2 },
-      { word: 'Cat', emoji: '🌱', meta: 'Needs 2 more days', day: 3 },
-      { word: 'Spoon', emoji: '🌱', meta: "Almost done — graduates after tomorrow's flash", day: 4 },
-    ],
-    aiContext: (
-      <>Alexander said <SpokenChip text="Nai nai Chor, ye ye Chor" /> — he's naming family in phrases. These next words reinforce the people he talks about most.</>
-    ),
-    queued: [
-      { rank: 1, word: 'Nai nai', tags: ['Next to enter', 'Family'], ai: "He's already saying this — flashing builds the visual character connection in Mandarin." },
-      { rank: 2, word: 'Ye ye', tags: ['Family'], ai: "Always paired with Nai nai — introducing both mirrors how he already uses them." },
-      { rank: 3, word: 'Sit', tags: ['Actions'], ai: "'Chor' (sit) is in his phrase — the Mandarin bridges his Cantonese to the target language." },
-    ],
-  },
-];
-
-const lastWeekSets = [
-  {
-    name: 'Set 1', wordCount: 9,
-    graduated: { word: 'Mama', emoji: '🌳' },
-    gradChip: '✓ Mama graduated',
-    words: [
-      { word: 'Cup', emoji: '🌱', meta: 'Introduced Day 1 · Day 4 of 5', day: 4 },
-      { word: 'Red car', emoji: '🌱', meta: 'Introduced Day 2 · Day 3 of 5', day: 3, phrase: true },
-      { word: 'Hat', emoji: '🌱', meta: 'Introduced Day 3 · Day 2 of 5', day: 2 },
-      { word: 'Sock', emoji: '🌱', meta: 'Introduced Day 4 · Day 1 of 5', day: 1 },
-      { word: 'Ball', emoji: '🌿', meta: 'Carried from prior week · Day 4 of 5', day: 4 },
-      { word: 'More', emoji: '🌿', meta: 'Carried from prior week · Day 3 of 5', day: 3 },
-      { word: 'Up', emoji: '🌿', meta: 'Carried from prior week · Day 2 of 5', day: 2 },
-      { word: 'No', emoji: '🌿', meta: 'Carried from prior week · Day 1 of 5', day: 1 },
-    ],
-  },
-  {
-    name: 'Set 2', wordCount: 9,
-    graduated: { word: 'Water', emoji: '🌳' },
-    gradChip: '✓ Water graduated',
-    words: [
-      { word: 'Shoes', emoji: '🌱', meta: 'Introduced Day 1 · Day 4 of 5', day: 4 },
-      { word: 'Bird', emoji: '🌱', meta: 'Introduced Day 2 · Day 3 of 5', day: 3 },
-      { word: 'Chair', emoji: '🌱', meta: 'Introduced Day 3 · Day 2 of 5', day: 2 },
-      { word: 'Table', emoji: '🌱', meta: 'Introduced Day 4 · Day 1 of 5', day: 1 },
-      { word: 'Dada', emoji: '🌿', meta: 'Carried from prior week · Day 4 of 5', day: 4 },
-      { word: 'Dog', emoji: '🌿', meta: 'Carried from prior week · Day 3 of 5', day: 3 },
-      { word: 'Eat', emoji: '🌿', meta: 'Carried from prior week · Day 2 of 5', day: 2 },
-      { word: 'Yes', emoji: '🌿', meta: 'Carried from prior week · Day 1 of 5', day: 1 },
-    ],
-  },
-  {
-    name: 'Set 3', wordCount: 9,
-    graduated: { word: 'More', emoji: '🌳' },
-    gradChip: '✓ More graduated',
-    words: [
-      { word: 'Spoon', emoji: '🌱', meta: 'Introduced Day 1 · Day 4 of 5', day: 4 },
-      { word: 'Cat', emoji: '🌱', meta: 'Introduced Day 2 · Day 3 of 5', day: 3 },
-      { word: 'Boat', emoji: '🌱', meta: 'Introduced Day 3 · Day 2 of 5', day: 2 },
-      { word: 'Door', emoji: '🌱', meta: 'Introduced Day 4 · Day 1 of 5', day: 1 },
-      { word: 'Bath', emoji: '🌿', meta: 'Carried from prior week · Day 4 of 5', day: 4 },
-      { word: 'Up', emoji: '🌿', meta: 'Carried from prior week · Day 3 of 5', day: 3 },
-      { word: 'Dog', emoji: '🌿', meta: 'Carried from prior week · Day 2 of 5', day: 2 },
-      { word: 'Ball', emoji: '🌿', meta: 'Carried from prior week · Day 1 of 5', day: 1 },
-    ],
-  },
-];
-
-const lastWeekDays = [
-  { label: 'M', sessions: 3 },
-  { label: 'T', sessions: 3 },
-  { label: 'W', sessions: 3 },
-  { label: 'T', sessions: 2 },
-  { label: 'F', sessions: 3 },
-  { label: 'S', sessions: 0 },
-  { label: 'S', sessions: 3 },
-];
-
-/* ─── Sub-components ─── */
-
-const StickyNav = () => (
+const SubLabel = ({ text }) => (
   <div style={{
-    position: 'sticky', top: 0, zIndex: 100,
-    background: C.white, borderBottom: `1px solid ${C.stone}`,
-    height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '0 24px',
+    padding: '7px 20px 5px', fontFamily: 'Inter', fontSize: 10, fontWeight: 700,
+    letterSpacing: 1, textTransform: 'uppercase', color: C.muted,
+    background: C.cream, borderTop: `1px solid ${C.stone}`, borderBottom: `1px solid ${C.stone}`,
+  }}>{text}</div>
+);
+
+const SectionHeader = ({ title, right }) => (
+  <>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+      <h2 style={{ fontFamily: "'Playfair Display'", fontSize: 20, fontWeight: 600, color: C.charcoal, margin: 0 }}>{title}</h2>
+      <span style={{ fontFamily: 'Inter', fontSize: 12, color: C.muted }}>{right}</span>
+    </div>
+    <div style={{ height: 1, background: C.stoneMid, marginBottom: 14 }} />
+  </>
+);
+
+/* ─── Word Row (active) ─── */
+const ActiveWordRow = ({ word, emoji, meta, day, phrase, isLast }) => (
+  <div style={{
+    display: 'grid', gridTemplateColumns: '20px 1fr auto', padding: '10px 20px', gap: 10,
+    borderBottom: isLast ? 'none' : `1px solid rgba(232,227,216,.5)`,
   }}>
-    <span style={{ fontFamily: 'Inter', fontSize: 17, fontWeight: 600, color: C.sage }}>🌱 Sprouttie</span>
-    <div style={{
-      width: 32, height: 32, borderRadius: '50%', background: C.sagePale,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: 'Inter', fontSize: 13, fontWeight: 600, color: C.sage,
-    }}>C</div>
-  </div>
-);
-
-const TodayLaunchpad = () => (
-  <div style={{ background: C.sage, borderRadius: 16, overflow: 'hidden', boxShadow: shadow.today, marginBottom: 12 }}>
-    <div style={{ padding: '20px 24px 18px', display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-      <div style={{ flex: 1, minWidth: 180 }}>
-        <div style={{ fontFamily: 'Inter', fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: 'rgba(255,255,255,.6)', marginBottom: 4 }}>Today · Mon 24 Feb</div>
-        <div style={{ fontFamily: "'Playfair Display'", fontSize: 22, color: '#fff', letterSpacing: -0.2, marginBottom: 5 }}>Session 2 of 3</div>
-        <div style={{ fontFamily: 'Inter', fontSize: 13, color: 'rgba(255,255,255,.72)' }}>Day 1 of 5 · 3 sets · 15 words ready</div>
+    <span style={{ fontSize: 14 }}>{emoji}</span>
+    <div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 3 }}>
+        <span style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: 500, color: C.ink }}>{word}</span>
+        {phrase && <Tag text="Phrase" bg={C.phraseBg} color={C.phraseClr} />}
       </div>
-      <button style={{
-        background: '#fff', color: C.sage, border: 'none', borderRadius: 8,
-        padding: '12px 20px', fontFamily: 'Inter', fontSize: 14, fontWeight: 700,
-        boxShadow: '0 2px 10px rgba(0,0,0,.12)', cursor: 'pointer',
-        display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
-      }}>
-        Flash now
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polygon points="2,0 12,6 2,12" fill={C.sage}/></svg>
-      </button>
+      <div style={{ fontFamily: 'Inter', fontSize: 11, color: C.muted, lineHeight: 1.4 }}>
+        {meta}
+      </div>
     </div>
-    <div style={{ background: 'rgba(0,0,0,.18)', padding: '10px 24px', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-      <span style={{ fontFamily: 'Inter', fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,.55)', flexShrink: 0 }}>Today's sessions</span>
-      {[
-        { label: '✓ Session 1', bg: 'rgba(255,255,255,.88)', color: C.sage, border: 'none' },
-        { label: '▶ Session 2', bg: 'rgba(255,255,255,.28)', color: '#fff', border: '1px solid rgba(255,255,255,.45)' },
-        { label: 'Session 3', bg: 'rgba(255,255,255,.1)', color: 'rgba(255,255,255,.45)', border: 'none' },
-      ].map((s, i) => (
-        <span key={i} style={{
-          fontFamily: 'Inter', fontSize: 11, fontWeight: 600,
-          padding: '4px 11px', borderRadius: 20,
-          background: s.bg, color: s.color, border: s.border || 'none',
-        }}>{s.label}</span>
-      ))}
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
+      <Pips filled={day} />
+      <span style={{ fontFamily: 'Inter', fontSize: 10, color: C.faint, whiteSpace: 'nowrap' }}>Day {day} of 5</span>
     </div>
   </div>
 );
 
+/* ─── Queued Word Row ─── */
+const QueuedWordRow = ({ rank, word, tags, ai, isLast }) => {
+  const borderColor = rank === 1 ? C.sage : rank === 2 ? C.sageMid : C.sageLight;
+  const badgeBg = rank === 1 ? C.sage : rank === 2 ? C.sageMid : C.sageLight;
+  const badgeColor = rank <= 2 ? '#fff' : C.charcoal;
+  return (
+    <div style={{
+      display: 'grid', gridTemplateColumns: '20px 1fr auto', padding: '10px 20px', paddingLeft: 17, gap: 10,
+      background: '#FAFDF9', borderLeft: `3px solid ${borderColor}`,
+      borderBottom: isLast ? 'none' : `1px solid rgba(232,227,216,.5)`,
+    }}>
+      <span style={{
+        width: 16, height: 16, borderRadius: '50%', background: badgeBg, color: badgeColor,
+        fontFamily: 'Inter', fontSize: 9, fontWeight: 700,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      }}>{rank}</span>
+      <div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 3, alignItems: 'center' }}>
+          <span style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: 600, color: C.charcoal }}>{word}</span>
+          {(tags || []).map(t => {
+            if (t === 'Next to enter') return <Tag key={t} text={t} bg={C.sagePale} color={C.sage} />;
+            return <Tag key={t} text={t} bg={C.stone} color={C.muted} />;
+          })}
+        </div>
+        {ai && <div style={{ fontFamily: 'Inter', fontSize: 11, color: C.sageMid, fontStyle: 'italic', lineHeight: 1.4 }}>{ai}</div>}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
+        <Pips filled={0} />
+        <span style={{ fontFamily: 'Inter', fontSize: 10, color: C.faint, whiteSpace: 'nowrap' }}>queued</span>
+      </div>
+    </div>
+  );
+};
+
+const AIContextBanner = ({ children }) => (
+  <div style={{
+    background: C.sageMist, borderTop: `1px solid ${C.stone}`, borderBottom: `1px solid ${C.stone}`,
+    padding: '11px 20px', display: 'flex', gap: 9, alignItems: 'flex-start',
+  }}>
+    <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>🤖</span>
+    <span style={{ fontFamily: 'Inter', fontSize: 12, color: C.ink, lineHeight: 1.6 }}>{children}</span>
+  </div>
+);
+
+/* ─── DaySquare for check-in ─── */
 const DaySquare = ({ sessions }) => {
-  const dots = sessions === 3
+  const dots = sessions >= 3
     ? [C.white, C.white, C.white]
     : sessions === 2
     ? [C.sageLight, C.sageLight, C.stoneMid]
@@ -236,7 +177,6 @@ const DaySquare = ({ sessions }) => {
     : [];
   const bg = sessions >= 3 ? C.sage : sessions > 0 ? C.sagePale : C.stone;
   const border = sessions > 0 && sessions < 3 ? `1.5px solid ${C.sageLight}` : 'none';
-
   return (
     <div style={{
       width: 36, height: 36, borderRadius: 6, background: bg, border,
@@ -249,23 +189,152 @@ const DaySquare = ({ sessions }) => {
   );
 };
 
-const LastWeekCheckin = () => {
+/* ─── This Week Set Card ─── */
+const ThisWeekSetCard = ({ set }) => (
+  <div style={{ background: C.white, border: `1px solid ${C.stone}`, borderRadius: 16, overflow: 'hidden', marginBottom: 10, boxShadow: shadow.card }}>
+    <div style={{
+      padding: '13px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      background: C.cream, borderBottom: `1px solid ${C.stone}`,
+    }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+        <span style={{ fontFamily: 'Inter', fontSize: 13, fontWeight: 700, color: C.charcoal }}>{set.name}</span>
+        <span className="set-sub" style={{ fontFamily: 'Inter', fontSize: 11, color: C.muted }}>· {set.active.length} words</span>
+      </div>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <span style={{ fontFamily: 'Inter', fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 10, background: C.stone, color: C.muted }}>{set.active.length} active</span>
+        <span style={{ fontFamily: 'Inter', fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 10, background: C.sagePale, color: C.sage }}>{set.queued.length} queued</span>
+      </div>
+    </div>
+    <SubLabel text="Flashing this week" />
+    {set.active.map((w, i) => (
+      <ActiveWordRow key={i} {...w} isLast={i === set.active.length - 1} />
+    ))}
+    {set.aiContext && <AIContextBanner>{set.aiContext}</AIContextBanner>}
+    {set.queued.length > 0 && (
+      <>
+        <SubLabel text="Coming up next — in order" />
+        {set.queued.map((w, i) => (
+          <QueuedWordRow key={i} {...w} isLast={i === set.queued.length - 1} />
+        ))}
+      </>
+    )}
+  </div>
+);
+
+/* ─── Last Week Set Card (collapsible) ─── */
+const LastWeekSetCard = ({ set }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ background: C.white, border: `1px solid ${C.stone}`, borderRadius: 16, overflow: 'hidden', marginBottom: 10, boxShadow: shadow.card }}>
+      <div
+        onClick={() => setOpen(!open)}
+        style={{
+          padding: '13px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          background: C.cream, borderBottom: open ? `1px solid ${C.stone}` : 'none', cursor: 'pointer',
+        }}
+      >
+        <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+          <span style={{ fontFamily: 'Inter', fontSize: 13, fontWeight: 700, color: C.charcoal }}>{set.name}</span>
+          <span style={{ fontFamily: 'Inter', fontSize: 11, color: C.muted }}>· {set.wordCount} words</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {set.graduated.length > 0 && (
+            <span style={{ fontFamily: 'Inter', fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 10, background: C.doneBg, color: C.sage }}>
+              ✓ {set.graduated.map(g => g.word).join(', ')} graduated
+            </span>
+          )}
+          <span style={{
+            transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+            fontSize: 12, color: C.muted,
+          }}>▼</span>
+        </div>
+      </div>
+
+      {open && (
+        <div>
+          {set.graduated.length > 0 && (
+            <>
+              <SubLabel text="✓ Graduated" />
+              {set.graduated.map((g, i) => (
+                <div key={i} style={{
+                  display: 'grid', gridTemplateColumns: '20px 1fr auto', padding: '10px 20px', gap: 10,
+                  background: C.sageMist,
+                  borderBottom: i < set.graduated.length - 1 ? `1px solid rgba(232,227,216,.5)` : 'none',
+                }}>
+                  <div style={{
+                    width: 15, height: 15, borderRadius: '50%', background: C.sage, color: '#fff',
+                    fontFamily: 'Inter', fontSize: 9, fontWeight: 700,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>✓</div>
+                  <div>
+                    <span style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: 600, color: C.sageMid }}>{g.word}</span>
+                    <div style={{ fontFamily: 'Inter', fontSize: 11, color: C.muted, lineHeight: 1.4 }}>Completed 5 days · retired</div>
+                  </div>
+                  <Pips filled={5} graduated />
+                </div>
+              ))}
+            </>
+          )}
+          {set.words.length > 0 && (
+            <>
+              <SubLabel text="Still in progress" />
+              {set.words.map((w, i) => (
+                <ActiveWordRow key={i} {...w} isLast={i === set.words.length - 1} />
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ─── Legend ─── */
+const LegendBar = () => (
+  <div style={{
+    display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center',
+    background: C.sageMist, border: `1px solid ${C.stone}`, borderRadius: 8,
+    padding: '12px 18px', marginTop: 4,
+  }}>
+    {[
+      { icon: '🌱', label: 'New / Sprouting' },
+      { icon: '🌿', label: 'Growing (carried over)' },
+      { icon: '🌳', label: 'Graduated / Retired' },
+    ].map(l => (
+      <div key={l.label} style={{ display: 'flex', gap: 5, alignItems: 'center', fontFamily: 'Inter', fontSize: 11, color: C.muted }}>
+        <span>{l.icon}</span> {l.label}
+      </div>
+    ))}
+    <div style={{ display: 'flex', gap: 5, alignItems: 'center', fontFamily: 'Inter', fontSize: 11, color: C.muted }}>
+      <div style={{ display: 'flex', gap: 2 }}>
+        {[C.sage, C.sage, C.stone, C.stone, C.stone].map((c, i) => (
+          <div key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: c }} />
+        ))}
+      </div>
+      Days flashed (5 = graduates)
+    </div>
+  </div>
+);
+
+/* ─── Last Week Check-in ─── */
+const LastWeekCheckin = ({ daySessions, totalFullDays }) => {
   const [pace, setPace] = useState(3);
+  const label = totalFullDays >= 5 ? '✓ Strong week' : totalFullDays >= 3 ? '◐ Decent week' : 'Getting started';
   return (
     <div style={{ background: C.white, border: `1px solid ${C.stone}`, borderRadius: 12, overflow: 'hidden', marginBottom: 28, boxShadow: shadow.card }}>
       <div style={{ padding: '16px 20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <span style={{ fontFamily: 'Inter', fontSize: 10, fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase', color: C.muted }}>Last Week Check-in</span>
-          <span style={{ background: C.sagePale, color: C.sage, fontFamily: 'Inter', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20 }}>✓ Strong week</span>
+          <span style={{ background: C.sagePale, color: C.sage, fontFamily: 'Inter', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20 }}>{label}</span>
         </div>
-        <p style={{ fontFamily: 'Inter', fontSize: 14, color: C.ink, lineHeight: 1.55, marginBottom: 14, margin: 0, marginTop: 0 }}>
-          Alexander completed <strong style={{ color: C.sage }}>5 full days</strong> last week — ideally 3 sessions each. That's a consistent week.
+        <p style={{ fontFamily: 'Inter', fontSize: 14, color: C.ink, lineHeight: 1.55, margin: 0 }}>
+          You flashed on <strong style={{ color: C.sage }}>{totalFullDays} day{totalFullDays !== 1 ? 's' : ''}</strong> last week.
         </p>
         <div style={{ display: 'flex', gap: 5, marginBottom: 8, marginTop: 14 }}>
-          {lastWeekDays.map((d, i) => (
+          {daySessions.map((d, i) => (
             <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 700, color: C.faint, textTransform: 'uppercase' }}>{d.label}</span>
-              <DaySquare sessions={d.sessions} />
+              <span style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 700, color: C.faint, textTransform: 'uppercase' }}>{DAY_LABELS[i]}</span>
+              <DaySquare sessions={d} />
             </div>
           ))}
         </div>
@@ -296,306 +365,358 @@ const LastWeekCheckin = () => {
           ))}
         </div>
       </div>
-      <div style={{ background: C.sageMist, borderTop: `1px solid ${C.stone}`, padding: '10px 20px', display: 'flex', gap: 8, alignItems: 'center' }}>
-        <div style={{ width: 6, height: 6, background: C.sage, borderRadius: '50%' }} />
-        <span style={{ fontFamily: 'Inter', fontSize: 12, fontWeight: 500, color: C.sage }}>Pace confirmed — plan is live</span>
-      </div>
     </div>
   );
 };
 
-/* ─── Word Row (active) ─── */
-const ActiveWordRow = ({ word, emoji, meta, day, phrase, isLast }) => (
-  <div style={{
-    display: 'grid', gridTemplateColumns: '20px 1fr auto', padding: '10px 20px', gap: 10,
-    borderBottom: isLast ? 'none' : `1px solid rgba(232,227,216,.5)`,
-  }}>
-    <span style={{ fontSize: 14 }}>{emoji}</span>
-    <div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 3 }}>
-        <span style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: 500, color: C.ink }}>{word}</span>
-        {phrase && <Tag text="Phrase" bg={C.phraseBg} color={C.phraseClr} />}
-      </div>
-      <div style={{ fontFamily: 'Inter', fontSize: 11, color: C.muted, lineHeight: 1.4 }}>
-        {meta.split(/(\d+ (?:more )?days?)/g).map((part, i) =>
-          /\d+ (?:more )?days?/.test(part)
-            ? <span key={i} style={{ color: C.sage, fontWeight: 500 }}>{part}</span>
-            : part
-        )}
-      </div>
-    </div>
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
-      <Pips filled={day} />
-      <span style={{ fontFamily: 'Inter', fontSize: 10, color: C.faint, whiteSpace: 'nowrap' }}>Day {day} of 5</span>
-    </div>
-  </div>
-);
-
-/* ─── Queued Word Row ─── */
-const QueuedWordRow = ({ rank, word, tags, ai, isLast }) => {
-  const borderColor = rank === 1 ? C.sage : rank === 2 ? C.sageMid : C.sageLight;
-  const badgeBg = rank === 1 ? C.sage : rank === 2 ? C.sageMid : C.sageLight;
-  const badgeColor = rank <= 2 ? '#fff' : C.charcoal;
+/* ─── Today Launchpad ─── */
+const TodayLaunchpad = ({ totalSets, totalWords, todaySessions }) => {
+  const today = new Date();
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dateLabel = `${dayNames[today.getDay()]} ${today.getDate()} ${months[today.getMonth()]}`;
+  const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay(); // Mon=1
 
   return (
-    <div style={{
-      display: 'grid', gridTemplateColumns: '20px 1fr auto', padding: '10px 20px', paddingLeft: 17, gap: 10,
-      background: '#FAFDF9', borderLeft: `3px solid ${borderColor}`,
-      borderBottom: isLast ? 'none' : `1px solid rgba(232,227,216,.5)`,
-    }}>
-      <span style={{
-        width: 16, height: 16, borderRadius: '50%', background: badgeBg, color: badgeColor,
-        fontFamily: 'Inter', fontSize: 9, fontWeight: 700,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-      }}>{rank}</span>
-      <div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 3, alignItems: 'center' }}>
-          <span style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: 600, color: C.charcoal }}>{word}</span>
-          {tags.map(t => {
-            if (t === 'Next to enter') return <Tag key={t} text={t} bg={C.sagePale} color={C.sage} />;
-            return <Tag key={t} text={t} bg={C.stone} color={C.muted} />;
-          })}
-        </div>
-        <div style={{ fontFamily: 'Inter', fontSize: 11, color: C.sageMid, fontStyle: 'italic', lineHeight: 1.4 }}>{ai}</div>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
-        <Pips filled={0} />
-        <span style={{ fontFamily: 'Inter', fontSize: 10, color: C.faint, whiteSpace: 'nowrap' }}>queued</span>
-      </div>
-    </div>
-  );
-};
-
-/* ─── AI Context Banner ─── */
-const AIContextBanner = ({ children }) => (
-  <div style={{
-    background: C.sageMist, borderTop: `1px solid ${C.stone}`, borderBottom: `1px solid ${C.stone}`,
-    padding: '11px 20px', display: 'flex', gap: 9, alignItems: 'flex-start',
-  }}>
-    <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>🤖</span>
-    <span style={{ fontFamily: 'Inter', fontSize: 12, color: C.ink, lineHeight: 1.6 }}>{children}</span>
-  </div>
-);
-
-/* ─── Sub-label ─── */
-const SubLabel = ({ text }) => (
-  <div style={{
-    padding: '7px 20px 5px', fontFamily: 'Inter', fontSize: 10, fontWeight: 700,
-    letterSpacing: 1, textTransform: 'uppercase', color: C.muted,
-    background: C.cream, borderTop: `1px solid ${C.stone}`, borderBottom: `1px solid ${C.stone}`,
-  }}>{text}</div>
-);
-
-/* ─── This Week Set Card ─── */
-const ThisWeekSetCard = ({ set }) => (
-  <div style={{ background: C.white, border: `1px solid ${C.stone}`, borderRadius: 16, overflow: 'hidden', marginBottom: 10, boxShadow: shadow.card }}>
-    {/* Header */}
-    <div style={{
-      padding: '13px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      background: C.cream, borderBottom: `1px solid ${C.stone}`,
-    }}>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-        <span style={{ fontFamily: 'Inter', fontSize: 13, fontWeight: 700, color: C.charcoal }}>{set.name}</span>
-        <span className="set-sub" style={{ fontFamily: 'Inter', fontSize: 11, color: C.muted }}>· 5 words, flashed every session</span>
-      </div>
-      <div style={{ display: 'flex', gap: 6 }}>
-        <span style={{ fontFamily: 'Inter', fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 10, background: C.stone, color: C.muted }}>5 active</span>
-        <span style={{ fontFamily: 'Inter', fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 10, background: C.sagePale, color: C.sage }}>3 queued</span>
-      </div>
-    </div>
-
-    {/* Active words */}
-    <SubLabel text="Flashing this week" />
-    {set.active.map((w, i) => (
-      <ActiveWordRow key={i} {...w} isLast={i === set.active.length - 1} />
-    ))}
-
-    {/* AI banner */}
-    <AIContextBanner>{set.aiContext}</AIContextBanner>
-
-    {/* Queued */}
-    <SubLabel text="Coming up next — in order" />
-    {set.queued.map((w, i) => (
-      <QueuedWordRow key={i} {...w} isLast={i === set.queued.length - 1} />
-    ))}
-  </div>
-);
-
-/* ─── Last Week Set Card (collapsible) ─── */
-const LastWeekSetCard = ({ set }) => {
-  const [open, setOpen] = useState(false);
-  const introWords = set.words.filter(w => w.emoji === '🌱');
-  const carriedWords = set.words.filter(w => w.emoji === '🌿');
-
-  return (
-    <div style={{ background: C.white, border: `1px solid ${C.stone}`, borderRadius: 16, overflow: 'hidden', marginBottom: 10, boxShadow: shadow.card }}>
-      <div
-        onClick={() => setOpen(!open)}
-        style={{
-          padding: '13px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          background: C.cream, borderBottom: open ? `1px solid ${C.stone}` : 'none', cursor: 'pointer',
-        }}
-      >
-        <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-          <span style={{ fontFamily: 'Inter', fontSize: 13, fontWeight: 700, color: C.charcoal }}>{set.name}</span>
-          <span style={{ fontFamily: 'Inter', fontSize: 11, color: C.muted }}>· {set.wordCount} words appeared</span>
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ fontFamily: 'Inter', fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 10, background: C.doneBg, color: C.sage }}>{set.gradChip}</span>
-          <span style={{
-            transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-            fontSize: 12, color: C.muted,
-          }}>▼</span>
-        </div>
-      </div>
-
-      {open && (
-        <div>
-          {/* Graduated */}
-          <SubLabel text="✓ Graduated" />
-          <div style={{
-            display: 'grid', gridTemplateColumns: '20px 1fr auto', padding: '10px 20px', gap: 10,
-            background: C.sageMist,
-          }}>
-            <div style={{
-              width: 15, height: 15, borderRadius: '50%', background: C.sage, color: '#fff',
-              fontFamily: 'Inter', fontSize: 9, fontWeight: 700,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>✓</div>
-            <div>
-              <span style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: 600, color: C.sageMid }}>{set.graduated.word}</span>
-              <div style={{ fontFamily: 'Inter', fontSize: 11, color: C.muted, lineHeight: 1.4 }}>Completed 5 days · won't return to this set</div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
-              <Pips filled={5} graduated />
-            </div>
+    <div style={{ background: C.sage, borderRadius: 16, overflow: 'hidden', boxShadow: shadow.today, marginBottom: 12 }}>
+      <div style={{ padding: '20px 24px 18px', display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <div style={{ fontFamily: 'Inter', fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: 'rgba(255,255,255,.6)', marginBottom: 4 }}>Today · {dateLabel}</div>
+          <div style={{ fontFamily: "'Playfair Display'", fontSize: 22, color: '#fff', letterSpacing: -0.2, marginBottom: 5 }}>
+            {todaySessions > 0 ? `${todaySessions} session${todaySessions !== 1 ? 's' : ''} logged` : 'No sessions yet'}
           </div>
-
-          {/* Still in progress */}
-          <SubLabel text="Still in progress — carries into this week" />
-          {introWords.map((w, i) => (
-            <ActiveWordRow key={`i${i}`} {...w} isLast={i === introWords.length - 1 && carriedWords.length === 0} />
-          ))}
-          {carriedWords.map((w, i) => (
-            <ActiveWordRow key={`c${i}`} {...w} isLast={i === carriedWords.length - 1} />
-          ))}
+          <div style={{ fontFamily: 'Inter', fontSize: 13, color: 'rgba(255,255,255,.72)' }}>
+            Day {dayOfWeek} of 7 · {totalSets} set{totalSets !== 1 ? 's' : ''} · {totalWords} words
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
-
-/* ─── Legend Bar ─── */
-const LegendBar = () => (
-  <div style={{
-    display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center',
-    background: C.sageMist, border: `1px solid ${C.stone}`, borderRadius: 8,
-    padding: '12px 18px', marginTop: 4,
-  }}>
-    {[
-      { icon: '🌱', label: 'Sprouting' },
-      { icon: '🌿', label: 'Growing' },
-      { icon: '🌳', label: 'Graduated' },
-    ].map(l => (
-      <div key={l.label} style={{ display: 'flex', gap: 5, alignItems: 'center', fontFamily: 'Inter', fontSize: 11, color: C.muted }}>
-        <span>{l.icon}</span> {l.label}
-      </div>
-    ))}
-    <div style={{ display: 'flex', gap: 5, alignItems: 'center', fontFamily: 'Inter', fontSize: 11, color: C.muted }}>
-      <div style={{ display: 'flex', gap: 2 }}>
-        {[C.sage, C.sage, C.stone, C.stone, C.stone].map((c, i) => (
-          <div key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: c }} />
-        ))}
-      </div>
-      Days flashed (5 = graduates)
-    </div>
-    <div style={{ display: 'flex', gap: 5, alignItems: 'center', fontFamily: 'Inter', fontSize: 11, color: C.muted }}>
-      <div style={{ width: 3, height: 14, background: C.sage, borderRadius: 2 }} />
-      AI queue
-    </div>
-    <div style={{ display: 'flex', gap: 5, alignItems: 'center', fontFamily: 'Inter', fontSize: 11, color: C.muted }}>
-      <SpokenChip text="word" />
-      Alexander is saying this
-    </div>
-  </div>
-);
-
-/* ─── Section Header ─── */
-const SectionHeader = ({ title, right }) => (
-  <>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-      <h2 style={{ fontFamily: "'Playfair Display'", fontSize: 20, fontWeight: 600, color: C.charcoal, margin: 0 }}>{title}</h2>
-      <span style={{ fontFamily: 'Inter', fontSize: 12, color: C.muted }}>{right}</span>
-    </div>
-    <div style={{ height: 1, background: C.stoneMid, marginBottom: 14 }} />
-  </>
-);
 
 /* ─── MAIN PAGE ─── */
 const WordPlannerPage = () => {
+  const { currentUser } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [thisWeekSets, setThisWeekSets] = useState([]);
+  const [lastWeekSets, setLastWeekSets] = useState([]);
+  const [lastWeekDaySessions, setLastWeekDaySessions] = useState([0, 0, 0, 0, 0, 0, 0]);
+  const [todaySessions, setTodaySessions] = useState(0);
+  const [spokenWords, setSpokenWords] = useState([]);
+
+  const now = new Date();
+  const thisWeekStart = getWeekStart(now);
+  const lastWeekStart = new Date(thisWeekStart);
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+  const thisWeekEnd = new Date(thisWeekStart);
+  thisWeekEnd.setDate(thisWeekEnd.getDate() + 6);
+  const lastWeekEnd = new Date(lastWeekStart);
+  lastWeekEnd.setDate(lastWeekEnd.getDate() + 6);
+
+  const buildSetsFromFlashcards = useCallback((flashcards, trackingMap) => {
+    // Group flashcards by set_number
+    const setGroups = {};
+    const unassigned = [];
+    flashcards.forEach(fc => {
+      if (fc.set_number) {
+        if (!setGroups[fc.set_number]) setGroups[fc.set_number] = [];
+        setGroups[fc.set_number].push(fc);
+      } else {
+        unassigned.push(fc);
+      }
+    });
+
+    const sortedSetNums = Object.keys(setGroups).map(Number).sort((a, b) => a - b);
+
+    return sortedSetNums.map(setNum => {
+      const cards = setGroups[setNum];
+      const activeCards = cards.filter(c => c.card_status === 'active' || c.card_status === 'waiting');
+      const retiredCards = cards.filter(c => c.card_status === 'retired');
+
+      // Build active word rows
+      const active = activeCards
+        .sort((a, b) => (a.set_display_order || 0) - (b.set_display_order || 0))
+        .map(card => {
+          const dayCount = card.active_day_count || 0;
+          const isPhrase = card.card_type === 'phrase';
+          const remaining = Math.max(0, 5 - dayCount);
+          let meta = '';
+          if (dayCount === 0) meta = 'Just entered — 5 days to go';
+          else if (remaining <= 1) meta = "Almost done — graduates after tomorrow's flash";
+          else meta = `Needs ${remaining} more days`;
+
+          // Check tracking for flash count
+          const trackCount = trackingMap[card.id] || 0;
+
+          return {
+            word: card.front,
+            emoji: dayCount >= 3 ? '🌿' : '🌱',
+            meta,
+            day: dayCount,
+            phrase: isPhrase,
+          };
+        });
+
+      // Queued words from word_plans or waiting cards not in set
+      const queued = [];
+
+      return {
+        name: `Set ${setNum}`,
+        active,
+        queued,
+        aiContext: null,
+      };
+    });
+  }, []);
+
+  const loadData = useCallback(async () => {
+    if (!currentUser) return;
+    setLoading(true);
+    try {
+      const uid = currentUser.id;
+      const thisWeekStr = formatDateStr(thisWeekStart);
+      const lastWeekStr = formatDateStr(lastWeekStart);
+      const todayStr = formatDateStr(now);
+      const lastWeekEndStr = formatDateStr(lastWeekEnd);
+
+      // Parallel queries
+      const [flashcardsRes, trackingRes, sessionsRes, spokenRes, lastWeekTrackingRes, todaySessionsRes, wordPlansRes] = await Promise.all([
+        supabase.from('flashcards').select('*').eq('user_id', uid).neq('card_status', 'retired'),
+        supabase.from('daily_tracking').select('flashcard_id, date, status').eq('user_id', uid).eq('status', 'flashed').gte('date', thisWeekStr),
+        supabase.from('daily_flashing_sessions').select('session_date, session_occurred').eq('user_id', uid).gte('session_date', lastWeekStr).lte('session_date', lastWeekEndStr),
+        supabase.from('spoken_words').select('word, word_stage').eq('user_id', uid).order('created_at', { ascending: false }).limit(20),
+        supabase.from('daily_tracking').select('flashcard_id, date, status').eq('user_id', uid).eq('status', 'flashed').gte('date', lastWeekStr).lt('date', thisWeekStr),
+        supabase.from('daily_flashing_sessions').select('*').eq('user_id', uid).eq('session_date', todayStr),
+        supabase.from('word_plans').select('*').eq('user_id', uid).eq('planned_week_start', thisWeekStr).order('display_order', { ascending: true }),
+      ]);
+
+      // Spoken words
+      setSpokenWords(spokenRes.data || []);
+
+      // Today's sessions count
+      setTodaySessions((todaySessionsRes.data || []).filter(s => s.session_occurred).length);
+
+      // Build tracking map for this week (flashcard_id -> count of days flashed)
+      const thisWeekTracking = trackingRes.data || [];
+      const trackingMap = {};
+      thisWeekTracking.forEach(t => {
+        trackingMap[t.flashcard_id] = (trackingMap[t.flashcard_id] || 0) + 1;
+      });
+
+      // Build this week sets
+      const flashcards = flashcardsRes.data || [];
+      const sets = buildSetsFromFlashcards(flashcards, trackingMap);
+
+      // Add queued words from word_plans
+      const wordPlans = wordPlansRes.data || [];
+      const flashcardWords = new Set(flashcards.map(f => f.front?.toLowerCase()));
+      const queuedWords = wordPlans.filter(wp => !flashcardWords.has(wp.word?.toLowerCase()));
+      if (sets.length > 0 && queuedWords.length > 0) {
+        // Distribute queued words across sets
+        queuedWords.forEach((wp, i) => {
+          const setIdx = i % sets.length;
+          sets[setIdx].queued.push({
+            rank: sets[setIdx].queued.length + 1,
+            word: wp.word,
+            tags: sets[setIdx].queued.length === 0 ? ['Next to enter', wp.theme || 'General'] : [wp.theme || 'General'],
+            ai: wp.notes || null,
+          });
+        });
+      }
+
+      // Add AI context from spoken words
+      const recentSpoken = (spokenRes.data || []).slice(0, 5);
+      if (recentSpoken.length > 0 && sets.length > 0) {
+        sets[0].aiContext = (
+          <>
+            Your child is saying{' '}
+            {recentSpoken.slice(0, 3).map((sw, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && (i === Math.min(recentSpoken.length, 3) - 1 ? ' and ' : ', ')}
+                <SpokenChip text={sw.word} />
+              </React.Fragment>
+            ))}
+            {' '}— this week's words build on their current vocabulary.
+          </>
+        );
+      }
+
+      // If no sets with set_number, show all flashcards as one set
+      if (sets.length === 0 && flashcards.length > 0) {
+        const allActive = flashcards
+          .sort((a, b) => (a.set_display_order || 0) - (b.set_display_order || 0))
+          .map(card => {
+            const dayCount = card.active_day_count || 0;
+            const remaining = Math.max(0, 5 - dayCount);
+            return {
+              word: card.front,
+              emoji: dayCount >= 3 ? '🌿' : '🌱',
+              meta: dayCount === 0 ? 'Just entered — 5 days to go' : remaining <= 1 ? "Almost done" : `Needs ${remaining} more days`,
+              day: dayCount,
+              phrase: card.card_type === 'phrase',
+            };
+          });
+
+        sets.push({
+          name: 'All Words',
+          active: allActive.slice(0, 10),
+          queued: queuedWords.map((wp, i) => ({
+            rank: i + 1,
+            word: wp.word,
+            tags: i === 0 ? ['Next to enter'] : [],
+            ai: wp.notes || null,
+          })),
+          aiContext: recentSpoken.length > 0 ? (
+            <>Your child is saying {recentSpoken.slice(0, 3).map((sw, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && (i === Math.min(recentSpoken.length, 3) - 1 ? ' and ' : ', ')}
+                <SpokenChip text={sw.word} />
+              </React.Fragment>
+            ))} — building on their vocabulary.</>
+          ) : null,
+        });
+      }
+
+      setThisWeekSets(sets);
+
+      // ─── Last week data ───
+      const lastWeekTracking = lastWeekTrackingRes.data || [];
+      // Count sessions per day-of-week (Mon=0..Sun=6)
+      const daySessionCounts = [0, 0, 0, 0, 0, 0, 0];
+      const lastWeekSessionDates = {};
+      (sessionsRes.data || []).forEach(s => {
+        if (s.session_occurred) {
+          const d = new Date(s.session_date + 'T00:00:00');
+          const dayIdx = d.getDay() === 0 ? 6 : d.getDay() - 1; // Mon=0
+          daySessionCounts[dayIdx] = (daySessionCounts[dayIdx] || 0) + 1;
+        }
+      });
+
+      // Also use daily_tracking if no sessions recorded
+      if (daySessionCounts.every(c => c === 0)) {
+        const dateSet = new Set(lastWeekTracking.map(t => t.date));
+        dateSet.forEach(dateStr => {
+          const d = new Date(dateStr + 'T00:00:00');
+          const dayIdx = d.getDay() === 0 ? 6 : d.getDay() - 1;
+          daySessionCounts[dayIdx] = Math.max(daySessionCounts[dayIdx], 1);
+        });
+      }
+
+      setLastWeekDaySessions(daySessionCounts);
+
+      // Build last week sets from retired flashcards
+      const allFlashcardsRes = await supabase.from('flashcards').select('*').eq('user_id', uid);
+      const allCards = allFlashcardsRes.data || [];
+
+      // Cards that were active last week (check date_retired or date_introduced)
+      const lastWeekRetired = allCards.filter(c =>
+        c.card_status === 'retired' && c.date_retired &&
+        c.date_retired >= lastWeekStr && c.date_retired < thisWeekStr
+      );
+
+      // Group by set_number for last week
+      const lwSetGroups = {};
+      allCards.forEach(fc => {
+        if (!fc.set_number) return;
+        // Include if it was introduced before this week end and either still active or retired this/last week
+        const introduced = fc.date_introduced || fc.created_at?.split('T')[0];
+        if (introduced && introduced <= lastWeekEndStr) {
+          if (!lwSetGroups[fc.set_number]) lwSetGroups[fc.set_number] = [];
+          lwSetGroups[fc.set_number].push(fc);
+        }
+      });
+
+      const lwSortedNums = Object.keys(lwSetGroups).map(Number).sort((a, b) => a - b);
+      const lwSets = lwSortedNums.map(setNum => {
+        const cards = lwSetGroups[setNum];
+        const graduated = cards.filter(c => c.card_status === 'retired' && c.date_retired && c.date_retired >= lastWeekStr && c.date_retired < thisWeekStr);
+        const inProgress = cards.filter(c => c.card_status !== 'retired');
+
+        return {
+          name: `Set ${setNum}`,
+          wordCount: cards.length,
+          graduated: graduated.map(g => ({ word: g.front, emoji: '🌳' })),
+          words: inProgress.slice(0, 8).map(card => {
+            const dayCount = card.active_day_count || 0;
+            return {
+              word: card.front,
+              emoji: dayCount >= 3 ? '🌿' : '🌱',
+              meta: `Day ${dayCount} of 5`,
+              day: dayCount,
+              phrase: card.card_type === 'phrase',
+            };
+          }),
+        };
+      });
+
+      setLastWeekSets(lwSets);
+    } catch (err) {
+      console.error('WordPlannerPage load error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUser, buildSetsFromFlashcards]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const totalWords = thisWeekSets.reduce((sum, s) => sum + s.active.length, 0);
+  const totalFullDays = lastWeekDaySessions.filter(s => s >= 3).length;
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', background: C.cream }}>
+        <Loader2 style={{ width: 32, height: 32, color: C.sage }} className="animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* Google Fonts */}
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-
-      <div style={{
-        background: C.cream, minHeight: '100vh',
-        WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale',
-      }}>
-        <StickyNav />
-
+      <div style={{ background: C.cream, minHeight: '100vh', WebkitFontSmoothing: 'antialiased' }}>
         <div style={{ maxWidth: 580, margin: '0 auto', padding: '20px 24px 120px' }}>
-          <TodayLaunchpad />
-          <LastWeekCheckin />
+          <TodayLaunchpad totalSets={thisWeekSets.length} totalWords={totalWords} todaySessions={todaySessions} />
+          <LastWeekCheckin daySessions={lastWeekDaySessions} totalFullDays={totalFullDays} />
 
           {/* This Week's Plan */}
-          <SectionHeader title="This Week's Plan" right="24 Feb – 2 Mar" />
-          <p style={{ fontFamily: 'Inter', fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 14, marginTop: 0 }}>
-            Words carry over from last week — nothing resets. Each day you flash, the oldest word in each set graduates and one new word enters.
-          </p>
-          {thisWeekSets.map((s, i) => <ThisWeekSetCard key={i} set={s} />)}
+          <SectionHeader
+            title="This Week's Plan"
+            right={`${formatShortDate(thisWeekStart)} – ${formatShortDate(thisWeekEnd)}`}
+          />
+          {thisWeekSets.length > 0 ? (
+            <>
+              <p style={{ fontFamily: 'Inter', fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 14, marginTop: 0 }}>
+                Words carry over — nothing resets. Each day you flash, the oldest word graduates and one new word enters.
+              </p>
+              {thisWeekSets.map((s, i) => <ThisWeekSetCard key={i} set={s} />)}
+            </>
+          ) : (
+            <p style={{ fontFamily: 'Inter', fontSize: 14, color: C.muted, textAlign: 'center', padding: '24px 0' }}>
+              No flashcard sets yet. Add words to your sets to see your weekly plan here.
+            </p>
+          )}
 
-          {/* Legend */}
           <LegendBar />
-
-          {/* Spacer */}
           <div style={{ height: 32 }} />
 
           {/* Last Week's Words */}
-          <SectionHeader title="Last Week's Words" right="17–23 Feb" />
-          <p style={{ fontFamily: 'Inter', fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 14, marginTop: 0 }}>
-            A record of what appeared and what graduated. Tap any set to expand.
-          </p>
-          {lastWeekSets.map((s, i) => <LastWeekSetCard key={i} set={s} />)}
-        </div>
-
-        {/* Fixed CTA Bar */}
-        <div style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
-          background: `linear-gradient(to top, ${C.cream} 60%, transparent)`,
-          padding: '16px 24px 28px',
-          display: 'flex', justifyContent: 'center', gap: 10,
-        }}>
-          <button style={{
-            background: C.sage, color: '#fff', border: 'none', borderRadius: 8,
-            padding: '13px 28px', fontFamily: 'Inter', fontSize: 14, fontWeight: 600,
-            boxShadow: shadow.primary, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 8,
-          }}>
-            Confirm this week's plan
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polygon points="2,0 12,6 2,12" fill="#fff"/></svg>
-          </button>
-          <button style={{
-            background: 'none', border: `1px solid ${C.stoneMid}`, borderRadius: 8,
-            padding: '13px 18px', fontFamily: 'Inter', fontSize: 13, fontWeight: 500,
-            color: C.muted, cursor: 'pointer',
-          }}>
-            Swap a word
-          </button>
+          {lastWeekSets.length > 0 && (
+            <>
+              <SectionHeader
+                title="Last Week's Words"
+                right={`${formatShortDate(lastWeekStart)} – ${formatShortDate(lastWeekEnd)}`}
+              />
+              <p style={{ fontFamily: 'Inter', fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 14, marginTop: 0 }}>
+                A record of what appeared and what graduated. Tap any set to expand.
+              </p>
+              {lastWeekSets.map((s, i) => <LastWeekSetCard key={i} set={s} />)}
+            </>
+          )}
         </div>
       </div>
 
-      {/* Responsive styles */}
       <style>{`
         @media (max-width: 580px) {
           .set-sub { display: none !important; }
