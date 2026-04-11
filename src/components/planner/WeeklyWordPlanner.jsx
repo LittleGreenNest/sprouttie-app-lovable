@@ -140,7 +140,68 @@ const WeeklyWordPlanner = () => {
     loadPendingSuggestions();
   }, [loadWordPlans, loadTrackingData, loadPendingSuggestions]);
 
-  const getWordStage = (wordText) => {
+  // Hardcoded swap alternatives per category (real logic comes later)
+  const SWAP_ALTERNATIVES = {
+    Actions: ['Run', 'Clap', 'Push', 'Pull', 'Throw'],
+    Food: ['Apple', 'Rice', 'Milk', 'Bread', 'Egg'],
+    Colours: ['Red', 'Green', 'Yellow', 'Pink', 'Orange'],
+    Animals: ['Dog', 'Cat', 'Bird', 'Horse', 'Cow'],
+  };
+
+  const getSwapAlternatives = (category, currentWord) => {
+    const alts = SWAP_ALTERNATIVES[category] || ['Word A', 'Word B', 'Word C'];
+    return alts.filter(w => w.toLowerCase() !== currentWord.toLowerCase()).slice(0, 3);
+  };
+
+  const handleAcceptAll = async () => {
+    if (!currentUser || pendingSuggestions.length === 0) return;
+    setAcceptingAll(true);
+    try {
+      const ids = pendingSuggestions.map(s => s.id);
+      await supabase.from('weekly_suggestions').update({ status: 'accepted' }).in('id', ids);
+
+      // Add each word to backlog (word_plans) and flashcards if needed
+      for (const s of pendingSuggestions) {
+        const existsInBacklog = wordPlans.some(wp => wp.word.toLowerCase() === s.word.toLowerCase());
+        if (!existsInBacklog) {
+          await supabase.from('word_plans').insert({
+            user_id: currentUser.id, word: s.word, theme: s.category || null,
+            planned_week_start: formatDate(currentWeekStart), display_order: wordPlans.length,
+          });
+        }
+        const existsInFlashcards = userFlashcards.some(f => f.front?.toLowerCase() === s.word.toLowerCase());
+        if (!existsInFlashcards) {
+          await supabase.from('flashcards').insert({
+            user_id: currentUser.id, front: s.word, back: '', folder: s.category || 'default',
+            card_type: 'word', card_status: 'waiting',
+          });
+        }
+      }
+      toast.success(`${pendingSuggestions.length} words added to your backlog 🌱`);
+      setPendingSuggestions([]);
+      loadWordPlans();
+      loadTrackingData();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to accept suggestions');
+    } finally {
+      setAcceptingAll(false);
+    }
+  };
+
+  const handleDismissAll = async () => {
+    if (!currentUser || pendingSuggestions.length === 0) return;
+    const ids = pendingSuggestions.map(s => s.id);
+    await supabase.from('weekly_suggestions').update({ status: 'dismissed' }).in('id', ids);
+    setPendingSuggestions([]);
+  };
+
+  const handleSwapWord = async (suggestionId, newWord) => {
+    await supabase.from('weekly_suggestions').update({ word: newWord }).eq('id', suggestionId);
+    setSwappingWordId(null);
+    loadPendingSuggestions();
+  };
+
     const spoken = spokenWords.find(
       (sw) => sw.word.toLowerCase() === wordText.toLowerCase()
     );
