@@ -202,6 +202,7 @@ const WeeklyWordPlanner = () => {
     loadPendingSuggestions();
   };
 
+  const getWordStage = (wordText) => {
     const spoken = spokenWords.find(
       (sw) => sw.word.toLowerCase() === wordText.toLowerCase()
     );
