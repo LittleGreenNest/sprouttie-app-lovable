@@ -196,12 +196,18 @@ const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
 
     setSaving(true);
     try {
+      // Use the video file's lastModified date as the recording date
+      const recordedAt = videoFile
+        ? new Date(videoFile.lastModified).toISOString()
+        : new Date().toISOString();
+
       const wordsToSave = extractedWords
         .filter((_, i) => selectedWords.has(i))
         .map(w => ({
           user_id: currentUser.id,
           word: w.word,
           word_stage: 'new',
+          started_saying_at: recordedAt,
           notes: w.language !== 'en' ? `Language: ${w.language}` : null,
         }));
 
