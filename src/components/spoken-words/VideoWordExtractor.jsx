@@ -149,6 +149,11 @@ const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
         body: { videoPath: filePath },
       });
 
+      // 3. Clean up — delete file from storage (no longer needed)
+      supabase.storage.from('spoken-word-videos').remove([filePath]).catch(e =>
+        console.warn('Storage cleanup failed (non-critical):', e)
+      );
+
       if (fnError) throw new Error(fnError.message || 'Failed to process video');
       if (data?.error) throw new Error(data.error);
 
