@@ -126,20 +126,21 @@ const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
   };
 
   const handleProcess = async () => {
-    if (!videoFile || !currentUser) return;
+    const fileToUpload = uploadFile || videoFile;
+    if (!fileToUpload || !currentUser) return;
 
     setProcessing(true);
     setStep('processing');
     setError(null);
 
     try {
-      // 1. Upload video to storage
-      const ext = videoFile.name.split('.').pop() || 'mp4';
+      // 1. Upload file to storage (may be audio-only if compressed)
+      const ext = fileToUpload.name.split('.').pop() || 'mp4';
       const filePath = `${currentUser.id}/${Date.now()}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from('spoken-word-videos')
-        .upload(filePath, videoFile, { contentType: videoFile.type });
+        .upload(filePath, fileToUpload, { contentType: fileToUpload.type });
 
       if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
 
