@@ -13,6 +13,8 @@ serve(async (req) => {
   }
 
   try {
+    const body = await req.json().catch(() => ({}));
+    
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -188,13 +190,15 @@ You must respond ONLY with a valid JSON array. No preamble, no explanation outsi
     }
 
     // ─── STEP 3: Write to Supabase ───
-    // Calculate Monday of current week
-    const now = new Date();
-    const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    const weekStart = new Date(now.getFullYear(), now.getMonth(), diff)
-      .toISOString()
-      .split("T")[0];
+    // Use weekStart from client if provided, otherwise calculate UTC
+    let weekStart = body?.weekStart;
+    if (!weekStart) {
+      const now = new Date();
+      const day = now.getUTCDay();
+      const diff = now.getUTCDate() - day + (day === 0 ? -6 : 1);
+      const wsDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), diff));
+      weekStart = wsDate.toISOString().split("T")[0];
+    }
 
     // Delete existing pending suggestions for this week
     await supabase

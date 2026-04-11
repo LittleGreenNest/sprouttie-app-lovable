@@ -97,7 +97,9 @@ const Dashboard = () => {
     if (!currentUser?.id || autoPilotLoading) return;
     setAutoPilotLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-autopilot-suggestions');
+      const { data, error } = await supabase.functions.invoke('generate-autopilot-suggestions', {
+        body: { weekStart: getWeekStart() }
+      });
       if (error) throw error;
       if (data?.error === 'parse_failed') {
         console.error('AI response parse failed:', data.raw);
@@ -513,7 +515,11 @@ function getWeekStart() {
   const now = new Date();
   const day = now.getDay();
   const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(now.getFullYear(), now.getMonth(), diff).toISOString().split('T')[0];
+  const d = new Date(now.getFullYear(), now.getMonth(), diff);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
 }
 
 function getLastSessionText(lastDate, todayStr) {
