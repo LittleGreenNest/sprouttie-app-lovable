@@ -196,12 +196,18 @@ const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
 
     setSaving(true);
     try {
+      // Use the video file's lastModified date as the recording date
+      const recordedAt = videoFile
+        ? new Date(videoFile.lastModified).toISOString()
+        : new Date().toISOString();
+
       const wordsToSave = extractedWords
         .filter((_, i) => selectedWords.has(i))
         .map(w => ({
           user_id: currentUser.id,
           word: w.word,
           word_stage: 'new',
+          started_saying_at: recordedAt,
           notes: w.language !== 'en' ? `Language: ${w.language}` : null,
         }));
 
@@ -376,6 +382,12 @@ const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
                   We detected <strong>{extractedWords.length}</strong> word{extractedWords.length !== 1 ? 's' : ''}. 
                   Tap to select/deselect, then save.
                 </p>
+
+                {videoFile && (
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted)/0.3)] rounded-lg px-3 py-2">
+                    📅 Recorded: {new Date(videoFile.lastModified).toLocaleDateString('en', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                )}
 
                 <div className="space-y-2">
                   {extractedWords.map((word, i) => {
