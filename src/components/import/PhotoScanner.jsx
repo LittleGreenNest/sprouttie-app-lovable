@@ -14,7 +14,7 @@ const MODES = { TEXT: 'text', IDENTIFY: 'identify' };
 
 const PhotoScanner = () => {
   const navigate = useNavigate();
-  const { flashcards, addFlashcard, categories, addCategory } = useFlashcards();
+  const { flashcards, addFlashcard, categories, addCategory, sets, getFlashcardsForSet } = useFlashcards();
   const fileInputRef = useRef(null);
 
   const [step, setStep] = useState(STEPS.UPLOAD);
@@ -27,6 +27,8 @@ const PhotoScanner = () => {
   const [aiMessage, setAiMessage] = useState('');
   const [scanMode, setScanMode] = useState(MODES.TEXT);
   const [scanningProgress, setScanningProgress] = useState('');
+  const [wordCategories, setWordCategories] = useState({}); // { [wordId]: categoryName }
+  const [setFilter, setSetFilter] = useState('all'); // 'all', 'in-set', 'not-in-set', or a set id
 
   const existingWordsSet = new Set(flashcards.map(fc => fc.word || fc.front));
 
@@ -113,12 +115,15 @@ const PhotoScanner = () => {
 
       const sel = {};
       const lang = {};
+      const cats = {};
       words.forEach(w => {
         if (!w.isDuplicate) sel[w.id] = true;
         lang[w.id] = w.originalLanguage === 'english' ? 'english' : 'chinese';
+        cats[w.id] = w.category || 'default';
       });
       setSelectedWords(sel);
       setCardLanguage(lang);
+      setWordCategories(cats);
       setStep(STEPS.REVIEW);
     } catch (err) {
       console.error('Scan error:', err);
@@ -155,20 +160,20 @@ const PhotoScanner = () => {
 
     try {
       for (const word of wordsToAdd) {
+        const cat = wordCategories[word.id] || word.category || 'default';
         const catExists = categories.some(
-          c => c.name === word.category || c.id === word.category
+          c => c.name === cat || c.id === cat
         );
-        if (!catExists && word.category) {
-          await addCategory(word.category);
+        if (!catExists && cat) {
+          await addCategory(cat);
         }
 
         const lang = cardLanguage[word.id] || 'chinese';
 
         if (lang === 'english' || lang === 'both') {
-          // English front card: front=English, back=Chinese + pinyin
           await addFlashcard(
             word.english,
-            word.category || 'default',
+            cat,
             `${word.chinese} (${word.pinyin})`,
             word.pinyin || '',
             'word',
@@ -178,10 +183,9 @@ const PhotoScanner = () => {
         }
 
         if (lang === 'chinese' || lang === 'both') {
-          // Chinese front card: front=Chinese, back=English
           await addFlashcard(
             word.chinese,
-            word.category || 'default',
+            cat,
             word.english || '',
             word.pinyin || '',
             'word',
@@ -207,8 +211,36 @@ const PhotoScanner = () => {
     setDetectedWords([]);
     setSelectedWords({});
     setCardLanguage({});
+    setWordCategories({});
     setAiMessage('');
+    setSetFilter('all');
   };
+
+  // Build set membership lookup for existing flashcards
+  const cardSetMap = React.useMemo(() => {
+    const map = {}; // cardFront -> setName
+    if (sets) {
+      sets.forEach((set, idx) => {
+        const setCards = getFlashcardsForSet(set.id);
+        setCards.forEach(card => {
+          if (card.front) map[card.front.toLowerCase()] = `Set ${idx + 1}`;
+        });
+      });
+    }
+    return map;
+  }, [sets, getFlashcardsForSet]);
+
+  const getWordSetName = (word) => {
+    return cardSetMap[word.chinese?.toLowerCase()] || cardSetMap[word.english?.toLowerCase()] || null;
+  };
+
+  // Filter detected words based on set filter
+  const filteredDetectedWords = React.useMemo(() => {
+    if (setFilter === 'all') return detectedWords;
+    if (setFilter === 'in-set') return detectedWords.filter(w => getWordSetName(w));
+    if (setFilter === 'not-in-set') return detectedWords.filter(w => !getWordSetName(w));
+    return detectedWords;
+  }, [detectedWords, setFilter, cardSetMap]);
 
   const getLangLabel = (lang) => {
     if (lang === 'english') return 'EN';
@@ -403,87 +435,127 @@ const PhotoScanner = () => {
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-[hsl(var(--sprouttie-ink))]">
                   Found {detectedWords.length} word{detectedWords.length !== 1 ? 's' : ''}
+                  {filteredDetectedWords.length !== detectedWords.length && (
+                    <span className="text-slate-400 font-normal"> · showing {filteredDetectedWords.length}</span>
+                  )}
                 </p>
                 <button
                   onClick={() => {
-                    const allSelected = detectedWords.every(w => selectedWords[w.id]);
-                    const sel = {};
-                    if (!allSelected) detectedWords.forEach(w => (sel[w.id] = true));
+                    const allSelected = filteredDetectedWords.every(w => selectedWords[w.id]);
+                    const sel = { ...selectedWords };
+                    filteredDetectedWords.forEach(w => (sel[w.id] = !allSelected));
                     setSelectedWords(sel);
                   }}
                   className="text-xs text-[hsl(var(--sprouttie-green-dark))] font-semibold"
                 >
-                  {detectedWords.every(w => selectedWords[w.id]) ? 'Deselect All' : 'Select All'}
+                  {filteredDetectedWords.every(w => selectedWords[w.id]) ? 'Deselect All' : 'Select All'}
                 </button>
+              </div>
+
+              {/* Filters row */}
+              <div className="flex gap-2 flex-wrap">
+                <select
+                  value={setFilter}
+                  onChange={(e) => setSetFilter(e.target.value)}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <option value="all">All cards</option>
+                  <option value="in-set">In a set</option>
+                  <option value="not-in-set">Not in a set</option>
+                </select>
               </div>
 
               {/* Language hint */}
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-2.5 text-xs text-blue-700">
-                <strong>Tap the language badge</strong> to cycle: <span className="font-semibold">EN</span> (English front) → <span className="font-semibold">CN</span> (Chinese front) → <span className="font-semibold">Both</span> (saves two cards)
+                <strong>Tap the language badge</strong> to cycle: <span className="font-semibold">EN</span> → <span className="font-semibold">CN</span> → <span className="font-semibold">Both</span>. Tap category to change it.
               </div>
 
               <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-                {detectedWords.map(word => {
+                {filteredDetectedWords.map(word => {
                   const lang = cardLanguage[word.id] || 'chinese';
+                  const wordSetName = getWordSetName(word);
+                  const wordCat = wordCategories[word.id] || word.category || 'default';
                   return (
                     <motion.div
                       key={word.id}
                       layout
-                      className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
+                      className={`p-3 rounded-xl border transition-all ${
                         selectedWords[word.id]
                           ? 'border-[hsl(var(--sprouttie-green)/0.4)] bg-[hsl(var(--sprouttie-green)/0.05)]'
                           : 'border-slate-100 bg-white'
                       } ${word.isDuplicate ? 'opacity-70' : ''}`}
-                      onClick={() => toggleWord(word.id)}
                     >
-                      {/* Checkbox */}
-                      <div
-                        className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition ${
-                          selectedWords[word.id]
-                            ? 'bg-[hsl(var(--sprouttie-green))] border-[hsl(var(--sprouttie-green))]'
-                            : 'border-slate-300'
-                        }`}
-                      >
-                        {selectedWords[word.id] && <Check className="w-3 h-3 text-white" />}
+                      <div className="flex items-center gap-3 cursor-pointer" onClick={() => toggleWord(word.id)}>
+                        {/* Checkbox */}
+                        <div
+                          className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition ${
+                            selectedWords[word.id]
+                              ? 'bg-[hsl(var(--sprouttie-green))] border-[hsl(var(--sprouttie-green))]'
+                              : 'border-slate-300'
+                          }`}
+                        >
+                          {selectedWords[word.id] && <Check className="w-3 h-3 text-white" />}
+                        </div>
+
+                        {/* Word info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-lg font-bold text-[hsl(var(--sprouttie-ink))]">
+                              {word.chinese}
+                            </span>
+                            {word.originalLanguage === 'english' && (
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600">
+                                FROM EN
+                              </span>
+                            )}
+                            {word.isDuplicate && (
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                                EXISTS
+                              </span>
+                            )}
+                            {wordSetName && (
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700">
+                                📦 {wordSetName}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <span>{word.pinyin}</span>
+                            <span>·</span>
+                            <span>{word.english}</span>
+                          </div>
+                        </div>
+
+                        {/* Language toggle badge */}
+                        <button
+                          onClick={(e) => cycleLanguage(word.id, e)}
+                          className={`text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0 transition-colors ${getLangColor(lang)}`}
+                          title="Tap to change: EN / CN / Both"
+                        >
+                          {getLangLabel(lang)}
+                        </button>
                       </div>
 
-                      {/* Word info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold text-[hsl(var(--sprouttie-ink))]">
-                            {word.chinese}
-                          </span>
-                          {word.originalLanguage === 'english' && (
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600">
-                              FROM EN
-                            </span>
+                      {/* Category selector row */}
+                      <div className="flex items-center gap-2 mt-2 ml-8">
+                        <select
+                          value={wordCat}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            setWordCategories(prev => ({ ...prev, [word.id]: e.target.value }));
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-[11px] px-2 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 max-w-[160px]"
+                        >
+                          {categories.map(cat => (
+                            <option key={cat.id || cat} value={cat.name || cat}>{cat.name || cat}</option>
+                          ))}
+                          {!categories.some(c => (c.name || c) === wordCat) && wordCat !== 'default' && (
+                            <option value={wordCat}>{wordCat} (new)</option>
                           )}
-                          {word.isDuplicate && (
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                              EXISTS
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-500">
-                          <span>{word.pinyin}</span>
-                          <span>·</span>
-                          <span>{word.english}</span>
-                        </div>
+                        </select>
                       </div>
-
-                      {/* Language toggle badge */}
-                      <button
-                        onClick={(e) => cycleLanguage(word.id, e)}
-                        className={`text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0 transition-colors ${getLangColor(lang)}`}
-                        title="Tap to change: EN / CN / Both"
-                      >
-                        {getLangLabel(lang)}
-                      </button>
-
-                      {/* Category badge */}
-                      <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-slate-100 text-slate-600 flex-shrink-0">
-                        {word.category}
-                      </span>
                     </motion.div>
                   );
                 })}
