@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronRight as ChevronRightIcon, Pencil, Check, Plus, X, Sparkles, FileText, BookOpen, Tag } from 'lucide-react';
 import SortableWordList from './SortableWordList';
 import SetTimeline from './SetTimeline';
+import DailyInsight from './DailyInsight';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const SET_COLORS = [
@@ -801,6 +802,9 @@ const SessionLogTracker = () => {
           </div>
         )}
       </div>
+
+      {/* Daily Insight */}
+      <DailyInsight dateString={dateString} />
 
       {/* Section 3: Optional Quick Log */}
       <div className="mx-4 mt-3">
