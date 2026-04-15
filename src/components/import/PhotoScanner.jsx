@@ -211,8 +211,36 @@ const PhotoScanner = () => {
     setDetectedWords([]);
     setSelectedWords({});
     setCardLanguage({});
+    setWordCategories({});
     setAiMessage('');
+    setSetFilter('all');
   };
+
+  // Build set membership lookup for existing flashcards
+  const cardSetMap = React.useMemo(() => {
+    const map = {}; // cardFront -> setName
+    if (sets) {
+      sets.forEach((set, idx) => {
+        const setCards = getFlashcardsForSet(set.id);
+        setCards.forEach(card => {
+          if (card.front) map[card.front.toLowerCase()] = `Set ${idx + 1}`;
+        });
+      });
+    }
+    return map;
+  }, [sets, getFlashcardsForSet]);
+
+  const getWordSetName = (word) => {
+    return cardSetMap[word.chinese?.toLowerCase()] || cardSetMap[word.english?.toLowerCase()] || null;
+  };
+
+  // Filter detected words based on set filter
+  const filteredDetectedWords = React.useMemo(() => {
+    if (setFilter === 'all') return detectedWords;
+    if (setFilter === 'in-set') return detectedWords.filter(w => getWordSetName(w));
+    if (setFilter === 'not-in-set') return detectedWords.filter(w => !getWordSetName(w));
+    return detectedWords;
+  }, [detectedWords, setFilter, cardSetMap]);
 
   const getLangLabel = (lang) => {
     if (lang === 'english') return 'EN';
