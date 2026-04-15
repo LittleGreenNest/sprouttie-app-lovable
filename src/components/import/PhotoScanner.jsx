@@ -14,7 +14,7 @@ const MODES = { TEXT: 'text', IDENTIFY: 'identify' };
 
 const PhotoScanner = () => {
   const navigate = useNavigate();
-  const { flashcards, addFlashcard, categories, addCategory } = useFlashcards();
+  const { flashcards, addFlashcard, categories, addCategory, sets, getFlashcardsForSet } = useFlashcards();
   const fileInputRef = useRef(null);
 
   const [step, setStep] = useState(STEPS.UPLOAD);
@@ -27,6 +27,8 @@ const PhotoScanner = () => {
   const [aiMessage, setAiMessage] = useState('');
   const [scanMode, setScanMode] = useState(MODES.TEXT);
   const [scanningProgress, setScanningProgress] = useState('');
+  const [wordCategories, setWordCategories] = useState({}); // { [wordId]: categoryName }
+  const [setFilter, setSetFilter] = useState('all'); // 'all', 'in-set', 'not-in-set', or a set id
 
   const existingWordsSet = new Set(flashcards.map(fc => fc.word || fc.front));
 
