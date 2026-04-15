@@ -160,20 +160,20 @@ const PhotoScanner = () => {
 
     try {
       for (const word of wordsToAdd) {
+        const cat = wordCategories[word.id] || word.category || 'default';
         const catExists = categories.some(
-          c => c.name === word.category || c.id === word.category
+          c => c.name === cat || c.id === cat
         );
-        if (!catExists && word.category) {
-          await addCategory(word.category);
+        if (!catExists && cat) {
+          await addCategory(cat);
         }
 
         const lang = cardLanguage[word.id] || 'chinese';
 
         if (lang === 'english' || lang === 'both') {
-          // English front card: front=English, back=Chinese + pinyin
           await addFlashcard(
             word.english,
-            word.category || 'default',
+            cat,
             `${word.chinese} (${word.pinyin})`,
             word.pinyin || '',
             'word',
@@ -183,10 +183,9 @@ const PhotoScanner = () => {
         }
 
         if (lang === 'chinese' || lang === 'both') {
-          // Chinese front card: front=Chinese, back=English
           await addFlashcard(
             word.chinese,
-            word.category || 'default',
+            cat,
             word.english || '',
             word.pinyin || '',
             'word',
