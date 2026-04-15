@@ -115,12 +115,15 @@ const PhotoScanner = () => {
 
       const sel = {};
       const lang = {};
+      const cats = {};
       words.forEach(w => {
         if (!w.isDuplicate) sel[w.id] = true;
         lang[w.id] = w.originalLanguage === 'english' ? 'english' : 'chinese';
+        cats[w.id] = w.category || 'default';
       });
       setSelectedWords(sel);
       setCardLanguage(lang);
+      setWordCategories(cats);
       setStep(STEPS.REVIEW);
     } catch (err) {
       console.error('Scan error:', err);
