@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Camera, Upload, X, Check, AlertTriangle, Loader2, RotateCcw, Plus, Globe, ScanText, Eye, FileText } from 'lucide-react';
+import { Camera, Upload, X, Check, AlertTriangle, Loader2, RotateCcw, Plus, Globe, ScanText, Eye, FileText, Sparkles } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useFlashcards } from '@/context/FlashcardContext';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { usePlanAccess } from '@/hooks/usePlanAccess';
 
 const STEPS = { UPLOAD: 'upload', SCANNING: 'scanning', REVIEW: 'review', DONE: 'done' };
 const MODES = { TEXT: 'text', IDENTIFY: 'identify' };
