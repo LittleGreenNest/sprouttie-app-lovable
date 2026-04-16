@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Camera, Upload, X, Check, AlertTriangle, Loader2, RotateCcw, Plus, Globe, ScanText, Eye, FileText } from 'lucide-react';
+import { Camera, Upload, X, Check, AlertTriangle, Loader2, RotateCcw, Plus, Globe, ScanText, Eye, FileText, Sparkles } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useFlashcards } from '@/context/FlashcardContext';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { usePlanAccess } from '@/hooks/usePlanAccess';
 
 const STEPS = { UPLOAD: 'upload', SCANNING: 'scanning', REVIEW: 'review', DONE: 'done' };
 const MODES = { TEXT: 'text', IDENTIFY: 'identify' };
@@ -15,6 +16,9 @@ const MODES = { TEXT: 'text', IDENTIFY: 'identify' };
 const PhotoScanner = () => {
   const navigate = useNavigate();
   const { flashcards, addFlashcard, categories, addCategory, sets, getFlashcardsForSet } = useFlashcards();
+  const { isPlanAtLeast } = usePlanAccess();
+  const isPaid = isPlanAtLeast('print');
+  const maxImages = isPaid ? 10 : 1;
   const fileInputRef = useRef(null);
 
   const [step, setStep] = useState(STEPS.UPLOAD);
@@ -52,46 +56,61 @@ const PhotoScanner = () => {
     return data;
   };
 
-  const handleFile = useCallback(async (file) => {
-    if (!file) return;
-
+  const processOneFile = async (file) => {
     const isPdf = file.type === 'application/pdf';
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(isPdf ? null : url);
+    let words = [];
+    let message = '';
+
+    if (isPdf) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const totalPages = Math.min(pdf.numPages, 10);
+      for (let i = 1; i <= totalPages; i++) {
+        setScanningProgress(`Scanning PDF page ${i} of ${totalPages}...`);
+        const page = await pdf.getPage(i);
+        const base64 = await pdfPageToBase64(page);
+        const data = await scanImage(base64, 'image/jpeg');
+        if (data.message && !message) message = data.message;
+        if (data.words?.length) words.push(...data.words);
+      }
+    } else {
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64 = btoa(binary);
+      const data = await scanImage(base64, file.type || 'image/jpeg');
+      if (data.message) message = data.message;
+      words = data.words || [];
+    }
+    return { words, message };
+  };
+
+  const handleFiles = useCallback(async (files) => {
+    if (!files || files.length === 0) return;
+
+    // Enforce limit
+    const fileList = Array.from(files).slice(0, maxImages);
+
+    // For single image, show preview
+    const firstFile = fileList[0];
+    const isPdf = firstFile.type === 'application/pdf';
+    setPreviewUrl(fileList.length === 1 && !isPdf ? URL.createObjectURL(firstFile) : null);
     setStep(STEPS.SCANNING);
     setAiMessage('');
-    setScanningProgress(isPdf ? 'Loading PDF...' : '');
+    setScanningProgress(fileList.length > 1 ? `Scanning image 1 of ${fileList.length}...` : (isPdf ? 'Loading PDF...' : ''));
 
     try {
       let allWords = [];
       let message = '';
 
-      if (isPdf) {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        const totalPages = Math.min(pdf.numPages, 10); // cap at 10 pages
-
-        for (let i = 1; i <= totalPages; i++) {
-          setScanningProgress(`Scanning page ${i} of ${totalPages}...`);
-          const page = await pdf.getPage(i);
-          const base64 = await pdfPageToBase64(page);
-          const data = await scanImage(base64, 'image/jpeg');
-          if (data.message && !message) message = data.message;
-          if (data.words?.length) {
-            allWords.push(...data.words);
-          }
-        }
-      } else {
-        const buffer = await file.arrayBuffer();
-        const bytes = new Uint8Array(buffer);
-        let binary = '';
-        for (let i = 0; i < bytes.length; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        const base64 = btoa(binary);
-        const data = await scanImage(base64, file.type || 'image/jpeg');
-        if (data.message) message = data.message;
-        allWords = data.words || [];
+      for (let f = 0; f < fileList.length; f++) {
+        if (fileList.length > 1) setScanningProgress(`Scanning image ${f + 1} of ${fileList.length}...`);
+        const result = await processOneFile(fileList[f]);
+        if (result.message && !message) message = result.message;
+        allWords.push(...result.words);
       }
 
       if (message) setAiMessage(message);
@@ -127,12 +146,12 @@ const PhotoScanner = () => {
       setStep(STEPS.REVIEW);
     } catch (err) {
       console.error('Scan error:', err);
-      toast.error(isPdf ? 'Failed to scan PDF. Please try again.' : 'Failed to scan image. Please try again.');
+      toast.error('Failed to scan. Please try again.');
       setStep(STEPS.UPLOAD);
     } finally {
       setScanningProgress('');
     }
-  }, [existingWordsSet, scanMode]);
+  }, [existingWordsSet, scanMode, maxImages]);
 
   const toggleWord = (id) => {
     setSelectedWords(prev => ({ ...prev, [id]: !prev[id] }));
@@ -357,7 +376,7 @@ const PhotoScanner = () => {
               className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[hsl(var(--sprouttie-green))] text-white font-semibold text-sm shadow-sm hover:opacity-90 transition mx-auto"
             >
               <Upload className="w-4 h-4" />
-              Upload Photo or PDF
+              {isPaid ? 'Upload Photos or PDF (up to 10)' : 'Upload Photo or PDF'}
             </button>
           </div>
 
@@ -366,8 +385,26 @@ const PhotoScanner = () => {
             type="file"
             accept="image/*,application/pdf"
             className="hidden"
-            onChange={e => handleFile(e.target.files?.[0])}
+            multiple={isPaid}
+            onChange={e => {
+              handleFiles(e.target.files);
+              e.target.value = '';
+            }}
           />
+
+          {!isPaid && (
+            <button
+              onClick={() => navigate('/plans')}
+              className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl text-left"
+            >
+              <Sparkles className="w-5 h-5 text-amber-500 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-amber-800">Scan up to 10 images at once</p>
+                <p className="text-[11px] text-amber-600">Upgrade to scan multiple photos in one go</p>
+              </div>
+              <span className="text-xs font-semibold text-amber-700">Upgrade →</span>
+            </button>
+          )}
 
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
             {scanMode === MODES.IDENTIFY
