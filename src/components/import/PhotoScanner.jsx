@@ -56,46 +56,61 @@ const PhotoScanner = () => {
     return data;
   };
 
-  const handleFile = useCallback(async (file) => {
-    if (!file) return;
-
+  const processOneFile = async (file) => {
     const isPdf = file.type === 'application/pdf';
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(isPdf ? null : url);
+    let words = [];
+    let message = '';
+
+    if (isPdf) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const totalPages = Math.min(pdf.numPages, 10);
+      for (let i = 1; i <= totalPages; i++) {
+        setScanningProgress(`Scanning PDF page ${i} of ${totalPages}...`);
+        const page = await pdf.getPage(i);
+        const base64 = await pdfPageToBase64(page);
+        const data = await scanImage(base64, 'image/jpeg');
+        if (data.message && !message) message = data.message;
+        if (data.words?.length) words.push(...data.words);
+      }
+    } else {
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64 = btoa(binary);
+      const data = await scanImage(base64, file.type || 'image/jpeg');
+      if (data.message) message = data.message;
+      words = data.words || [];
+    }
+    return { words, message };
+  };
+
+  const handleFiles = useCallback(async (files) => {
+    if (!files || files.length === 0) return;
+
+    // Enforce limit
+    const fileList = Array.from(files).slice(0, maxImages);
+
+    // For single image, show preview
+    const firstFile = fileList[0];
+    const isPdf = firstFile.type === 'application/pdf';
+    setPreviewUrl(fileList.length === 1 && !isPdf ? URL.createObjectURL(firstFile) : null);
     setStep(STEPS.SCANNING);
     setAiMessage('');
-    setScanningProgress(isPdf ? 'Loading PDF...' : '');
+    setScanningProgress(fileList.length > 1 ? `Scanning image 1 of ${fileList.length}...` : (isPdf ? 'Loading PDF...' : ''));
 
     try {
       let allWords = [];
       let message = '';
 
-      if (isPdf) {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        const totalPages = Math.min(pdf.numPages, 10); // cap at 10 pages
-
-        for (let i = 1; i <= totalPages; i++) {
-          setScanningProgress(`Scanning page ${i} of ${totalPages}...`);
-          const page = await pdf.getPage(i);
-          const base64 = await pdfPageToBase64(page);
-          const data = await scanImage(base64, 'image/jpeg');
-          if (data.message && !message) message = data.message;
-          if (data.words?.length) {
-            allWords.push(...data.words);
-          }
-        }
-      } else {
-        const buffer = await file.arrayBuffer();
-        const bytes = new Uint8Array(buffer);
-        let binary = '';
-        for (let i = 0; i < bytes.length; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        const base64 = btoa(binary);
-        const data = await scanImage(base64, file.type || 'image/jpeg');
-        if (data.message) message = data.message;
-        allWords = data.words || [];
+      for (let f = 0; f < fileList.length; f++) {
+        if (fileList.length > 1) setScanningProgress(`Scanning image ${f + 1} of ${fileList.length}...`);
+        const result = await processOneFile(fileList[f]);
+        if (result.message && !message) message = result.message;
+        allWords.push(...result.words);
       }
 
       if (message) setAiMessage(message);
@@ -131,12 +146,12 @@ const PhotoScanner = () => {
       setStep(STEPS.REVIEW);
     } catch (err) {
       console.error('Scan error:', err);
-      toast.error(isPdf ? 'Failed to scan PDF. Please try again.' : 'Failed to scan image. Please try again.');
+      toast.error('Failed to scan. Please try again.');
       setStep(STEPS.UPLOAD);
     } finally {
       setScanningProgress('');
     }
-  }, [existingWordsSet, scanMode]);
+  }, [existingWordsSet, scanMode, maxImages]);
 
   const toggleWord = (id) => {
     setSelectedWords(prev => ({ ...prev, [id]: !prev[id] }));
