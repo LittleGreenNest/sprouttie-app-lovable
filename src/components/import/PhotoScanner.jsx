@@ -16,6 +16,9 @@ const MODES = { TEXT: 'text', IDENTIFY: 'identify' };
 const PhotoScanner = () => {
   const navigate = useNavigate();
   const { flashcards, addFlashcard, categories, addCategory, sets, getFlashcardsForSet } = useFlashcards();
+  const { isPlanAtLeast } = usePlanAccess();
+  const isPaid = isPlanAtLeast('print');
+  const maxImages = isPaid ? 10 : 1;
   const fileInputRef = useRef(null);
 
   const [step, setStep] = useState(STEPS.UPLOAD);
