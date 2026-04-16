@@ -376,7 +376,7 @@ const PhotoScanner = () => {
               className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[hsl(var(--sprouttie-green))] text-white font-semibold text-sm shadow-sm hover:opacity-90 transition mx-auto"
             >
               <Upload className="w-4 h-4" />
-              Upload Photo or PDF
+              {isPaid ? 'Upload Photos or PDF (up to 10)' : 'Upload Photo or PDF'}
             </button>
           </div>
 
@@ -385,8 +385,26 @@ const PhotoScanner = () => {
             type="file"
             accept="image/*,application/pdf"
             className="hidden"
-            onChange={e => handleFile(e.target.files?.[0])}
+            multiple={isPaid}
+            onChange={e => {
+              handleFiles(e.target.files);
+              e.target.value = '';
+            }}
           />
+
+          {!isPaid && (
+            <button
+              onClick={() => navigate('/plans')}
+              className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl text-left"
+            >
+              <Sparkles className="w-5 h-5 text-amber-500 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-amber-800">Scan up to 10 images at once</p>
+                <p className="text-[11px] text-amber-600">Upgrade to scan multiple photos in one go</p>
+              </div>
+              <span className="text-xs font-semibold text-amber-700">Upgrade →</span>
+            </button>
+          )}
 
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
             {scanMode === MODES.IDENTIFY
