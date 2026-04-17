@@ -67,10 +67,10 @@ const LoadingSpinner = () => (
 
 export const fetchUserPlan = async (userEmail) => {
   const { data, error } = await supabase
-    .from('users')
+    .from('profiles')
     .select('plan')
     .eq('email', userEmail)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error fetching plan:', error.message);
