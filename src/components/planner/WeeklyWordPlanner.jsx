@@ -505,16 +505,29 @@ const WeeklyWordPlanner = () => {
                         </p>
                       )}
                     </div>
-                    <button
-                      onClick={() => {
-                        const opening = swappingWordId !== s.id;
-                        setSwappingWordId(opening ? s.id : null);
-                        if (opening) fetchSwapAlternatives(s.id, s.word, s.category);
-                      }}
-                      className="flex-shrink-0 text-xs px-3 py-1.5 rounded-lg border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
-                    >
-                      Swap
-                    </button>
+                    <div className="flex-shrink-0 flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          const opening = swappingWordId !== s.id;
+                          setSwappingWordId(opening ? s.id : null);
+                          setDismissingId(null);
+                          if (opening) fetchSwapAlternatives(s.id, s.word, s.category);
+                        }}
+                        className="text-xs px-3 py-1.5 rounded-lg border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+                      >
+                        Swap
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDismissingId(dismissingId === s.id ? null : s.id);
+                          setSwappingWordId(null);
+                        }}
+                        title="Dismiss this suggestion"
+                        className="p-1.5 rounded-lg border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                   {/* Swap bottom sheet */}
                   <AnimatePresence>
@@ -550,6 +563,40 @@ const WeeklyWordPlanner = () => {
                       </motion.div>
                     )}
                   </AnimatePresence>
+                  {/* Dismiss reason picker */}
+                  <AnimatePresence>
+                    {dismissingId === s.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-2 pt-2 border-t border-dashed border-[hsl(var(--border))]">
+                          <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2">
+                            Why dismiss? (Sprouttie will learn from this)
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {[
+                              { label: 'Too easy', value: 'too easy — already knows similar' },
+                              { label: 'Already says it', value: 'already says it' },
+                              { label: 'Not relevant', value: 'not relevant to our routine' },
+                              { label: 'Too hard', value: 'too hard for now' },
+                              { label: 'Other', value: 'other' },
+                            ].map(opt => (
+                              <button
+                                key={opt.value}
+                                onClick={() => handleDismissOne(s.id, opt.value)}
+                                className="text-xs px-2.5 py-1 rounded-lg bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--border))] transition-colors"
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               ))}
             </div>
@@ -566,10 +613,10 @@ const WeeklyWordPlanner = () => {
                 )}
               </button>
               <button
-                onClick={handleDismissAll}
+                onClick={() => handleDismissAll('dismissed all — planning manually')}
                 className="w-full text-center text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors py-1"
               >
-                Dismiss — I'll plan manually
+                Dismiss all — I'll plan manually
               </button>
             </div>
           </motion.div>
