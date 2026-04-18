@@ -38,6 +38,7 @@ const WeeklyWordPlanner = () => {
   const [swapAlternatives, setSwapAlternatives] = useState({});
   const [loadingSwap, setLoadingSwap] = useState(null);
   const [acceptingAll, setAcceptingAll] = useState(false);
+  const [dismissingId, setDismissingId] = useState(null); // suggestion currently showing reason picker
 
   function getWeekStart(date) {
     const d = new Date(date);
