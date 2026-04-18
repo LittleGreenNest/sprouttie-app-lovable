@@ -201,11 +201,24 @@ const WeeklyWordPlanner = () => {
     }
   };
 
-  const handleDismissAll = async () => {
+  const handleDismissAll = async (reason = null) => {
     if (!currentUser || pendingSuggestions.length === 0) return;
     const ids = pendingSuggestions.map(s => s.id);
-    await supabase.from('weekly_suggestions').update({ status: 'dismissed' }).in('id', ids);
+    await supabase.from('weekly_suggestions')
+      .update({ status: 'dismissed', dismissal_reason: reason })
+      .in('id', ids);
     setPendingSuggestions([]);
+    toast.success(reason ? 'Got it — Sprouttie will learn from this.' : 'Suggestions dismissed.');
+  };
+
+  const handleDismissOne = async (id, reason) => {
+    if (!currentUser) return;
+    await supabase.from('weekly_suggestions')
+      .update({ status: 'dismissed', dismissal_reason: reason })
+      .eq('id', id);
+    setPendingSuggestions(prev => prev.filter(s => s.id !== id));
+    setDismissingId(null);
+    toast.success('Sprouttie will remember that.');
   };
 
   const handleSwapWord = async (suggestionId, newWord) => {
