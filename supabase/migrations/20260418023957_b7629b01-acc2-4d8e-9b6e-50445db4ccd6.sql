@@ -1,0 +1,1 @@
+ALTER TABLE public.weekly_suggestions ADD COLUMN IF NOT EXISTS dismissal_reason text;
