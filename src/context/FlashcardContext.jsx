@@ -349,14 +349,34 @@ export const FlashcardProvider = ({ children }) => {
         const newFlashcard = {
           id: data.id,
           word: data.front,
+          front: data.front,
+          back: data.back,
           english: data.back,
           pinyin,
-          categoryId: data.folder,
-          card_type: data.card_type,
+          categoryId: data.folder || 'default',
+          folder: data.folder || 'default',
+          card_type: data.card_type || 'word',
           phrase_group: data.phrase_group,
+          card_status: data.card_status,
+          active_day_count: data.active_day_count,
+          date_introduced: data.date_introduced,
+          date_retired: data.date_retired,
+          created_at: data.created_at,
+          mastery_level: data.mastery_level,
+          set_number: data.set_number,
         };
 
         setFlashcards(prev => [...prev, newFlashcard]);
+
+        // Ensure the category appears in the categories list (e.g., when added via PhotoScanner)
+        if (data.folder && data.folder !== 'default') {
+          setCategories(prev =>
+            prev.some(c => c.id === data.folder || c.name === data.folder)
+              ? prev
+              : [...prev, { id: data.folder, name: data.folder }]
+          );
+        }
+
         return newFlashcard;
       } catch (error) {
         console.error("Error adding flashcard to Supabase:", error);
