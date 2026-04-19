@@ -1,7 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => {
@@ -14,7 +13,7 @@ export default defineConfig(({ mode }) => {
     process.env.VITE_SUPABASE_URL ||
     process.env.SUPABASE_URL ||
     // Public fallback (non-secret) so the app doesn't blank-screen if env injection fails.
-    'https://fbytytkhaeawzzkjhrhh.supabase.co';
+    'https://xqwrfbyqhuxveoqksuqz.supabase.co';
 
   const supabasePublishableKey =
     env.VITE_SUPABASE_PUBLISHABLE_KEY ||
@@ -22,7 +21,7 @@ export default defineConfig(({ mode }) => {
     process.env.SUPABASE_PUBLISHABLE_KEY ||
     process.env.SUPABASE_ANON_KEY ||
     // Public fallback (non-secret)
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZieXR5dGtoYWVhd3p6a2pocmhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzOTA5MjQsImV4cCI6MjA3NDk2NjkyNH0.C08lBvJWCovzGsPesbd6Mt6fIP3ugzaou_5ZFXTXgFA';
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhxd3JmYnlxaHV4dmVvcWtzdXF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIyNDc4NDUsImV4cCI6MjA2NzgyMzg0NX0.jGCyhrAWN0AjobX52Zh30VActTq_S60oM8JhHOkLDfw';
 
   return ({
     define: {
@@ -36,7 +35,6 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
-      mode === 'development' && componentTagger(),
       VitePWA({
         registerType: 'autoUpdate',
         // Prevent service worker caching headaches during preview/dev.
