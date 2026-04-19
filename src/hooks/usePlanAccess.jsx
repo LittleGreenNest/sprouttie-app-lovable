@@ -144,36 +144,38 @@ export const usePlanAccess = () => {
 };
 
 // Upgrade prompt component for locked features
-export const UpgradePrompt = ({ 
-  feature, 
+export const UpgradePrompt = ({
+  feature,
   requiredPlan = 'print',
   title,
-  description 
+  description,
 }) => {
   const planName = PLAN_NAMES[requiredPlan] || 'Print Plan';
-  
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-8 text-center max-w-md mx-auto">
-      <div className="text-6xl mb-4">🔒</div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">
-        {title || `${feature} - Premium Feature`}
-      </h2>
-      <p className="text-gray-600 mb-6">
-        {description || `Upgrade to ${planName} or higher to access this feature.`}
-      </p>
-      <div className="space-y-3">
-        <button
-          onClick={() => window.location.href = '/plans'}
-          className="w-full px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
-        >
-          View Plans & Upgrade
-        </button>
-        <button
-          onClick={() => window.location.href = '/dashboard'}
-          className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-        >
-          Back to Dashboard
-        </button>
+    <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 font-body">
+      <div className="glass rounded-2xl p-8 text-center max-w-sm w-full shadow-[var(--shadow-lg)]">
+        <div className="text-5xl mb-4">🌱</div>
+        <h2 className="font-display text-2xl text-[hsl(var(--sprouttie-ink))] mb-2">
+          {title || `${feature}`}
+        </h2>
+        <p className="text-sm text-[hsl(var(--muted-foreground))] mb-6">
+          {description || `Upgrade to ${planName} or higher to unlock this feature.`}
+        </p>
+        <div className="space-y-3">
+          <a
+            href="/plans"
+            className="block w-full py-3 rounded-xl bg-[hsl(var(--sprouttie-green))] hover:bg-[hsl(var(--sprouttie-green-dark))] text-white font-semibold text-sm transition-all"
+          >
+            View plans & upgrade
+          </a>
+          <a
+            href="/dashboard"
+            className="block w-full py-3 rounded-xl border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--sprouttie-ink))] text-sm transition-all"
+          >
+            Back to dashboard
+          </a>
+        </div>
       </div>
     </div>
   );

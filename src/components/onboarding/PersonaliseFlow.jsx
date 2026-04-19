@@ -369,14 +369,6 @@ const PersonaliseFlow = ({ onComplete }) => {
         {title}
       </h2>
 
-      {/* Video placeholder */}
-      <div className="w-full aspect-video rounded-2xl bg-[hsl(var(--muted))] flex items-center justify-center mb-6 border-2 border-dashed border-[hsl(var(--border))]">
-        <div className="text-center">
-          <span className="text-4xl">🎬</span>
-          <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">Video placeholder</p>
-        </div>
-      </div>
-
       <div className="space-y-4 text-left mb-6">
         {current.steps.map((s) => (
           <div key={s.num} className="flex gap-3 items-start">

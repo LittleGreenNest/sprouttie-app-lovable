@@ -31,7 +31,6 @@ const Dashboard = () => {
   const [weeklyBooks, setWeeklyBooks] = useState([]);
   const [weeklyActivities, setWeeklyActivities] = useState([]);
   const [pendingSuggestions, setPendingSuggestions] = useState([]);
-  const [autoPilotLoading, setAutoPilotLoading] = useState(false);
 
   // Rotate tip daily based on day-of-year
   useEffect(() => {
@@ -92,38 +91,6 @@ const Dashboard = () => {
     setPendingSuggestions(data || []);
   }, [currentUser?.id]);
 
-  // DEV ONLY — simulate auto-pilot run (real AI call)
-  const simulateAutoPilot = async () => {
-    if (!currentUser?.id || autoPilotLoading) return;
-    setAutoPilotLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-autopilot-suggestions', {
-        body: { weekStart: getWeekStart() }
-      });
-      if (error) throw error;
-      if (data?.error === 'parse_failed') {
-        console.error('AI response parse failed:', data.raw);
-        toast.error("Sprouttie couldn't generate suggestions right now. Try again.");
-        return;
-      }
-      if (data?.error === 'save_failed') {
-        toast.error("Suggestions generated but couldn't be saved. Try again.");
-        return;
-      }
-      if (data?.error) {
-        toast.error(data.error);
-        return;
-      }
-      toast.success(`Sprouttie picked ${data?.count || 5} words for you 🌱`);
-      refreshSuggestions();
-    } catch (err) {
-      console.error('Auto-pilot error:', err);
-      toast.error("Sprouttie couldn't generate suggestions right now. Try again.");
-    } finally {
-      setAutoPilotLoading(false);
-    }
-  };
-
   // Dismiss all pending suggestions
   const dismissSuggestions = async () => {
     if (!currentUser?.id || pendingSuggestions.length === 0) return;
@@ -137,7 +104,7 @@ const Dashboard = () => {
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
   const firstName = currentUser?.user_metadata?.name?.split(' ')[0] || profile?.email?.split('@')[0] || 'Friend';
-  const childName = profile?.pets_and_toys || 'Your child'; // fallback
+  const childName = firstName !== 'Friend' ? `${firstName}'s child` : 'Your child';
 
   // Today's rounds from tracking data
   const todayTracking = trackingData.filter(t => t.date === todayStr);
@@ -228,7 +195,7 @@ const Dashboard = () => {
 
       {/* 4. CHILD'S WORDS CARD */}
       <button
-        onClick={() => navigate('/words')}
+        onClick={() => navigate('/words-said')}
         className="block w-full text-left mx-4 mb-3 active:scale-[0.98] transition-transform"
         style={{
           background: 'white', border: '0.5px solid #E5E7EB', borderRadius: 16,
@@ -329,7 +296,7 @@ const Dashboard = () => {
 
       {/* 6. FLASHCARD SETS CARD */}
       <button
-        onClick={() => navigate('/words')}
+        onClick={() => navigate('/words-said')}
         className="block w-full text-left mx-4 mb-3 active:scale-[0.98] transition-transform"
         style={{
           background: 'white', border: '0.5px solid #E5E7EB', borderRadius: 16,
@@ -458,22 +425,7 @@ const Dashboard = () => {
         <ChevronRight size={12} color="#9CA3AF" className="flex-shrink-0" />
       </button>
 
-      {/* DEV ONLY — Simulate auto-pilot run button for testing */}
-      <button
-        onClick={simulateAutoPilot}
-        disabled={autoPilotLoading}
-        className="mx-4 mb-5 active:scale-[0.98] transition-transform"
-        style={{
-          background: autoPilotLoading ? '#E5E7EB' : '#F3F4F6',
-          border: '1px dashed #D1D5DB', borderRadius: 10,
-          padding: '10px 14px', fontSize: 12, fontWeight: 500,
-          color: autoPilotLoading ? '#9CA3AF' : '#6B7280',
-          cursor: autoPilotLoading ? 'not-allowed' : 'pointer',
-          width: 'calc(100% - 32px)', textAlign: 'center'
-        }}
-      >
-        {autoPilotLoading ? '🌱 Sprouttie is thinking…' : '🔁 Simulate auto-pilot run'}
-      </button>
+
     </div>
   );
 };

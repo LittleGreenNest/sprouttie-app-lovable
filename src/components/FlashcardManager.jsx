@@ -1,6 +1,7 @@
 // components/FlashcardManager.js
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { useFlashcards } from '../context/FlashcardContext';
 import { supabase } from '@/integrations/supabase/client';
 import CSVImport from './CSVImport';
@@ -9,10 +10,11 @@ import { History } from 'lucide-react';
 
 const FlashcardManager = () => {
   const navigate = useNavigate();
-  const { 
+  const {
     categories,
     setCategories,
-    flashcards, 
+    flashcards,
+    plan,
     addCategory,
     updateCategory,
     deleteCategory,
@@ -20,6 +22,9 @@ const FlashcardManager = () => {
     updateFlashcard,
     deleteFlashcard
   } = useFlashcards();
+
+  const FREE_CARD_LIMIT = 50;
+  const isAtFreeLimit = plan === 'free' && flashcards.length >= FREE_CARD_LIMIT;
   
   // UI state
   const [activeTab, setActiveTab] = useState('categories');
@@ -136,7 +141,7 @@ const FlashcardManager = () => {
         : flashcards;
       
       if (cardsToExport.length === 0) {
-        alert('No flashcards to export.');
+        toast.error('No flashcards to export.');
         return;
       }
       
@@ -208,7 +213,7 @@ const FlashcardManager = () => {
       document.body.removeChild(link);
     } catch (error) {
       console.error("Error exporting flashcards:", error);
-      alert('There was an error exporting the flashcards. Please try again.');
+      toast.error('There was an error exporting the flashcards. Please try again.');
     }
   };
   
@@ -262,9 +267,14 @@ const FlashcardManager = () => {
   };
   
   // Handlers for Flashcards
-  const handleAddFlashcard = (e) => {
+  const handleAddFlashcard = async (e) => {
     e.preventDefault();
-    
+
+    if (isAtFreeLimit) {
+      navigate('/plans');
+      return;
+    }
+
     if (cardLanguage === 'en') {
       // English card: front = english word, back = description/hint
       if (!newFlashcardEnglish.trim() || !newFlashcardCategory) return;
@@ -282,15 +292,20 @@ const FlashcardManager = () => {
         if (!window.confirm(msg)) return;
       }
       
-      addFlashcard(
-        newFlashcardEnglish,
-        newFlashcardCategory,
-        newFlashcardPinyin, // used as description/hint for EN cards
-        '',
-        newCardType,
-        newCardType === 'phrase' ? newPhraseGroup : null,
-        'en'
-      );
+      try {
+        await addFlashcard(
+          newFlashcardEnglish,
+          newFlashcardCategory,
+          newFlashcardPinyin,
+          '',
+          newCardType,
+          newCardType === 'phrase' ? newPhraseGroup : null,
+          'en'
+        );
+      } catch (err) {
+        if (err?.message === 'FREE_LIMIT_REACHED') { navigate('/plans'); return; }
+        throw err;
+      }
       setNewFlashcardEnglish('');
       setNewFlashcardPinyin('');
       setNewCardType('word');
@@ -320,15 +335,20 @@ const FlashcardManager = () => {
       }
     }
     
-    addFlashcard(
-      newFlashcardWord, 
-      newFlashcardCategory, 
-      newFlashcardEnglish, 
-      newFlashcardPinyin,
-      newCardType,
-      newCardType === 'phrase' ? newPhraseGroup : null,
-      'zh'
-    );
+    try {
+      await addFlashcard(
+        newFlashcardWord,
+        newFlashcardCategory,
+        newFlashcardEnglish,
+        newFlashcardPinyin,
+        newCardType,
+        newCardType === 'phrase' ? newPhraseGroup : null,
+        'zh'
+      );
+    } catch (err) {
+      if (err?.message === 'FREE_LIMIT_REACHED') { navigate('/plans'); return; }
+      throw err;
+    }
     setNewFlashcardWord('');
     setNewFlashcardEnglish('');
     setNewFlashcardPinyin('');
@@ -378,6 +398,33 @@ const FlashcardManager = () => {
   
   return (
     <div>
+      {/* Free plan usage banner */}
+      {plan === 'free' && (
+        <div className={`mb-4 rounded-xl px-4 py-3 flex items-center justify-between gap-3 ${
+          isAtFreeLimit
+            ? 'bg-amber-50 border border-amber-200'
+            : flashcards.length >= 40
+            ? 'bg-amber-50 border border-amber-100'
+            : 'bg-[hsl(var(--sprouttie-mint))] border border-[hsl(var(--border))]'
+        }`}>
+          <div className="flex items-center gap-2 text-sm">
+            <span>{isAtFreeLimit ? '⚠️' : '🃏'}</span>
+            <span className="text-[hsl(var(--sprouttie-ink))] font-medium">
+              {flashcards.length}/{FREE_CARD_LIMIT} cards used
+            </span>
+            {isAtFreeLimit && (
+              <span className="text-amber-700">— You've reached the free limit.</span>
+            )}
+          </div>
+          <button
+            onClick={() => navigate('/plans')}
+            className="flex-shrink-0 text-xs font-semibold text-white bg-[hsl(var(--sprouttie-green))] hover:bg-[hsl(var(--sprouttie-green-dark))] px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Upgrade
+          </button>
+        </div>
+      )}
+
       {/* CSV Import Modal */}
       {showCSVImport && (
         <div className="fixed inset-0 z-10 overflow-y-auto">

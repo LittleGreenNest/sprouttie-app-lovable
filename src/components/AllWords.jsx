@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { useFlashcards } from '../context/FlashcardContext';
@@ -111,7 +112,6 @@ const AllWords = () => {
           firstFlashedDates[t.flashcard_id] = t.flashed_at;
         }
       });
-      console.log('Flashed flashcard IDs from tracking:', Array.from(flashedIds));
       setFlashedEver(flashedIds);
 
       // Group flashcards by category
@@ -152,7 +152,6 @@ const AllWords = () => {
           });
         });
         setAllCategories(categories.map(c => c.name));
-        console.log('Using localStorage flashcards, IDs:', localFlashcards.map(c => c.id));
       }
 
       setFlashcardsByCategory(grouped);
@@ -225,7 +224,7 @@ const AllWords = () => {
       fetchFlashcardsAndTracking();
     } catch (error) {
       console.error('Error updating category:', error);
-      alert('Failed to update category. Please try again.');
+      toast.error('Failed to update category. Please try again.');
     }
   };
 

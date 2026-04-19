@@ -180,35 +180,35 @@ const PhotoScanner = () => {
     try {
       for (const word of wordsToAdd) {
         const cat = wordCategories[word.id] || word.category || 'default';
-        const catExists = categories.some(
-          c => c.name === cat || c.id === cat
-        );
+        const catExists = categories.some(c => c.name === cat || c.id === cat);
         if (!catExists && cat) {
           await addCategory(cat);
         }
 
         const lang = cardLanguage[word.id] || 'chinese';
 
-        if (lang === 'english' || lang === 'both') {
+        if ((lang === 'english' || lang === 'both') && word.english?.trim()) {
           await addFlashcard(
-            word.english,
+            word.english.trim(),
             cat,
-            `${word.chinese} (${word.pinyin})`,
+            word.chinese ? `${word.chinese} (${word.pinyin || ''})` : '',
             word.pinyin || '',
             'word',
-            null
+            null,
+            'en'
           );
           added++;
         }
 
-        if (lang === 'chinese' || lang === 'both') {
+        if ((lang === 'chinese' || lang === 'both') && word.chinese?.trim()) {
           await addFlashcard(
-            word.chinese,
+            word.chinese.trim(),
             cat,
             word.english || '',
             word.pinyin || '',
             'word',
-            null
+            null,
+            'zh'
           );
           added++;
         }
@@ -217,8 +217,12 @@ const PhotoScanner = () => {
       toast.success(`Added ${added} flashcard${added !== 1 ? 's' : ''}! 🎉`);
       setStep(STEPS.DONE);
     } catch (err) {
-      console.error('Error adding flashcards:', err);
-      toast.error(`Added ${added} cards, but an error occurred.`);
+      if (err?.message === 'FREE_LIMIT_REACHED') {
+        toast.error("You've reached the 50-card free limit. Upgrade to add more.");
+        navigate('/plans');
+        return;
+      }
+      toast.error(added > 0 ? `Added ${added} cards, but then hit an error.` : 'Failed to add cards. Please try again.');
     } finally {
       setAdding(false);
     }
@@ -646,7 +650,7 @@ const PhotoScanner = () => {
               Scan More
             </button>
             <button
-              onClick={() => navigate('/manage-flashcards')}
+              onClick={() => navigate('/cards')}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[hsl(var(--sprouttie-green))] text-white font-semibold text-sm shadow-sm hover:opacity-90 transition"
             >
               View Cards

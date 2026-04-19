@@ -46,6 +46,7 @@ const defaultSets = [
 export const FlashcardProvider = ({ children }) => {
   const authContext = useAuth();
   const currentUser = authContext?.currentUser;
+  const plan = authContext?.plan || 'free';
   const [categories, setCategories] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
   const [history, setHistory] = useState([]);
@@ -188,7 +189,6 @@ export const FlashcardProvider = ({ children }) => {
 
   const migrateLocalStorageToSupabase = async (localFlashcards, localCategories) => {
     try {
-      console.log('Migrating localStorage flashcards to Supabase...');
       
       // Create a map of category IDs to names
       const categoryMap = {};
@@ -216,7 +216,6 @@ export const FlashcardProvider = ({ children }) => {
           .insert(flashcardsToInsert);
 
         if (error) throw error;
-        console.log(`Migrated ${flashcardsToInsert.length} flashcards to Supabase`);
       }
 
       setMigrationDone(true);
@@ -228,7 +227,6 @@ export const FlashcardProvider = ({ children }) => {
   // Migrate localStorage sets to Supabase set_number field
   const migrateLocalSetsToSupabase = async (localSets, supabaseFlashcards) => {
     try {
-      console.log('Migrating localStorage sets to Supabase...');
       
       // Create a map of flashcard word -> supabase ID
       const wordToId = {};
@@ -257,12 +255,10 @@ export const FlashcardProvider = ({ children }) => {
               .in('id', supabaseIds);
 
             if (error) throw error;
-            console.log(`Migrated ${supabaseIds.length} cards to Set ${set.id}`);
           }
         }
       }
 
-      console.log('Sets migration complete');
     } catch (error) {
       console.error("Error migrating sets to Supabase:", error);
     }
@@ -323,7 +319,11 @@ export const FlashcardProvider = ({ children }) => {
   // Flashcard CRUD operations - Now saves to Supabase
   const addFlashcard = async (word, categoryId, english = '', pinyin = '', cardType = 'word', phraseGroup = null, cardLanguage = 'zh') => {
     const categoryName = categories.find(c => c.id === categoryId)?.name || categoryId;
-    
+
+    if (plan === 'free' && flashcards.length >= 50) {
+      throw new Error('FREE_LIMIT_REACHED');
+    }
+
     if (currentUser?.id) {
       try {
         const { data, error } = await supabase
@@ -587,6 +587,7 @@ export const FlashcardProvider = ({ children }) => {
     sets,
     history,
     loading,
+    plan,
     addCategory,
     updateCategory,
     deleteCategory,
@@ -600,7 +601,7 @@ export const FlashcardProvider = ({ children }) => {
     getTrackingData,
     getFlashcardStats,
     refreshFlashcards,
-  }), [categories, flashcards, sets, history, loading, updateSetFlashcards, getFlashcardsByCategory, getFlashcardsForSet]);
+  }), [categories, flashcards, sets, history, loading, plan, updateSetFlashcards, getFlashcardsByCategory, getFlashcardsForSet]);
   
   return (
     <FlashcardContext.Provider value={contextValue}>

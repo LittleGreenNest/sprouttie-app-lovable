@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'react-toastify';
 
 const LANGUAGE_LABELS = {
   english: 'English', mandarin: 'Mandarin', cantonese: 'Cantonese',
@@ -96,7 +97,6 @@ const Profile = () => {
     const plan = urlParams.get('plan');
     
     if (paymentStatus === 'success' && plan) {
-      console.log('Payment successful, refreshing user plan...');
       
       // Clear URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -122,7 +122,7 @@ const Profile = () => {
       }, 2000);
       
       // Show success message
-      alert(`Successfully subscribed to ${plan} plan! Your account will be updated shortly.`);
+      toast.success(`Successfully subscribed to ${plan} plan! Your account will be updated shortly.`);
     }
   }, [currentUser]);
 
@@ -155,7 +155,7 @@ const Profile = () => {
       setIsEditing(false);
     } catch (err) {
       console.error('Failed to update profile:', err);
-      alert('Failed to save — please try again');
+      toast.error('Failed to save — please try again');
     }
   };
 
@@ -173,11 +173,11 @@ const Profile = () => {
       if (data?.url) {
         window.location.href = data.url;
       } else {
-        alert('Unable to open billing portal');
+        toast.error('Unable to open billing portal. Please contact support.');
       }
     } catch (error) {
       console.error('Billing portal error:', error);
-      alert('Unable to open billing portal');
+      toast.error('Unable to open billing portal. Please contact support.');
     }
   };
 
@@ -511,7 +511,6 @@ const Profile = () => {
             onClick={() => {
               if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
                 // Handle account deletion (mock for now)
-                console.log('Account deletion requested');
               }
             }}
           >
