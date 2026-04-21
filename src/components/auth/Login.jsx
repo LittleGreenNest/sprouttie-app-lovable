@@ -32,7 +32,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[hsl(var(--sprouttie-cream))] via-white to-[hsl(var(--sprouttie-mint))] px-5 py-12 font-body">
+    <div className="min-h-screen flex items-center justify-center bg-white px-5 py-12 font-body">
       <div className="w-full max-w-md">
 
         {/* Logo */}
