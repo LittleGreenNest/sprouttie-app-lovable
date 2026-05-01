@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, ChevronRight as ChevronRightIco
 import SortableWordList from './SortableWordList';
 import SetTimeline from './SetTimeline';
 import DailyInsight from './DailyInsight';
+import InterestsCard from './InterestsCard';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const SET_COLORS = [
@@ -19,7 +20,7 @@ const SET_COLORS = [
 
 const SessionLogTracker = () => {
   const { currentUser } = useAuth();
-  const { sets, flashcards, getFlashcardsForSet, updateSetFlashcards, categories, refreshFlashcards } = useFlashcards();
+  const { sets, flashcards, getFlashcardsForSet, updateSetFlashcards, categories, refreshFlashcards, addFlashcard } = useFlashcards();
 
   // Date state
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -43,6 +44,15 @@ const SessionLogTracker = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState('all');
+
+  // Inline "create new word/phrase" form state
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newWordFront, setNewWordFront] = useState('');
+  const [newWordEnglish, setNewWordEnglish] = useState('');
+  const [newWordPinyin, setNewWordPinyin] = useState('');
+  const [newWordType, setNewWordType] = useState('word');
+  const [newWordCategory, setNewWordCategory] = useState('');
+  const [creatingWord, setCreatingWord] = useState(false);
 
   // Session occurred flag
   const [sessionOccurred, setSessionOccurred] = useState(false);
@@ -379,6 +389,50 @@ const SessionLogTracker = () => {
     const currentIds = currentSet.flashcardIds || [];
     await updateSetFlashcards(editingSetId, [...currentIds, wordId]);
     toast.success('Word added to set');
+  };
+
+  const handleCreateAndAddWord = async () => {
+    const front = newWordFront.trim();
+    if (!front) {
+      toast.error('Word or phrase is required');
+      return;
+    }
+    setCreatingWord(true);
+    try {
+      const categoryId =
+        newWordCategory ||
+        (categories[0] && (categories[0].id || categories[0])) ||
+        'default';
+
+      const created = await addFlashcard(
+        front,
+        categoryId,
+        newWordEnglish.trim(),
+        newWordPinyin.trim(),
+        newWordType,
+        newWordType === 'phrase' ? front : null,
+        'zh'
+      );
+
+      if (created?.id) {
+        const currentSet = sets.find(s => s.id === editingSetId);
+        const currentIds = currentSet?.flashcardIds || [];
+        await updateSetFlashcards(editingSetId, [...currentIds, created.id]);
+        toast.success(`"${front}" added to set`);
+      }
+
+      setNewWordFront('');
+      setNewWordEnglish('');
+      setNewWordPinyin('');
+      setNewWordType('word');
+      setNewWordCategory('');
+      setShowCreateForm(false);
+    } catch (err) {
+      console.error('Error creating word:', err);
+      toast.error('Could not create word. Please try again.');
+    } finally {
+      setCreatingWord(false);
+    }
   };
 
   const handleRemoveWordFromSet = async (wordId) => {
@@ -777,6 +831,87 @@ const SessionLogTracker = () => {
                               <span style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'italic' }}>No available words</span>
                             )}
                           </div>
+
+                          {/* Inline: Add a brand new word/phrase */}
+                          <div style={{ marginTop: '10px', borderTop: '0.5px dashed #E5E7EB', paddingTop: '10px' }}>
+                            {!showCreateForm ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowCreateForm(true);
+                                  if (searchQuery.trim()) setNewWordFront(searchQuery.trim());
+                                }}
+                                className="flex items-center gap-1 rounded-full transition-colors"
+                                style={{
+                                  padding: '5px 12px', fontSize: '11px',
+                                  background: '#EEF2FF', border: '0.5px dashed #A5B4FC', color: '#4338CA',
+                                  fontWeight: 500
+                                }}
+                              >
+                                <Plus className="w-3 h-3" />
+                                <span>Add a new word or phrase</span>
+                              </button>
+                            ) : (
+                              <div style={{ background: '#F9FAFB', border: '0.5px solid #E5E7EB', borderRadius: '8px', padding: '10px' }}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#374151' }}>New word</span>
+                                  <button onClick={() => setShowCreateForm(false)} style={{ color: '#9CA3AF', cursor: 'pointer' }}>
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <div className="flex gap-1.5 mb-2">
+                                  {['word', 'phrase'].map(t => (
+                                    <button
+                                      key={t}
+                                      type="button"
+                                      onClick={() => setNewWordType(t)}
+                                      style={{
+                                        fontSize: '11px', padding: '3px 10px', borderRadius: '12px', cursor: 'pointer',
+                                        background: newWordType === t ? '#52B788' : '#fff',
+                                        color: newWordType === t ? '#fff' : '#6B7280',
+                                        border: newWordType === t ? '0.5px solid #52B788' : '0.5px solid #D1D5DB',
+                                      }}
+                                    >
+                                      {t.charAt(0).toUpperCase() + t.slice(1)}
+                                    </button>
+                                  ))}
+                                </div>
+                                <input
+                                  type="text"
+                                  value={newWordFront}
+                                  onChange={(e) => setNewWordFront(e.target.value)}
+                                  placeholder={newWordType === 'phrase' ? 'Phrase (Chinese)' : 'Word (Chinese)'}
+                                  style={{ width: '100%', fontSize: '12px', padding: '6px 8px', borderRadius: '6px', border: '0.5px solid #D1D5DB', marginBottom: '5px' }}
+                                />
+                                <input
+                                  type="text"
+                                  value={newWordEnglish}
+                                  onChange={(e) => setNewWordEnglish(e.target.value)}
+                                  placeholder="English meaning (optional)"
+                                  style={{ width: '100%', fontSize: '12px', padding: '6px 8px', borderRadius: '6px', border: '0.5px solid #D1D5DB', marginBottom: '5px' }}
+                                />
+                                <input
+                                  type="text"
+                                  value={newWordPinyin}
+                                  onChange={(e) => setNewWordPinyin(e.target.value)}
+                                  placeholder="Pinyin (optional)"
+                                  style={{ width: '100%', fontSize: '12px', padding: '6px 8px', borderRadius: '6px', border: '0.5px solid #D1D5DB', marginBottom: '8px' }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleCreateAndAddWord}
+                                  disabled={creatingWord || !newWordFront.trim()}
+                                  style={{
+                                    width: '100%', padding: '7px', fontSize: '12px', fontWeight: 600,
+                                    background: creatingWord || !newWordFront.trim() ? '#D1D5DB' : '#52B788',
+                                    color: '#fff', border: 'none', borderRadius: '6px', cursor: creatingWord ? 'wait' : 'pointer'
+                                  }}
+                                >
+                                  {creatingWord ? 'Adding…' : 'Add to Set'}
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -907,6 +1042,11 @@ const SessionLogTracker = () => {
                 onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
               />
             </div>
+
+            <div style={{ height: '0.5px', background: '#E5E7EB', margin: '0 14px' }} />
+
+            {/* Child interests — feeds AI word suggestions */}
+            <InterestsCard />
           </div>
         )}
       </div>

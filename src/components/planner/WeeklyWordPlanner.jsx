@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
+import WeeklyOutcomeReview from './WeeklyOutcomeReview';
 import {
   ChevronLeft,
   ChevronRight,
@@ -39,6 +40,8 @@ const WeeklyWordPlanner = () => {
   const [loadingSwap, setLoadingSwap] = useState(null);
   const [acceptingAll, setAcceptingAll] = useState(false);
   const [dismissingId, setDismissingId] = useState(null); // suggestion currently showing reason picker
+  const [wordRatings, setWordRatings] = useState({}); // { [lowercaseWord]: { id, outcome } } for current week
+  const [ratingWord, setRatingWord] = useState(null); // word currently being saved
 
   function getWeekStart(date) {
     const d = new Date(date);
@@ -142,11 +145,66 @@ const WeeklyWordPlanner = () => {
     setPendingSuggestions(data || []);
   }, [currentUser, currentWeekStart]);
 
+  // Load this-week ratings (mid-week feedback) from weekly_suggestions
+  const loadWordRatings = useCallback(async () => {
+    if (!currentUser) return;
+    const { data } = await supabase
+      .from('weekly_suggestions')
+      .select('id, word, outcome')
+      .eq('user_id', currentUser.id)
+      .eq('week_start', formatDate(currentWeekStart));
+    const map = {};
+    (data || []).forEach((r) => {
+      map[r.word.toLowerCase()] = { id: r.id, outcome: r.outcome };
+    });
+    setWordRatings(map);
+  }, [currentUser, currentWeekStart]);
+
+  // Rate a backlog word mid-week — upserts a weekly_suggestions row so the
+  // autopilot's outcome signals include this feedback.
+  const rateWord = async (wp, outcome) => {
+    if (!currentUser) return;
+    const key = wp.word.toLowerCase();
+    setRatingWord(key);
+    try {
+      const existing = wordRatings[key];
+      if (existing?.id) {
+        await supabase
+          .from('weekly_suggestions')
+          .update({ outcome, outcome_noted_at: new Date().toISOString() })
+          .eq('id', existing.id);
+        setWordRatings((prev) => ({ ...prev, [key]: { id: existing.id, outcome } }));
+      } else {
+        const { data, error } = await supabase
+          .from('weekly_suggestions')
+          .insert({
+            user_id: currentUser.id,
+            week_start: formatDate(currentWeekStart),
+            word: wp.word,
+            category: wp.theme || null,
+            status: 'accepted',
+            outcome,
+            outcome_noted_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single();
+        if (error) throw error;
+        setWordRatings((prev) => ({ ...prev, [key]: { id: data.id, outcome } }));
+      }
+    } catch (err) {
+      console.error('Failed to rate word:', err);
+      toast.error('Could not save rating');
+    } finally {
+      setRatingWord(null);
+    }
+  };
+
   useEffect(() => {
     loadWordPlans();
     loadTrackingData();
     loadPendingSuggestions();
-  }, [loadWordPlans, loadTrackingData, loadPendingSuggestions]);
+    loadWordRatings();
+  }, [loadWordPlans, loadTrackingData, loadPendingSuggestions, loadWordRatings]);
 
   const fetchSwapAlternatives = async (suggestionId, word, category) => {
     if (swapAlternatives[suggestionId]) return; // already loaded
@@ -314,8 +372,9 @@ const WeeklyWordPlanner = () => {
     setCurrentWeekStart(getWeekStart(new Date()));
   };
 
-  // AI Suggestions - now shows cards for user to choose
-  const generateSuggestions = async () => {
+  // AI Suggestions — calls the autopilot, which writes a themed week of
+  // suggestions into weekly_suggestions for review.
+  const generateSuggestions = async (numSets = 1) => {
     setGeneratingSuggestions(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -324,19 +383,23 @@ const WeeklyWordPlanner = () => {
         return;
       }
 
-      const response = await supabase.functions.invoke('suggest-words', {
-        body: { weekStart: formatDate(currentWeekStart) },
+      const response = await supabase.functions.invoke('generate-autopilot-suggestions', {
+        body: { weekStart: formatDate(currentWeekStart), numSets },
       });
 
       if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
 
-      const suggestions = response.data?.suggestions || [];
-      setAiSuggestions(suggestions);
-      setShowSuggestions(true);
-
-      if (suggestions.length === 0) {
+      const count = response.data?.count || 0;
+      if (count === 0) {
         toast.info('No new suggestions at the moment.');
+      } else {
+        toast.success(`Sprouttie planned ${count} word${count === 1 ? '' : 's'} for this week 🌿`);
       }
+
+      await loadPendingSuggestions();
+      setShowSuggestions(false);
+      setAiSuggestions([]);
     } catch (error) {
       console.error('Error generating suggestions:', error);
       toast.error(error.message || 'Failed to generate suggestions');
@@ -421,7 +484,7 @@ const WeeklyWordPlanner = () => {
       {/* Action buttons row */}
       <div className="flex items-center gap-2">
         <button
-          onClick={generateSuggestions}
+          onClick={() => generateSuggestions(1)}
           disabled={generatingSuggestions}
           className="flex items-center gap-2 px-4 py-2.5 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
         >
@@ -470,6 +533,53 @@ const WeeklyWordPlanner = () => {
         </button>
       </div>
 
+      {/* Outcome review for last week's accepted words (feedback loop) */}
+      <WeeklyOutcomeReview currentWeekStart={currentWeekStart} />
+
+      {/* Empty-state CTA: Generate themed week with Sprouttie */}
+      {pendingSuggestions.length === 0 && !generatingSuggestions && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-br from-emerald-50 to-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl p-5"
+        >
+          <div className="flex items-start gap-3 mb-3">
+            <span className="text-2xl">🌿</span>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-display font-semibold text-[hsl(var(--foreground))] text-base">
+                Plan this week with Sprouttie
+              </h3>
+              <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 leading-relaxed">
+                Sprouttie reads your recent logs, your child's interests, and what worked last week — then proposes one themed set of words.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[1, 2, 3].map((n) => (
+              <button
+                key={n}
+                onClick={() => generateSuggestions(n)}
+                disabled={generatingSuggestions}
+                className="flex-1 min-w-[90px] py-2.5 px-3 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {n} set{n > 1 ? 's' : ''}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Loading state for autopilot generation */}
+      {generatingSuggestions && pendingSuggestions.length === 0 && (
+        <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl p-6 text-center">
+          <Loader2 className="w-6 h-6 animate-spin text-[hsl(var(--sprouttie-green))] mx-auto mb-2" />
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Sprouttie is reading your logs and picking a theme…
+          </p>
+        </div>
+      )}
+
       {/* This Week's Plan — auto-pilot review section */}
       <AnimatePresence>
         {pendingSuggestions.length > 0 && (
@@ -484,7 +594,13 @@ const WeeklyWordPlanner = () => {
                 <span>📋</span>
                 <span className="font-semibold text-sm text-emerald-900">This Week's Plan</span>
               </div>
-              <p className="text-xs text-emerald-700 mt-0.5">Auto-generated · Tap to swap any word</p>
+              {pendingSuggestions[0]?.theme ? (
+                <p className="text-xs text-emerald-700 mt-0.5">
+                  Theme: <strong>{pendingSuggestions[0].theme}</strong> · Tap to swap any word
+                </p>
+              ) : (
+                <p className="text-xs text-emerald-700 mt-0.5">Auto-generated · Tap to swap any word</p>
+              )}
             </div>
             <div className="divide-y divide-[hsl(var(--border))]">
               {pendingSuggestions.map((s) => (
@@ -830,15 +946,46 @@ const WeeklyWordPlanner = () => {
                       </span>
                     </div>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteWord(wp.id);
-                    }}
-                    className="p-1.5 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    {/* Mid-week reaction ratings */}
+                    {(() => {
+                      const key = wp.word.toLowerCase();
+                      const rating = wordRatings[key];
+                      const isRating = ratingWord === key;
+                      return (
+                        <>
+                          {['responded', 'partial', 'no_response'].map((outcome) => {
+                            const emoji = outcome === 'responded' ? '👍' : outcome === 'partial' ? '🤔' : '👎';
+                            const active = rating?.outcome === outcome;
+                            return (
+                              <button
+                                key={outcome}
+                                disabled={isRating}
+                                onClick={(e) => { e.stopPropagation(); rateWord(wp, outcome); }}
+                                className={`text-xs px-1.5 py-1 rounded-lg transition-colors disabled:opacity-50 ${
+                                  active
+                                    ? 'bg-[hsl(var(--sprouttie-green-light))] text-[hsl(var(--sprouttie-green-dark))] border border-[hsl(var(--sprouttie-green))]'
+                                    : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]'
+                                }`}
+                                title={outcome === 'responded' ? 'They responded' : outcome === 'partial' ? 'Some interest' : 'No response'}
+                              >
+                                {isRating && rating?.outcome !== outcome ? '' : emoji}
+                              </button>
+                            );
+                          })}
+                        </>
+                      );
+                    })()}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteWord(wp.id);
+                      }}
+                      className="p-1.5 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             );

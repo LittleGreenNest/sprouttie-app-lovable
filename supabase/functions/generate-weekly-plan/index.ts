@@ -105,8 +105,8 @@ serve(async (req) => {
     const newSpokenWords = spokenWords?.filter(w => w.word_stage === 'new') || [];
 
     // Build AI prompt
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is not configured');
 
     const childAge = profile?.child_age_band || '1-2';
     const targetLang = profile?.target_language || 'mandarin';
@@ -184,14 +184,14 @@ LAST WEEK ADHERENCE: ${daysCompleted} of 7 days completed
 
 Generate exactly ${setsPerDay} sets with exactly 5 words each. Maximum 1 phrase per set.`;
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${GEMINI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: 'gemini-2.5-flash-preview-04-17',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }

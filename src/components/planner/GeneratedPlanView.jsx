@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-toastify';
-import { Loader2, ChevronDown, ChevronUp, Plus, RefreshCw, X } from 'lucide-react';
+import { Loader2, Plus, X, Sparkles } from 'lucide-react';
 import {
   validatePlan,
   canRemoveWord,
   canAddToSet,
   formatWeekRange,
   getWeekStart,
-  getAdherenceSuggestion,
+  getSetsForTime,
   MAX_WORDS_PER_SET,
   MAX_PHRASES_PER_SET,
 } from '@/utils/planningEngine';
 
 const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
-  const { currentUser, profile } = useAuth();
+  const { currentUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState(null);
   const [planMeta, setPlanMeta] = useState(null);
@@ -24,40 +24,85 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
   const [adjusting, setAdjusting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [customWordInput, setCustomWordInput] = useState({ setIndex: null, word: '', back: '' });
+  const [numSets, setNumSets] = useState(1);
 
   const weekStart = getWeekStart();
 
   useEffect(() => {
-    generatePlan();
-  }, []);
+    let cancelled = false;
+    (async () => {
+      let initialNumSets = 1;
+      if (currentUser) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('daily_time_commitment')
+          .eq('id', currentUser.id)
+          .single();
+        initialNumSets = getSetsForTime(data?.daily_time_commitment);
+      }
+      if (cancelled) return;
+      setNumSets(initialNumSets);
+      generatePlan(initialNumSets);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
 
-  const generatePlan = async () => {
+  // Distribute the autopilot's flat list of words across sets round-robin.
+  const buildPlanFromAutopilot = (suggestions, theme, themeRationale, sets) => {
+    const safeSets = Math.max(1, Math.min(3, sets || 1));
+    const buckets = Array.from({ length: safeSets }, (_, i) => ({
+      set_number: i + 1,
+      words: [],
+    }));
+
+    (suggestions || []).slice(0, safeSets * MAX_WORDS_PER_SET).forEach((s, idx) => {
+      const word = {
+        word: s.word,
+        back: s.pinyin || '',
+        category: s.category || theme || 'Custom',
+        stage_icon: '🌱',
+        is_phrase: typeof s.word === 'string' && s.word.trim().split(/\s+/).length > 1,
+        reason: s.reason || null,
+        activity: s.activity || null,
+      };
+      buckets[idx % safeSets].words.push(word);
+    });
+
+    return { theme, theme_rationale: themeRationale, sets: buckets };
+  };
+
+  const generatePlan = async (sets = numSets) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await supabase.functions.invoke('generate-weekly-plan', {
-        body: { weekStart, isFirstPlan }
+      const response = await supabase.functions.invoke('generate-autopilot-suggestions', {
+        body: { weekStart, numSets: sets },
       });
 
       if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
 
-      if (response.data?.error) {
-        throw new Error(response.data.error);
+      const { suggestions = [], theme = null, theme_rationale = null } = response.data || {};
+
+      if (!suggestions.length) {
+        throw new Error("Sprouttie couldn't generate suggestions just yet — try again in a moment.");
       }
 
-      setPlan(response.data.plan);
-      setPlanMeta({
-        setsPerDay: response.data.setsPerDay,
-        isPreSpeech: response.data.isPreSpeech,
-        daysCompletedLastWeek: response.data.daysCompletedLastWeek,
-        weekStart: response.data.weekStart,
-      });
+      setPlan(buildPlanFromAutopilot(suggestions, theme, theme_rationale, sets));
+      setPlanMeta({ setsPerDay: sets, isPreSpeech: false, weekStart, theme, theme_rationale });
     } catch (err) {
       console.error('Failed to generate plan:', err);
       setError(err.message || 'Failed to generate your plan. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleChangeNumSets = (next) => {
+    if (next === numSets) return;
+    setNumSets(next);
+    generatePlan(next);
   };
 
   const handleStartWeek = async () => {
@@ -180,7 +225,6 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
     toast.success('Plan updated.');
   };
 
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center px-6">
@@ -191,24 +235,23 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
         >
           <Loader2 className="w-10 h-10 animate-spin text-[hsl(var(--sprouttie-green))] mx-auto mb-4" />
           <h2 className="text-xl font-display font-bold text-[hsl(var(--foreground))] mb-2">
-            {isFirstPlan ? 'Building your structured plan…' : 'Planning your week…'}
+            {isFirstPlan ? 'Building your first themed week…' : 'Reading the room…'}
           </h2>
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
-            Analysing vocabulary and creating your sets.
+            Sprouttie is checking your logs, interests and what worked last week.
           </p>
         </motion.div>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center px-6">
         <div className="text-center max-w-sm">
           <p className="text-[hsl(var(--destructive))] mb-4">{error}</p>
           <button
-            onClick={generatePlan}
+            onClick={() => generatePlan()}
             className="px-6 py-3 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl font-medium hover:opacity-90 transition-opacity"
           >
             Try Again
@@ -220,8 +263,7 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
 
   if (!plan?.sets) return null;
 
-  const validation = validatePlan(plan, planMeta?.setsPerDay || 3);
-  const adherence = getAdherenceSuggestion(planMeta?.daysCompletedLastWeek || 7);
+  const validation = validatePlan(plan, planMeta?.setsPerDay || 1);
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
@@ -231,58 +273,55 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
         animate={{ opacity: 1, y: 0 }}
         className="text-center"
       >
-        <p className="text-sm text-[hsl(var(--sprouttie-green))] font-medium mb-1">
-          {planMeta?.isPreSpeech ? 'Stage 1 Activation Plan' : '🌿 Weekly Plan'}
+        <p className="text-sm text-[hsl(var(--sprouttie-green))] font-medium mb-1 flex items-center justify-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5" />
+          Sprouttie's pick for this week
         </p>
         <h1 className="text-2xl font-display font-bold text-[hsl(var(--foreground))]">
           Week of {formatWeekRange(planMeta?.weekStart || weekStart)}
         </h1>
       </motion.div>
 
-      {/* Summary card */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl p-5"
-      >
-        <div className="text-sm text-[hsl(var(--foreground))] space-y-1.5">
-          <p className="font-medium">{plan.sets.length} Sets per Day</p>
-          <p>{MAX_WORDS_PER_SET} Words per Set</p>
-          <p>5-Day Exposure Cycle</p>
-        </div>
-        <div className="mt-3 pt-3 border-t border-[hsl(var(--border))] text-xs text-[hsl(var(--muted-foreground))] space-y-1">
-          <p>Structured for:</p>
-          <p>• {planMeta?.isPreSpeech ? 'Foundational vocabulary' : 'Ongoing stabilisation'}</p>
-          <p>• {planMeta?.isPreSpeech ? 'Stabilisation' : 'New vocabulary integration'}</p>
-          <p>• {planMeta?.isPreSpeech ? 'Gradual expansion' : 'Balanced category exposure'}</p>
-        </div>
-      </motion.div>
-
-      {/* Adherence note (only for non-first plans) */}
-      {!isFirstPlan && planMeta?.daysCompletedLastWeek !== undefined && (
+      {/* Theme banner */}
+      {plan.theme && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.15 }}
-          className="text-sm text-[hsl(var(--muted-foreground))] text-center"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-gradient-to-br from-emerald-50 to-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl p-5"
         >
-          Last week you completed: ✔ {planMeta.daysCompletedLastWeek} of 7 days
+          <p className="text-xs uppercase tracking-wide text-[hsl(var(--sprouttie-green))] font-semibold mb-1">
+            This week's theme
+          </p>
+          <h2 className="text-lg font-display font-bold text-[hsl(var(--foreground))] mb-1.5">
+            {plan.theme}
+          </h2>
+          {plan.theme_rationale && (
+            <p className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
+              {plan.theme_rationale}
+            </p>
+          )}
         </motion.div>
       )}
 
-      {/* Strategic signals */}
-      {plan.summary && (
-        <div className="flex justify-center gap-4 text-xs text-[hsl(var(--muted-foreground))]">
-          <span>Active: {plan.summary.active_words}</span>
-          {plan.summary.eligible_for_replacement > 0 && (
-            <span>Ready to replace: {plan.summary.eligible_for_replacement}</span>
-          )}
-          {plan.summary.stabilising_recently > 0 && (
-            <span>Stabilising: {plan.summary.stabilising_recently}</span>
-          )}
-        </div>
-      )}
+      {/* Sets-per-day toggle */}
+      <div className="flex items-center justify-center gap-2">
+        <span className="text-xs text-[hsl(var(--muted-foreground))]">Sets this week:</span>
+        {[1, 2, 3].map((n) => (
+          <button
+            key={n}
+            onClick={() => handleChangeNumSets(n)}
+            disabled={loading}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-all border ${
+              numSets === n
+                ? 'bg-[hsl(var(--sprouttie-green))] text-white border-[hsl(var(--sprouttie-green))]'
+                : 'bg-transparent text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]'
+            } disabled:opacity-50`}
+          >
+            {n} × 5
+          </button>
+        ))}
+      </div>
 
       {/* Set cards */}
       {plan.sets.map((set, setIndex) => (
@@ -295,37 +334,54 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
         >
           <div className="px-5 py-3 border-b border-[hsl(var(--border))] flex items-center justify-between">
             <h3 className="font-semibold text-[hsl(var(--foreground))]">Set {set.set_number}</h3>
-            <span className="text-xs text-[hsl(var(--muted-foreground))]">{set.words.length}/{MAX_WORDS_PER_SET}</span>
+            <span className="text-xs text-[hsl(var(--muted-foreground))]">
+              {set.words.length}/{MAX_WORDS_PER_SET}
+            </span>
           </div>
 
           <div className="divide-y divide-[hsl(var(--border))]">
             {set.words.map((word, wordIndex) => (
-              <div key={wordIndex} className="px-5 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-lg">{word.stage_icon}</span>
-                  <div>
-                    <span className="text-[hsl(var(--foreground))] font-medium">{word.word}</span>
-                    {word.back && (
-                      <span className="ml-2 text-xs text-[hsl(var(--muted-foreground))]">{word.back}</span>
-                    )}
-                    {word.is_phrase && (
-                      <span className="ml-2 text-[10px] bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] px-1.5 py-0.5 rounded">Phrase</span>
-                    )}
+              <div key={wordIndex} className="px-5 py-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <span className="text-lg leading-none mt-0.5">{word.stage_icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <span className="text-[hsl(var(--foreground))] font-medium">{word.word}</span>
+                        {word.back && (
+                          <span className="text-xs text-[hsl(var(--muted-foreground))]">{word.back}</span>
+                        )}
+                        {word.is_phrase && (
+                          <span className="text-[10px] bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] px-1.5 py-0.5 rounded">
+                            Phrase
+                          </span>
+                        )}
+                      </div>
+                      {word.reason && (
+                        <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 leading-relaxed">
+                          {word.reason}
+                        </p>
+                      )}
+                      {word.activity && (
+                        <p className="text-xs text-[hsl(var(--sprouttie-green))] mt-1.5 leading-relaxed">
+                          💡 {word.activity}
+                        </p>
+                      )}
+                    </div>
                   </div>
+                  {adjusting && (
+                    <button
+                      onClick={() => handleRemoveWord(setIndex, wordIndex)}
+                      className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors mt-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
-                {adjusting && (
-                  <button
-                    onClick={() => handleRemoveWord(setIndex, wordIndex)}
-                    className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
               </div>
             ))}
           </div>
 
-          {/* Add custom word (adjust mode) */}
           {adjusting && canAddToSet(set) && (
             <div className="px-5 py-3 border-t border-[hsl(var(--border))]">
               {customWordInput.setIndex === setIndex ? (
@@ -389,8 +445,16 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
         </button>
 
         <button
+          onClick={() => generatePlan()}
+          className="w-full py-2.5 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors flex items-center justify-center gap-1.5"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          Regenerate
+        </button>
+
+        <button
           onClick={() => setAdjusting(!adjusting)}
-          className="w-full py-2.5 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+          className="w-full py-2 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
         >
           {adjusting ? 'Done Adjusting' : 'Adjust Plan'}
         </button>
