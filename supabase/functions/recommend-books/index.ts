@@ -194,7 +194,7 @@ Respond with valid JSON only:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
         messages: [
           { role: "system", content: "You are a helpful children's book recommendation assistant. Always respond with valid JSON only." },
           { role: "user", content: prompt }

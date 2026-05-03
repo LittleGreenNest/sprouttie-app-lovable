@@ -329,7 +329,7 @@ Respond ONLY with a valid JSON array of EXACTLY 5 objects. No preamble, no markd
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gemini-2.0-flash",
+          model: "gemini-2.5-flash",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userMessage },

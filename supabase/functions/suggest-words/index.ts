@@ -218,7 +218,7 @@ Please suggest 10-15 words for the upcoming week, following the ${methodInfo.nam
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
