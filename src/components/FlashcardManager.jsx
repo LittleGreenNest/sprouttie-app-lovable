@@ -392,6 +392,7 @@ const FlashcardManager = () => {
   };
   
   const handleDeleteFlashcard = (flashcardId) => {
+    if (!window.confirm('Delete this flashcard?')) return;
     deleteFlashcard(flashcardId);
     showMessage('Flashcard deleted successfully');
   };

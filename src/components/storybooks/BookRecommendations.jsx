@@ -188,25 +188,14 @@ const BookRecommendations = () => {
   const { flashcards } = useFlashcards();
   const { isPlanAtLeast, loading: planLoading } = usePlanAccess();
 
-  if (!planLoading && !isPlanAtLeast('print')) {
-    return (
-      <UpgradePrompt
-        feature="Book Recommendations"
-        requiredPlan="print"
-        title="AI Book Recommendations"
-        description="Get personalised book suggestions matched to your child's vocabulary. Available on the Print Plan and above."
-      />
-    );
-  }
-
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [spokenWordsData, setSpokenWordsData] = useState([]);
   const [showWordSource, setShowWordSource] = useState(false);
   const [lastGenerated, setLastGenerated] = useState(null);
   const [generateCount, setGenerateCount] = useState(0);
-  const [feedbackMap, setFeedbackMap] = useState({});    // { bookTitle: 'up'|'down' }
-  const [excludeTitles, setExcludeTitles] = useState([]); // from DB
+  const [feedbackMap, setFeedbackMap] = useState({});
+  const [excludeTitles, setExcludeTitles] = useState([]);
 
   // Fetch spoken words + book history + existing feedback on mount
   useEffect(() => {
@@ -350,6 +339,17 @@ const BookRecommendations = () => {
       setLoading(false);
     }
   }, [allWords, detectedLanguages, generateCount, isMultilingual, feedbackMap, profile, spokenWordsData, flashcards, excludeTitles]);
+
+  if (!planLoading && !isPlanAtLeast('print')) {
+    return (
+      <UpgradePrompt
+        feature="Book Recommendations"
+        requiredPlan="print"
+        title="AI Book Recommendations"
+        description="Get personalised book suggestions matched to your child's vocabulary. Available on the Print Plan and above."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
