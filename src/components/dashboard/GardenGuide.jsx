@@ -148,6 +148,14 @@ const GardenGuide = () => {
             <p className="text-gray-700">
               {currentStreak} day streak • {GARDEN_STAGES[currentStageIndex].description}
             </p>
+            {currentStageIndex === 0 && (
+              <button
+                onClick={() => navigate('/daily-tracking')}
+                className="mt-2 text-sm font-medium text-sprouttie-green underline"
+              >
+                Start a flashcard session →
+              </button>
+            )}
           </div>
         </div>
       </motion.div>

@@ -8,7 +8,7 @@ const TABS = [
   { id: 'daily-tracking', label: 'Log', icon: CalendarCheck },
   { id: 'words-said', label: 'Words Said', icon: MessageCircle },
   { id: 'cards', label: 'Cards', icon: Layers },
-  { id: 'more', label: 'More', icon: MoreHorizontal },
+  { id: 'more', label: 'Explore', icon: MoreHorizontal },
 ];
 
 const MORE_ITEMS = [

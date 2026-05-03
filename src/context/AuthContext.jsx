@@ -235,7 +235,7 @@ export const AuthProvider = ({ children }) => {
   }, [currentUser?.id]);
 
   // Signup
-  const signup = async (email, password) => {
+  const signup = async (email, password, name) => {
     try {
       setLoading(true);
       setError("");
@@ -245,6 +245,7 @@ export const AuthProvider = ({ children }) => {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: { full_name: name || '' },
         },
       });
       if (signUpErr) throw signUpErr;

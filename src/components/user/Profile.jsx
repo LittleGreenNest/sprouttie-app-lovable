@@ -17,7 +17,7 @@ const TIME_LABELS = { '1-2': '1–2 minutes', '3-5': '3–5 minutes', '5-10': '5
 const Profile = () => {
   const { currentUser, profile, refreshProfile, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(currentUser?.user_metadata?.name || '');
+  const [name, setName] = useState(currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || '');
   const [email, setEmail] = useState(currentUser?.email || '');
   const [userPlan, setUserPlan] = useState(null);
   const [planLoading, setPlanLoading] = useState(true);
@@ -142,13 +142,12 @@ const Profile = () => {
     try {
       // Update Supabase auth user metadata
       const { data: updatedAuth, error: authErr } = await supabase.auth.updateUser({
-        data: { name }
+        data: { full_name: name }
       });
       if (authErr) throw authErr;
 
-      // Re-sync name state from the updated user to ensure UI reflects the change
-      if (updatedAuth?.user?.user_metadata?.name) {
-        setName(updatedAuth.user.user_metadata.name);
+      if (updatedAuth?.user?.user_metadata?.full_name !== undefined) {
+        setName(updatedAuth.user.user_metadata.full_name);
       }
 
       await refreshProfile(currentUser);
@@ -358,7 +357,7 @@ const Profile = () => {
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Full name</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {currentUser?.user_metadata?.name || 'Not provided'}
+                  {currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || 'Not provided'}
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">

@@ -698,7 +698,12 @@ const SessionLogTracker = () => {
                         <div style={{ padding: '10px 12px 12px 40px' }}>
                           <div className="flex flex-wrap gap-1.5">
                             {words.length === 0 && (
-                              <span style={{ fontSize: '13px', color: '#9CA3AF', fontStyle: 'italic' }}>No words in this set</span>
+                              <div style={{ width: '100%' }}>
+                                <span style={{ fontSize: '13px', color: '#9CA3AF', fontStyle: 'italic' }}>No words in this set</span>
+                                <a href="/cards" style={{ display: 'block', marginTop: '6px', fontSize: '12px', color: '#52B788', textDecoration: 'underline' }}>
+                                  Add words in Flashcard Manager →
+                                </a>
+                              </div>
                             )}
                             {words.map((word, idx) => {
                               let tagLabel = null;

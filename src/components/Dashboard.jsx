@@ -103,7 +103,7 @@ const Dashboard = () => {
   // ─── Derived data ───
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
-  const firstName = currentUser?.user_metadata?.name?.split(' ')[0] || profile?.email?.split('@')[0] || 'Friend';
+  const firstName = currentUser?.user_metadata?.full_name?.split(' ')[0] || currentUser?.user_metadata?.name?.split(' ')[0] || 'Friend';
   const childName = firstName !== 'Friend' ? `${firstName}'s child` : 'Your child';
 
   // Today's rounds from tracking data

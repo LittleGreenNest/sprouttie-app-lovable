@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
@@ -152,6 +153,7 @@ const WordCard = ({ word, index }) => {
 const WordJourney = () => {
   const { currentUser } = useAuth();
   const { sets, flashcards } = useFlashcards();
+  const navigate = useNavigate();
   const [trackingData, setTrackingData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -354,8 +356,15 @@ const WordJourney = () => {
       {/* Word list */}
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-slate-500">
-          <p className="text-lg mb-1">No words found</p>
-          <p className="text-sm">Start flashing cards to see your word journey! 🌱</p>
+          <p className="text-4xl mb-4">🌱</p>
+          <p className="text-lg font-medium text-slate-700 mb-1">Your journey starts here</p>
+          <p className="text-sm mb-4">Every word you flash will appear here, building into a map of your child's growing vocabulary.</p>
+          <button
+            onClick={() => navigate('/daily-tracking')}
+            className="inline-block px-4 py-2 bg-sprouttie-green text-white text-sm font-medium rounded-lg"
+          >
+            Start your first session →
+          </button>
         </div>
       ) : groupByFolder && groupedByFolder ? (
         <div className="space-y-4">

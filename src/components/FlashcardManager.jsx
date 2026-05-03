@@ -503,24 +503,26 @@ const FlashcardManager = () => {
       )}
 
       {/* Sub-Tabs */}
-      <div className="flex mb-6 border-b">
-        <button 
-          className={`px-4 py-2 ${activeTab === 'categories' ? 'bg-blue-100 border-b-2 border-blue-500 font-medium' : 'hover:bg-gray-100'}`}
-          onClick={() => setActiveTab('categories')}
-        >
-          Categories
-        </button>
-        <button 
-          className={`px-4 py-2 ${activeTab === 'flashcards' ? 'bg-blue-100 border-b-2 border-blue-500 font-medium' : 'hover:bg-gray-100'}`}
-          onClick={() => setActiveTab('flashcards')}
-        >
-          Flashcards
-        </button>
-        <button 
-          className={`px-4 py-2 ${activeTab === 'print-flashcards' ? 'bg-blue-100 border-b-2 border-blue-500 font-medium' : 'hover:bg-gray-100'}`}
+      <div className="flex items-center justify-between mb-6 border-b">
+        <div className="flex">
+          <button
+            className={`px-4 py-2 ${activeTab === 'categories' ? 'bg-blue-100 border-b-2 border-blue-500 font-medium' : 'hover:bg-gray-100'}`}
+            onClick={() => setActiveTab('categories')}
+          >
+            Categories
+          </button>
+          <button
+            className={`px-4 py-2 ${activeTab === 'flashcards' ? 'bg-blue-100 border-b-2 border-blue-500 font-medium' : 'hover:bg-gray-100'}`}
+            onClick={() => setActiveTab('flashcards')}
+          >
+            Flashcards
+          </button>
+        </div>
+        <button
+          className="flex items-center gap-1.5 px-3 py-1.5 mb-1 text-sm font-medium text-sprouttie-green border border-sprouttie-green rounded-lg hover:bg-sprouttie-mint/30 transition-colors"
           onClick={() => setActiveTab('print-flashcards')}
         >
-          Print Flashcards
+          🖨️ Print
         </button>
       </div>
       

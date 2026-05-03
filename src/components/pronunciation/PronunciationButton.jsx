@@ -117,7 +117,7 @@ const PronunciationButton = ({
             title={isAiGenerated ? 'AI-generated audio' : 'Human-recorded audio'}
           >
             {isAiGenerated ? (
-              <Sparkles className="w-2 h-2 text-purple-500" />
+              <Sparkles className="w-2 h-2 text-[hsl(var(--sprouttie-green))]" />
             ) : (
               <Mic className="w-2 h-2 text-blue-500" />
             )}
