@@ -329,7 +329,7 @@ Respond ONLY with a valid JSON array of EXACTLY 5 objects. No preamble, no markd
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gemini-2.5-flash-preview-04-17",
+          model: "gemini-2.0-flash",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userMessage },
@@ -355,7 +355,7 @@ Respond ONLY with a valid JSON array of EXACTLY 5 objects. No preamble, no markd
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      throw new Error("AI call failed");
+      throw new Error(`AI call failed: ${aiResponse.status} ${errText}`);
     }
 
     const aiData = await aiResponse.json();

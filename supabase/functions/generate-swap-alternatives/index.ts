@@ -70,7 +70,7 @@ Return exactly 3 alternative words as a JSON array of strings. No other text. Ex
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gemini-2.5-flash-preview-04-17",
+          model: "gemini-2.0-flash",
           messages: [
             {
               role: "system",

@@ -191,7 +191,7 @@ Generate exactly ${setsPerDay} sets with exactly 5 words each. Maximum 1 phrase 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gemini-2.5-flash-preview-04-17',
+        model: 'gemini-2.0-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
