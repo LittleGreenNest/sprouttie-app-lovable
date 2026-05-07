@@ -20,7 +20,7 @@ const SET_COLORS = [
 
 const SessionLogTracker = () => {
   const { currentUser } = useAuth();
-  const { sets, flashcards, getFlashcardsForSet, updateSetFlashcards, categories, refreshFlashcards, addFlashcard } = useFlashcards();
+  const { sets, flashcards, getFlashcardsForSet, updateSetFlashcards, categories, refreshFlashcards, addFlashcard, loading: flashcardsLoading } = useFlashcards();
 
   // Date state
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -504,7 +504,7 @@ const SessionLogTracker = () => {
     );
   }
 
-  if (loading) {
+  if (loading || flashcardsLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2" style={{ borderColor: '#2D6A4F' }} />

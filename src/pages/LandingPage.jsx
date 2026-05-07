@@ -3,6 +3,97 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
+const PhoneMockup = () => (
+  <div style={{
+    width: 220, flexShrink: 0,
+    background: '#111', borderRadius: 36, padding: 3,
+    boxShadow: '0 32px 64px rgba(0,0,0,0.22), 0 0 0 1px rgba(255,255,255,0.08)',
+  }}>
+    {/* Screen */}
+    <div style={{ background: '#fff', borderRadius: 33, overflow: 'hidden', position: 'relative' }}>
+      {/* Dynamic island */}
+      <div style={{ background: '#111', height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 72, height: 14, background: '#000', borderRadius: 9 }} />
+      </div>
+
+      {/* Navbar */}
+      <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6, borderBottom: '0.5px solid #F3F4F6' }}>
+        <div style={{ width: 20, height: 20, background: '#D1FAE5', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>🌱</div>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#166534', fontFamily: 'DM Serif Display, serif' }}>Sprouttie</span>
+      </div>
+
+      {/* Dashboard content */}
+      <div style={{ padding: '10px 10px 0', fontSize: 10 }}>
+        {/* Greeting */}
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontWeight: 600, color: '#111827', fontSize: 11 }}>Hi Sarah 👋</div>
+          <div style={{ color: '#9CA3AF', fontSize: 9 }}>Thursday · May 8</div>
+        </div>
+
+        {/* Today's Focus */}
+        <div style={{ background: '#2D6A4F', borderRadius: 10, padding: '8px 10px', marginBottom: 6 }}>
+          <div style={{ fontSize: 7, fontWeight: 600, letterSpacing: '0.06em', color: '#95D5B2', textTransform: 'uppercase', marginBottom: 5 }}>Today's Focus</div>
+          {[
+            'Animals · 12 words due',
+            'Last session: today ✓',
+            '2 / 3 rounds done',
+          ].map(t => (
+            <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+              <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#95D5B2', flexShrink: 0 }} />
+              <span style={{ fontSize: 8, color: '#D8F3DC' }}>{t}</span>
+            </div>
+          ))}
+          <div style={{ marginTop: 6, background: '#52B788', borderRadius: 6, padding: '5px 0', textAlign: 'center', fontSize: 8, fontWeight: 600, color: '#fff' }}>
+            Start Flashcard Session
+          </div>
+        </div>
+
+        {/* Words card */}
+        <div style={{ border: '0.5px solid #E5E7EB', borderRadius: 10, padding: '7px 8px', marginBottom: 6 }}>
+          <div style={{ fontSize: 8, fontWeight: 500, color: '#1F2937', marginBottom: 5 }}>Mia's words this month</div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {[['8','sprouting','#F0FDF4','#2D6A4F'],['14','growing','#FFFBEB','#92400E'],['32','owned','#F0FDF4','#065F46']].map(([n,l,bg,c]) => (
+              <div key={l} style={{ flex: 1, background: bg, borderRadius: 6, padding: '4px 2px', textAlign: 'center' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: c, lineHeight: 1 }}>{n}</div>
+                <div style={{ fontSize: 7, color: '#6B7280', marginTop: 1 }}>{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Flashcard sets */}
+        <div style={{ border: '0.5px solid #E5E7EB', borderRadius: 10, padding: '7px 8px', marginBottom: 6 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+            <span style={{ fontSize: 8, fontWeight: 500, color: '#1F2937' }}>Flashcard sets</span>
+            <span style={{ fontSize: 7, color: '#9CA3AF' }}>46 flashed</span>
+          </div>
+          {[['Animals','#7B61FF',78],['Colours','#F59E0B',52],['Body Parts','#3B82F6',33]].map(([name, col, pct]) => (
+            <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+              <div style={{ width: 12, height: 12, borderRadius: '50%', background: col, fontSize: 6, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 700 }}>
+                {name[0]}
+              </div>
+              <div style={{ flex: 1, height: 3, background: '#E5E7EB', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ width: `${pct}%`, height: '100%', background: '#52B788' }} />
+              </div>
+              <span style={{ fontSize: 7, color: '#9CA3AF', minWidth: 16, textAlign: 'right' }}>{pct}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom tab bar */}
+      <div style={{ borderTop: '0.5px solid #F3F4F6', padding: '6px 0 10px', display: 'flex', justifyContent: 'space-around' }}>
+        {[['🏠','Home',true],['📋','Log',false],['💬','Words',false],['🃏','Cards',false]].map(([icon,label,active]) => (
+          <div key={label} style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 12 }}>{icon}</div>
+            <div style={{ fontSize: 7, color: active ? '#2D6A4F' : '#9CA3AF', fontWeight: active ? 600 : 400 }}>{label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
 const fade = {
   hidden: { opacity: 0, y: 20 },
   visible: (i = 0) => ({
@@ -49,23 +140,6 @@ const FEATURES = [
   },
 ];
 
-const TESTIMONIALS = [
-  {
-    quote: "Sprouttie made our bilingual journey feel manageable instead of overwhelming. My daughter's Mandarin vocabulary doubled in two months!",
-    author: 'Sarah L.',
-    role: 'Parent of a 3-year-old',
-  },
-  {
-    quote: "I love how it doesn't pressure you. Missing a day doesn't feel like failure — you just pick up where you left off.",
-    author: 'James T.',
-    role: 'Parent of twins, age 2',
-  },
-  {
-    quote: "The session log is a game-changer. I can finally see what we've covered and adjust our approach based on real data.",
-    author: 'Michelle K.',
-    role: 'Homeschooling parent',
-  },
-];
 
 const LandingPage = () => {
   const { currentUser } = useAuth();
@@ -141,12 +215,15 @@ const LandingPage = () => {
             </motion.p>
           </div>
 
-          <motion.div variants={fade} initial="hidden" animate="visible" custom={2} className="flex justify-center sm:justify-end">
+          <motion.div variants={fade} initial="hidden" animate="visible" custom={2} className="flex justify-center sm:justify-end items-start relative">
+            {/* Mascot floating behind the phone */}
             <img
               src="/images/sprouttie-mascot.png"
-              alt="Sprouttie mascot"
-              className="h-44 sm:h-56 drop-shadow-lg"
+              alt=""
+              aria-hidden="true"
+              className="absolute -top-6 -right-4 h-16 drop-shadow-md opacity-90 -scale-x-100 hidden sm:block"
             />
+            <PhoneMockup />
           </motion.div>
         </div>
       </section>
@@ -222,38 +299,36 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Testimonials — Dark section */}
+      {/* Testimonial — Dark section */}
       <section className="py-16 sm:py-24 px-5 bg-[hsl(var(--sprouttie-ink))] relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full bg-[hsl(var(--sprouttie-green)/0.08)] blur-[80px]" />
-        <div className="max-w-5xl mx-auto relative">
+        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] rounded-full bg-[hsl(var(--sprouttie-coral)/0.05)] blur-[80px]" />
+        <div className="max-w-3xl mx-auto relative text-center">
           <motion.p variants={fade} initial="hidden" whileInView="visible" viewport={{ once: true }}
-            className="font-body text-xs font-semibold tracking-widest uppercase text-[hsl(var(--sprouttie-coral))] mb-2">
+            className="font-body text-xs font-semibold tracking-widest uppercase text-[hsl(var(--sprouttie-coral))] mb-10">
             From our community
           </motion.p>
-          <motion.h2 variants={fade} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={1}
-            className="font-display text-3xl sm:text-4xl text-white mb-12">
-            What parents say
-          </motion.h2>
-
-          <div className="grid sm:grid-cols-3 gap-4">
-            {TESTIMONIALS.map((t, i) => (
-              <motion.blockquote
-                key={i}
-                variants={fade}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                custom={i}
-                className="rounded-2xl p-6 bg-white/[0.06] backdrop-blur-sm border border-white/[0.08]"
-              >
-                <p className="font-body text-sm text-white/75 leading-relaxed mb-5">"{t.quote}"</p>
-                <footer>
-                  <div className="font-body font-semibold text-white text-sm">{t.author}</div>
-                  <div className="font-body text-xs text-white/40">{t.role}</div>
-                </footer>
-              </motion.blockquote>
-            ))}
-          </div>
+          <motion.blockquote
+            variants={fade}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={1}
+          >
+            <div className="text-[hsl(var(--sprouttie-green))] text-5xl font-display leading-none mb-4 opacity-60">"</div>
+            <p className="font-display text-xl sm:text-2xl text-white leading-relaxed mb-8 italic">
+              Sprouttie has helped me effectively plan flashcard sessions for my kids and keep track of everything better. It is also a great way to introduce Chinese words to them!
+            </p>
+            <footer className="flex items-center justify-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-[hsl(var(--sprouttie-green)/0.3)] flex items-center justify-center text-sm font-semibold text-[hsl(var(--sprouttie-green))]">
+                C
+              </div>
+              <div className="text-left">
+                <div className="font-body font-semibold text-white text-sm">Cyrena C.</div>
+                <div className="font-body text-xs text-white/40">Parent of 2 · Singapore</div>
+              </div>
+            </footer>
+          </motion.blockquote>
         </div>
       </section>
 

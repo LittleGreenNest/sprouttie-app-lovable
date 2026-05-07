@@ -94,10 +94,16 @@ const PhotoScanner = () => {
     // Enforce limit
     const fileList = Array.from(files).slice(0, maxImages);
 
-    // For single image, show preview
+    // For single image, show preview using data URL (blob URLs can fail in some PWA/browser contexts)
     const firstFile = fileList[0];
     const isPdf = firstFile.type === 'application/pdf';
-    setPreviewUrl(fileList.length === 1 && !isPdf ? URL.createObjectURL(firstFile) : null);
+    if (fileList.length === 1 && !isPdf) {
+      const reader = new FileReader();
+      reader.onload = (e) => setPreviewUrl(e.target.result);
+      reader.readAsDataURL(firstFile);
+    } else {
+      setPreviewUrl(null);
+    }
     setStep(STEPS.SCANNING);
     setAiMessage('');
     setScanningProgress(fileList.length > 1 ? `Scanning image 1 of ${fileList.length}...` : (isPdf ? 'Loading PDF...' : ''));

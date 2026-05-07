@@ -170,27 +170,46 @@ const Dashboard = () => {
           TODAY'S FOCUS
         </p>
 
-        {/* Status lines */}
-        <StatusLine dotColor="#95D5B2" text={dueSetText} />
-        <StatusLine dotColor="#95D5B2" text={lastSessionText} />
-        <StatusLine dotColor="#52B788" text={
-          todayRoundsDone >= totalPossibleRounds && todayRoundsDone > 0
-            ? 'All rounds done today ✓'
-            : `${todayRoundsDone} / ${totalPossibleRounds} rounds done today`
-        } />
-
-        <div style={{ marginTop: 14 }}>
-          <button
-            onClick={() => navigate('/daily-tracking')}
-            className="w-full active:scale-[0.98] transition-transform"
-            style={{
-              background: '#52B788', border: 'none', borderRadius: 10,
-              padding: 12, fontSize: 14, fontWeight: 500, color: 'white', cursor: 'pointer'
-            }}
-          >
-            Start Flashcard Session
-          </button>
-        </div>
+        {sets.length === 0 ? (
+          <>
+            <StatusLine dotColor="#95D5B2" text="You're all set up — now add your first flashcard set" />
+            <StatusLine dotColor="#52B788" text="Takes less than 2 minutes to get started" />
+            <div style={{ marginTop: 14 }}>
+              <button
+                onClick={() => navigate('/cards')}
+                className="w-full active:scale-[0.98] transition-transform"
+                style={{
+                  background: '#52B788', border: 'none', borderRadius: 10,
+                  padding: 12, fontSize: 14, fontWeight: 500, color: 'white', cursor: 'pointer'
+                }}
+              >
+                Add Your First Flashcard Set
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <StatusLine dotColor="#95D5B2" text={dueSetText} />
+            <StatusLine dotColor="#95D5B2" text={lastSessionText} />
+            <StatusLine dotColor="#52B788" text={
+              todayRoundsDone >= totalPossibleRounds && todayRoundsDone > 0
+                ? 'All rounds done today ✓'
+                : `${todayRoundsDone} / ${totalPossibleRounds} rounds done today`
+            } />
+            <div style={{ marginTop: 14 }}>
+              <button
+                onClick={() => navigate('/daily-tracking')}
+                className="w-full active:scale-[0.98] transition-transform"
+                style={{
+                  background: '#52B788', border: 'none', borderRadius: 10,
+                  padding: 12, fontSize: 14, fontWeight: 500, color: 'white', cursor: 'pointer'
+                }}
+              >
+                Start Flashcard Session
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* 4. CHILD'S WORDS CARD */}
@@ -296,7 +315,7 @@ const Dashboard = () => {
 
       {/* 6. FLASHCARD SETS CARD */}
       <button
-        onClick={() => navigate('/words-said')}
+        onClick={() => navigate('/cards')}
         className="block w-full text-left mx-4 mb-3 active:scale-[0.98] transition-transform"
         style={{
           background: 'white', border: '0.5px solid #E5E7EB', borderRadius: 16,
@@ -308,28 +327,46 @@ const Dashboard = () => {
           <span style={{ fontSize: 11, fontWeight: 400, color: '#9CA3AF' }}>{totalFlashed} words flashed</span>
         </div>
 
-        <div className="flex flex-col gap-2">
-          {sets.map((set, i) => {
-            const data = flashedPerSet[i];
-            const pct = data.total > 0 ? (data.flashed / data.total) * 100 : 0;
-            const isEmpty = data.total === 0;
-            return (
-              <div key={set.id} className="flex items-center gap-2.5" style={{ opacity: isEmpty ? 0.4 : 1 }}>
-                <div className="flex-shrink-0 flex items-center justify-center rounded-full" style={{
-                  width: 18, height: 18, background: SET_COLORS[i], fontSize: 9, fontWeight: 600, color: 'white'
-                }}>
-                  {i + 1}
+        {sets.length === 0 ? (
+          <div className="flex flex-col items-center py-2 gap-2">
+            <p style={{ fontSize: 12, color: '#9CA3AF', textAlign: 'center' }}>
+              No flashcard sets yet
+            </p>
+            <button
+              onClick={(e) => { e.stopPropagation(); navigate('/cards'); }}
+              style={{
+                fontSize: 12, fontWeight: 500, color: '#2D6A4F',
+                background: '#F0FDF4', border: '1px solid #BBF7D0',
+                borderRadius: 8, padding: '6px 14px', cursor: 'pointer'
+              }}
+            >
+              Create your first set →
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {sets.map((set, i) => {
+              const data = flashedPerSet[i];
+              const pct = data.total > 0 ? (data.flashed / data.total) * 100 : 0;
+              const isEmpty = data.total === 0;
+              return (
+                <div key={set.id} className="flex items-center gap-2.5" style={{ opacity: isEmpty ? 0.4 : 1 }}>
+                  <div className="flex-shrink-0 flex items-center justify-center rounded-full" style={{
+                    width: 18, height: 18, background: SET_COLORS[i], fontSize: 9, fontWeight: 600, color: 'white'
+                  }}>
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 rounded-sm overflow-hidden" style={{ height: 4, background: '#E5E7EB' }}>
+                    <div style={{ width: `${pct}%`, height: '100%', background: '#52B788', borderRadius: 2 }} />
+                  </div>
+                  <span className="flex-shrink-0" style={{ fontSize: 11, fontWeight: 400, color: '#9CA3AF', minWidth: 28, textAlign: 'right' }}>
+                    {data.flashed}/{data.total}
+                  </span>
                 </div>
-                <div className="flex-1 rounded-sm overflow-hidden" style={{ height: 4, background: '#E5E7EB' }}>
-                  <div style={{ width: `${pct}%`, height: '100%', background: '#52B788', borderRadius: 2 }} />
-                </div>
-                <span className="flex-shrink-0" style={{ fontSize: 11, fontWeight: 400, color: '#9CA3AF', minWidth: 28, textAlign: 'right' }}>
-                  {data.flashed}/{data.total}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </button>
 
       {/* 6.5. WEEKLY SUMMARY CARD */}
@@ -482,6 +519,8 @@ function getLastSessionText(lastDate, todayStr) {
 }
 
 function getDueSetText(sets, flashcards, trackingData, todayStr) {
+  if (sets.length === 0) return 'Add your first flashcard set to begin';
+
   const todayTracking = trackingData.filter(t => t.date === todayStr && t.status === 'flashed');
   const flashedToday = new Set(todayTracking.map(t => t.flashcard_id));
 
