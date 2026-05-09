@@ -71,10 +71,10 @@ const Profile = () => {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('plan, subscription_status, current_period_end')
+          .select('plan, subscription_status')
           .eq('id', currentUser.id)
           .single();
-          
+
         if (error) {
           console.error('Error fetching user plan:', error);
         } else if (data) {
@@ -95,19 +95,19 @@ const Profile = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const paymentStatus = urlParams.get('payment');
     const plan = urlParams.get('plan');
-    
+
     if (paymentStatus === 'success' && plan) {
-      
+
       // Clear URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
-      
+
       // Wait a bit for webhook to process, then refresh plan
       setTimeout(() => {
         const fetchUpdatedPlan = async () => {
           try {
             const { data, error } = await supabase
               .from('profiles')
-              .select('plan, subscription_status, current_period_end')
+              .select('plan, subscription_status')
               .eq('id', currentUser.id)
               .single();
               
