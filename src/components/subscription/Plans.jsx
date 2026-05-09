@@ -9,8 +9,8 @@ import WaitlistForm from '../WaitlistForm';
 const PLANS = [
   {
     name: 'Free',
-    priceMonthly: '$0',
-    priceYearly: '$0',
+    priceMonthly: 'Free',
+    priceYearly: 'Free',
     description: 'Get started with the basics',
     features: ['Up to 50 flashcards', 'Flash history', 'Organise flashcard folders', 'Session logging'],
     planKey: 'free',
@@ -29,8 +29,8 @@ const PLANS = [
   },
   {
     name: 'Pro Sprout',
-    priceMonthly: '$7',
-    priceYearly: '$59',
+    priceMonthly: 'SGD 7',
+    priceYearly: 'SGD 59',
     description: 'Premium for growing families',
     features: ['Everything in Print Plan', 'Multi-child profiles', 'Voice training for parents', 'Unlimited AI story generation', 'Priority support'],
     planKey: 'pro',
