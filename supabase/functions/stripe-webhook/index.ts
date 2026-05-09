@@ -46,7 +46,7 @@ serve(async (req) => {
         const planKey = session.metadata?.plan_key;
 
         if (userId && planKey) {
-          await supabaseAdmin
+          const { error: updateError } = await supabaseAdmin
             .from('profiles')
             .update({
               plan: planKey,
@@ -56,7 +56,13 @@ serve(async (req) => {
             })
             .eq('id', userId);
 
+          if (updateError) {
+            console.error(`Failed to update profile for user ${userId}:`, updateError.message);
+            throw new Error(`Profile update failed: ${updateError.message}`);
+          }
           console.log(`Updated user ${userId} to plan ${planKey}`);
+        } else {
+          console.error('Missing metadata — userId:', userId, 'planKey:', planKey);
         }
         break;
       }
