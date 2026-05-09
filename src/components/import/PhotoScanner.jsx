@@ -74,13 +74,13 @@ const PhotoScanner = () => {
         if (data.words?.length) words.push(...data.words);
       }
     } else {
-      const buffer = await file.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      let binary = '';
-      for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64 = btoa(binary);
+      // Use FileReader for efficient base64 encoding (avoids O(n²) string concat for large photos)
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
       const data = await scanImage(base64, file.type || 'image/jpeg');
       if (data.message) message = data.message;
       words = data.words || [];

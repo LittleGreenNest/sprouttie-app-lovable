@@ -184,105 +184,39 @@ LAST WEEK ADHERENCE: ${daysCompleted} of 7 days completed
 
 Generate exactly ${setsPerDay} sets with exactly 5 words each. Maximum 1 phrase per set.`;
 
-    const aiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GEMINI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "generate_weekly_plan",
-              description: "Generate a structured weekly flashcard plan",
-              parameters: {
-                type: "object",
-                properties: {
-                  sets: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        set_number: { type: "integer" },
-                        words: {
-                          type: "array",
-                          items: {
-                            type: "object",
-                            properties: {
-                              word: { type: "string" },
-                              back: { type: "string" },
-                              category: { type: "string" },
-                              stage_icon: { type: "string", enum: ["🌱", "🌿", "🌳"] },
-                              is_phrase: { type: "boolean" },
-                              reason: { type: "string" }
-                            },
-                            required: ["word", "back", "category", "stage_icon", "is_phrase", "reason"]
-                          }
-                        }
-                      },
-                      required: ["set_number", "words"]
-                    }
-                  },
-                  summary: {
-                    type: "object",
-                    properties: {
-                      active_words: { type: "integer" },
-                      eligible_for_replacement: { type: "integer" },
-                      stabilising_recently: { type: "integer" }
-                    },
-                    required: ["active_words", "eligible_for_replacement", "stabilising_recently"]
-                  }
-                },
-                required: ["sets", "summary"]
-              }
-            }
-          }
-        ],
-        tool_choice: { type: "function", function: { name: "generate_weekly_plan" } }
-      }),
-    });
+    const aiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+          generation_config: { response_mime_type: 'application/json', temperature: 0.4 },
+        }),
+      }
+    );
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('AI gateway error:', aiResponse.status, errorText);
+      console.error('Gemini API error:', aiResponse.status, errorText);
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
           status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: 'AI usage limit reached. Please add credits.' }), {
-          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      throw new Error('AI gateway error');
+      throw new Error('Gemini API error');
     }
 
     const aiData = await aiResponse.json();
+    const rawPlanContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    // Extract from tool call response
     let plan;
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    if (toolCall?.function?.arguments) {
-      plan = typeof toolCall.function.arguments === 'string'
-        ? JSON.parse(toolCall.function.arguments)
-        : toolCall.function.arguments;
-    } else {
-      // Fallback: try parsing from content
-      const content = aiData.choices?.[0]?.message?.content || '';
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        plan = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('Failed to parse plan from AI response');
-      }
+    try {
+      const jsonMatch = rawPlanContent.match(/\{[\s\S]*\}/);
+      plan = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(rawPlanContent);
+    } catch {
+      throw new Error('Failed to parse plan from AI response');
     }
 
     // Validate plan structure

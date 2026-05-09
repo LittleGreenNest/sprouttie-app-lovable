@@ -6,6 +6,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const GEMINI_MODEL = "gemini-2.5-flash";
+
 const TEXT_SYSTEM_PROMPT = `You are a word extractor for a bilingual Chinese-English learning app for young children.
 
 The user will send you a photo that may contain Chinese words, English words, or both. This could be physical flashcards, educational toys, puzzles, posters, book pages, packaging, or any object with text on it.
@@ -81,61 +83,54 @@ serve(async (req) => {
       ? "Please look at this photo and identify the main objects, animals, or items visible. Return the Chinese word, pinyin, and English for each."
       : "Please scan this photo and extract all the words you can see — both Chinese and English. This could be flashcards, a toy, a puzzle, a poster, or any object with text. For English-only words, provide the Chinese translation too.";
 
+    // Use native Gemini generateContent API (more stable than OpenAI-compat shim)
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${GEMINI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "gemini-2.5-flash",
-          messages: [
-            { role: "system", content: systemPrompt },
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [
             {
               role: "user",
-              content: [
-                { type: "text", text: userText },
+              parts: [
+                { text: userText },
                 {
-                  type: "image_url",
-                  image_url: {
-                    url: `data:${mimeType || "image/jpeg"};base64,${imageBase64}`,
+                  inline_data: {
+                    mime_type: mimeType || "image/jpeg",
+                    data: imageBase64,
                   },
                 },
               ],
             },
           ],
+          generation_config: {
+            response_mime_type: "application/json",
+            temperature: 0.2,
+          },
         }),
       }
     );
 
     if (!response.ok) {
+      const errText = await response.text();
+      console.error("Gemini API error:", response.status, errText);
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI usage limit reached. Please add credits." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const errText = await response.text();
-      console.error("AI gateway error:", response.status, errText);
-      throw new Error(`AI gateway error: ${response.status}`);
+      throw new Error(`Gemini API error: ${response.status} — ${errText}`);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-    let jsonStr = content;
+    let jsonStr = content.trim();
     const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-      jsonStr = jsonMatch[1].trim();
-    }
+    if (jsonMatch) jsonStr = jsonMatch[1].trim();
 
     let parsed;
     try {

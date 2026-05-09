@@ -321,45 +321,32 @@ Respond ONLY with a valid JSON array of EXACTLY 5 objects. No preamble, no markd
 ]`;
 
     const aiResponse = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${GEMINI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "gemini-2.5-flash",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userMessage },
-          ],
-          temperature: 0.95,
-          top_p: 0.95,
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: "user", parts: [{ text: userMessage }] }],
+          generation_config: { response_mime_type: "application/json", temperature: 0.95 },
         }),
       }
     );
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, errText);
+      console.error("Gemini API error:", aiResponse.status, errText);
       if (aiResponse.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limited. Please try again in a moment." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add funds." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
       throw new Error(`AI call failed: ${aiResponse.status} ${errText}`);
     }
 
     const aiData = await aiResponse.json();
-    let rawContent = aiData.choices?.[0]?.message?.content || "";
+    let rawContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
     rawContent = rawContent.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
 
     let suggestions: any[];

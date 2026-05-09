@@ -78,78 +78,33 @@ Return ONLY the JSON object, no markdown, no explanation.`;
         };
 
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${GEMINI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "gemini-2.5-flash",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: word.trim() },
-          ],
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "provide_translation",
-                description: isEnglishToChinese
-                  ? "Provide the Chinese characters, pinyin, and English for an English word"
-                  : "Provide the English meaning and pinyin for a Chinese word",
-                parameters: toolParams,
-              },
-            },
-          ],
-          tool_choice: {
-            type: "function",
-            function: { name: "provide_translation" },
-          },
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: "user", parts: [{ text: word.trim() }] }],
+          generation_config: { response_mime_type: "application/json", temperature: 0.2 },
         }),
       }
     );
 
     if (!response.ok) {
+      const text = await response.text();
+      console.error("Gemini API error:", response.status, text);
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limited, please try again shortly." }),
-          {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted." }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-      const text = await response.text();
-      console.error("AI gateway error:", response.status, text);
-      throw new Error("AI gateway error");
+      throw new Error("Gemini API error");
     }
 
     const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-
-    if (toolCall?.function?.arguments) {
-      const result = JSON.parse(toolCall.function.arguments);
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Fallback: try to parse from content
-    const content = data.choices?.[0]?.message?.content || "";
-    const parsed = JSON.parse(
-      content.replace(/```json?\n?/g, "").replace(/```/g, "").trim()
-    );
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const parsed = JSON.parse(content.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

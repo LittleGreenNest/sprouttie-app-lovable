@@ -62,30 +62,21 @@ Words already in the child's sets (avoid these): ${existingWords.slice(0, 30).jo
 Return exactly 3 alternative words as a JSON array of strings. No other text. Example: ["word1", "word2", "word3"]`;
 
     const aiResponse = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${GEMINI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "gemini-2.5-flash",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are Sprouttie, a language strategist for babies and toddlers. Suggest developmentally appropriate vocabulary alternatives. Respond ONLY with a JSON array of 3 strings. No markdown, no explanation.",
-            },
-            { role: "user", content: userMessage },
-          ],
+          system_instruction: { parts: [{ text: "You are Sprouttie, a language strategist for babies and toddlers. Suggest developmentally appropriate vocabulary alternatives. Respond ONLY with a JSON array of 3 strings. No markdown, no explanation." }] },
+          contents: [{ role: "user", parts: [{ text: userMessage }] }],
+          generation_config: { response_mime_type: "application/json", temperature: 0.5 },
         }),
       }
     );
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, errText);
+      console.error("Gemini API error:", aiResponse.status, errText);
       if (aiResponse.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limited. Try again in a moment." }),
@@ -96,7 +87,7 @@ Return exactly 3 alternative words as a JSON array of strings. No other text. Ex
     }
 
     const aiData = await aiResponse.json();
-    let rawContent = aiData.choices?.[0]?.message?.content || "";
+    let rawContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
     rawContent = rawContent.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
 
     let alternatives: string[];

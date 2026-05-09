@@ -211,42 +211,32 @@ ${context.existingPlanWords.length > 0 ? context.existingPlanWords.join(', ') : 
 
 Please suggest 10-15 words for the upcoming week, following the ${methodInfo.name} principles.`;
 
-    const aiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GEMINI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-      }),
-    });
+    const aiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+          generation_config: { response_mime_type: 'application/json', temperature: 0.5 },
+        }),
+      }
+    );
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('AI gateway error:', aiResponse.status, errorText);
-      
+      console.error('Gemini API error:', aiResponse.status, errorText);
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: 'AI usage limit reached. Please try again later.' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      throw new Error('AI gateway error');
+      throw new Error('Gemini API error');
     }
 
     const aiData = await aiResponse.json();
-    const content = aiData.choices?.[0]?.message?.content;
+    const content = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (!content) {
       throw new Error('No content in AI response');
