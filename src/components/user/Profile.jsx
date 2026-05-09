@@ -201,7 +201,6 @@ const Profile = () => {
 
     const plan = userPlan?.plan || 'free';
     const status = userPlan?.subscription_status || 'free';
-    const periodEnd = userPlan?.current_period_end;
     
     return (
       <div className="mt-6 border rounded-lg p-6 bg-white shadow-sm">
@@ -225,18 +224,12 @@ const Profile = () => {
         ) : plan === 'print' ? (
           <div>
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              Print Plan - $1/month
+              Print Plan – SGD 3/month
             </span>
             <div className="mt-2">
               <p className="text-sm text-gray-600">
                 You're on the Print Plan with access to printable PDF flashcards.
               </p>
-              {periodEnd && (
-                <p className="text-xs text-gray-500 mt-1">
-                  {status === 'active' ? 'Next billing date: ' : 'Active until: '}
-                  {new Date(periodEnd).toLocaleDateString()}
-                </p>
-              )}
             </div>
             <div className="mt-4 space-x-3">
               <button 
@@ -256,18 +249,12 @@ const Profile = () => {
         ) : plan === 'pro' ? (
           <div>
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-              Pro Sprout Plan - $3/month
+              Pro Sprout – SGD 7/month
             </span>
             <div className="mt-2">
               <p className="text-sm text-gray-600">
                 You're on the Pro Sprout Plan with unlimited story generation and all features.
               </p>
-              {periodEnd && (
-                <p className="text-xs text-gray-500 mt-1">
-                  {status === 'active' ? 'Next billing date: ' : 'Active until: '}
-                  {new Date(periodEnd).toLocaleDateString()}
-                </p>
-              )}
             </div>
             <div className="mt-4">
               <button 
