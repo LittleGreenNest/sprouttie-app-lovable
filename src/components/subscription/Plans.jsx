@@ -18,8 +18,8 @@ const PLANS = [
   },
   {
     name: 'Print Plan',
-    priceMonthly: '$3',
-    priceYearly: '$29',
+    priceMonthly: 'SGD 3',
+    priceYearly: 'SGD 29',
     description: 'For offline learners',
     features: ['Everything in Free', 'Unlimited flashcards', 'Printable PDF flashcards', 'Multiple PDF export formats'],
     planKey: 'print',
@@ -88,7 +88,7 @@ export default function Plans() {
     setLoading(true);
     try {
       const priceIds = {
-        print: { monthly: 'price_1Rp1LZEVoum0YBjsFK6SriTG', yearly: 'price_1SDylNEVoum0YBjsLMdqBY3S' },
+        print: { monthly: 'price_1TV5x9EVoum0YBjstZUa3WSq', yearly: 'price_1TV5yoEVoum0YBjseEsQMVBY' },
       };
       const priceId = priceIds[planKey]?.[billingCycle];
       if (!priceId) throw new Error('Invalid plan or billing cycle');
