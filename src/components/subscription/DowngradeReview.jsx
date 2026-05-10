@@ -7,7 +7,7 @@ const DowngradeReview = ({ currentPlan, onCancel, onConfirm, loading }) => {
     const losses = {
       print: {
         usageLimits: [
-          { text: "Unlimited flashcards", newLimit: "50 flashcards max" },
+          { text: "Unlimited flashcards", newLimit: "100 flashcards max" },
           { text: "Unlimited PDF exports", newLimit: "No PDF exports" },
         ],
         features: [
@@ -18,7 +18,7 @@ const DowngradeReview = ({ currentPlan, onCancel, onConfirm, loading }) => {
       },
       pro: {
         usageLimits: [
-          { text: "Unlimited flashcards", newLimit: "50 flashcards max" },
+          { text: "Unlimited flashcards", newLimit: "100 flashcards max" },
           { text: "Unlimited AI story generation", newLimit: "Sample story access only" },
           { text: "Unlimited PDF exports", newLimit: "No PDF exports" },
         ],

@@ -224,7 +224,7 @@ const PhotoScanner = () => {
       setStep(STEPS.DONE);
     } catch (err) {
       if (err?.message === 'FREE_LIMIT_REACHED') {
-        toast.error("You've reached the 50-card free limit. Upgrade to add more.");
+        toast.error("You've reached the 100-card free limit. Upgrade to add more.");
         navigate('/plans');
         return;
       }

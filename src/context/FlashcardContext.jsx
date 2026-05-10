@@ -320,7 +320,7 @@ export const FlashcardProvider = ({ children }) => {
   const addFlashcard = async (word, categoryId, english = '', pinyin = '', cardType = 'word', phraseGroup = null, cardLanguage = 'zh') => {
     const categoryName = categories.find(c => c.id === categoryId)?.name || categoryId;
 
-    if (plan === 'free' && flashcards.length >= 50) {
+    if (plan === 'free' && flashcards.length >= 100) {
       throw new Error('FREE_LIMIT_REACHED');
     }
 

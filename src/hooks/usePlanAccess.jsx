@@ -13,7 +13,7 @@ export const PLANS = {
 // Feature access by plan
 export const PLAN_FEATURES = {
   free: {
-    maxFlashcards: 50,
+    maxFlashcards: 100,
     pdfExport: false,
     aiStories: false,
     voiceTraining: false,

@@ -23,7 +23,7 @@ const FlashcardManager = () => {
     deleteFlashcard
   } = useFlashcards();
 
-  const FREE_CARD_LIMIT = 50;
+  const FREE_CARD_LIMIT = 100;
   const isAtFreeLimit = plan === 'free' && flashcards.length >= FREE_CARD_LIMIT;
   
   // UI state
