@@ -8,7 +8,7 @@ const DowngradeReview = ({ currentPlan, onCancel, onConfirm, loading }) => {
       print: {
         usageLimits: [
           { text: "Unlimited flashcards", newLimit: "100 flashcards max" },
-          { text: "Unlimited PDF exports", newLimit: "No PDF exports" },
+          { text: "Unlimited PDF exports", newLimit: "3 PDF prints/month" },
         ],
         features: [
           { text: "Printable PDF Flashcards" },
@@ -20,7 +20,7 @@ const DowngradeReview = ({ currentPlan, onCancel, onConfirm, loading }) => {
         usageLimits: [
           { text: "Unlimited flashcards", newLimit: "100 flashcards max" },
           { text: "Unlimited AI story generation", newLimit: "Sample story access only" },
-          { text: "Unlimited PDF exports", newLimit: "No PDF exports" },
+          { text: "Unlimited PDF exports", newLimit: "3 PDF prints/month" },
         ],
         features: [
           { text: "Multi-child profiles" },

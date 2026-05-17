@@ -24,6 +24,7 @@ const Profile = () => {
   const [editingChild, setEditingChild] = useState(false);
   const [childForm, setChildForm] = useState({});
   const [savingChild, setSavingChild] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const navigate = useNavigate();
 
   // Sync child form with profile
@@ -492,15 +493,25 @@ const Profile = () => {
             Change Password
           </button>
           
-          <button 
-            className="block text-sm text-red-600 hover:text-red-500"
-            onClick={() => {
-              if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                // Handle account deletion (mock for now)
+          <button
+            disabled={deletingAccount}
+            className="block text-sm text-red-600 hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={async () => {
+              if (!window.confirm('Are you sure you want to delete your account? All your flashcards and data will be permanently deleted. This cannot be undone.')) return;
+              setDeletingAccount(true);
+              try {
+                const { error } = await supabase.functions.invoke('delete-account');
+                if (error) throw error;
+                await supabase.auth.signOut();
+                navigate('/');
+              } catch (err) {
+                console.error('Delete account error:', err);
+                toast.error('Failed to delete account. Please contact support.');
+                setDeletingAccount(false);
               }
             }}
           >
-            Delete Account
+            {deletingAccount ? 'Deleting…' : 'Delete Account'}
           </button>
         </div>
       </div>

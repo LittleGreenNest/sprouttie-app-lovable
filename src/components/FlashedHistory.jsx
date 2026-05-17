@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
-import { 
-  TrendingUp, BarChart3, BookOpen, 
-  Download, Eye, Edit3, Sparkles, Zap
+import {
+  TrendingUp, BarChart3, BookOpen,
+  Download, Sparkles, Zap
 } from 'lucide-react';
 
 // Helper to get month options
@@ -315,15 +315,12 @@ const FlashedHistory = () => {
                 <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Notes
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Actions
-                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {sessionHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
+                  <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
                     No tracking data found for this user yet.
                   </td>
                 </tr>
@@ -376,22 +373,6 @@ const FlashedHistory = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-muted-foreground max-w-[200px] truncate">
                       {session.notes || '-'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <button 
-                          className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                          title="View details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button 
-                          className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                          title="Edit session"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                      </div>
                     </td>
                   </motion.tr>
                 ))
@@ -450,7 +431,7 @@ const FlashedHistory = () => {
             Start tracking your flashcard sessions to see your progress here.
           </p>
           <a 
-            href="/tracker" 
+            href="/daily-tracking"
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
           >
             <Zap className="w-4 h-4" />

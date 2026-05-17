@@ -12,7 +12,7 @@ const PLANS = [
     priceMonthly: 'Free',
     priceYearly: 'Free',
     description: 'Get started with the basics',
-    features: ['Up to 100 flashcards', 'Flash history', 'Organise flashcard folders', 'Session logging'],
+    features: ['Up to 100 flashcards', 'Flash history', 'Organise flashcard folders', 'Session logging', '3 PDF prints/month'],
     planKey: 'free',
     buttonText: 'Get Started',
   },
