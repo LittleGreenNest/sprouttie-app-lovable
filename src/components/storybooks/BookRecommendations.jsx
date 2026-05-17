@@ -5,7 +5,6 @@ import { useFlashcards } from '../../context/FlashcardContext';
 import { Book, Sparkles, RefreshCw, ChevronDown, ChevronUp, ExternalLink, Globe, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
-import { usePlanAccess, UpgradePrompt } from '@/hooks/usePlanAccess';
 
 // Detect languages from flashcard words and spoken words
 const detectLanguages = (flashcards, spokenWords) => {
@@ -186,7 +185,6 @@ const BookCard = ({ book, index, feedback, onFeedback }) => (
 const BookRecommendations = () => {
   const { currentUser, profile } = useAuth();
   const { flashcards } = useFlashcards();
-  const { isPlanAtLeast, loading: planLoading } = usePlanAccess();
 
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -339,17 +337,6 @@ const BookRecommendations = () => {
       setLoading(false);
     }
   }, [allWords, detectedLanguages, generateCount, isMultilingual, feedbackMap, profile, spokenWordsData, flashcards, excludeTitles]);
-
-  if (!planLoading && !isPlanAtLeast('print')) {
-    return (
-      <UpgradePrompt
-        feature="Book Recommendations"
-        requiredPlan="print"
-        title="AI Book Recommendations"
-        description="Get personalised book suggestions matched to your child's vocabulary. Available on the Print Plan and above."
-      />
-    );
-  }
 
   return (
     <div className="space-y-6">
