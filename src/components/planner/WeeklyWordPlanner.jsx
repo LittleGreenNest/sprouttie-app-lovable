@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ChevronUp,
   BookOpen,
+  Library,
 } from 'lucide-react';
 
 const MAX_ACTIVATION_WORDS = 5;
@@ -42,6 +43,7 @@ const WeeklyWordPlanner = () => {
   const [dismissingId, setDismissingId] = useState(null); // suggestion currently showing reason picker
   const [wordRatings, setWordRatings] = useState({}); // { [lowercaseWord]: { id, outcome } } for current week
   const [ratingWord, setRatingWord] = useState(null); // word currently being saved
+  const [addingToFlashcards, setAddingToFlashcards] = useState(null); // wp.id being added to deck
 
   function getWeekStart(date) {
     const d = new Date(date);
@@ -353,6 +355,28 @@ const WeeklyWordPlanner = () => {
     } catch (error) {
       console.error('Error deleting word:', error);
       toast.error('Failed to remove word');
+    }
+  };
+
+  const handleAddToFlashcards = async (wp) => {
+    setAddingToFlashcards(wp.id);
+    try {
+      const { error } = await supabase.from('flashcards').insert({
+        user_id: currentUser.id,
+        front: wp.word,
+        back: wp.pinyin || '',
+        folder: wp.theme || 'default',
+        card_type: 'word',
+        card_status: 'waiting',
+      });
+      if (error) throw error;
+      setUserFlashcards(prev => [...prev, { front: wp.word, back: wp.pinyin || '', folder: wp.theme || 'default' }]);
+      toast.success(`"${wp.word}" added to flashcard deck`);
+    } catch (err) {
+      console.error('Error adding to flashcards:', err);
+      toast.error('Failed to add to flashcard deck');
+    } finally {
+      setAddingToFlashcards(null);
     }
   };
 
@@ -906,6 +930,8 @@ const WeeklyWordPlanner = () => {
           {wordPlans.map((wp, index) => {
             const stage = getWordStage(wp.word);
             const isExpanded = expandedWordId === wp.id;
+            const inDeck = userFlashcards.some(f => f.front?.toLowerCase() === wp.word.toLowerCase());
+            const isAddingCard = addingToFlashcards === wp.id;
 
             return (
               <motion.div
@@ -929,7 +955,7 @@ const WeeklyWordPlanner = () => {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {wp.theme && (
                         <span className="text-xs text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))] px-2 py-0.5 rounded-full">
                           {wp.theme}
@@ -944,6 +970,29 @@ const WeeklyWordPlanner = () => {
                       }`}>
                         {stage.label}
                       </span>
+                      {inDeck ? (
+                        <span
+                          className="text-[10px] font-medium text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full flex items-center gap-0.5 leading-none"
+                          title="In your flashcard deck"
+                        >
+                          <Library className="w-2.5 h-2.5" />
+                          In deck
+                        </span>
+                      ) : (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleAddToFlashcards(wp); }}
+                          disabled={isAddingCard}
+                          title="Add to flashcard deck"
+                          className="text-[10px] font-medium text-[hsl(var(--muted-foreground))] hover:text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200 border border-[hsl(var(--border))] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 leading-none transition-colors disabled:opacity-50"
+                        >
+                          {isAddingCard ? (
+                            <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                          ) : (
+                            <Plus className="w-2.5 h-2.5" />
+                          )}
+                          {isAddingCard ? 'Adding…' : 'Add card'}
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
