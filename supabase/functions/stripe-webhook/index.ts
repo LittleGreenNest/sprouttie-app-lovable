@@ -2,31 +2,84 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from 'npm:stripe@18.5.0';
 import { createClient } from 'npm:@supabase/supabase-js@2.45.0';
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-  apiVersion: '2025-08-27.basil',
-});
+/**
+ * Verify Stripe webhook signature using native Web Crypto API.
+ * Replaces Stripe.createSubtleCryptoProvider() which is unreliable in Deno edge runtimes.
+ */
+async function verifyStripeSignature(
+  body: string,
+  signatureHeader: string,
+  secret: string
+): Promise<boolean> {
+  const encoder = new TextEncoder();
 
-const cryptoProvider = Stripe.createSubtleCryptoProvider();
+  // Parse "t=timestamp,v1=sig1,v1=sig2,..." header
+  const items: Record<string, string[]> = {};
+  for (const part of signatureHeader.split(',')) {
+    const idx = part.indexOf('=');
+    if (idx === -1) continue;
+    const k = part.slice(0, idx);
+    const v = part.slice(idx + 1);
+    if (!items[k]) items[k] = [];
+    items[k].push(v);
+  }
+
+  const timestamp = items.t?.[0];
+  const v1Sigs = items.v1 ?? [];
+
+  if (!timestamp || v1Sigs.length === 0) return false;
+
+  // Reject events older than 5 minutes
+  if (Math.abs(Date.now() / 1000 - parseInt(timestamp, 10)) > 300) return false;
+
+  const signedPayload = `${timestamp}.${body}`;
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const rawSig = await crypto.subtle.sign('HMAC', key, encoder.encode(signedPayload));
+  const computedSig = Array.from(new Uint8Array(rawSig))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+
+  return v1Sigs.some(sig => sig === computedSig);
+}
 
 serve(async (req) => {
-  const signature = req.headers.get('Stripe-Signature');
+  const signatureHeader = req.headers.get('Stripe-Signature');
   const body = await req.text();
-  
-  let event;
-  
-  try {
-    event = await stripe.webhooks.constructEventAsync(
-      body,
-      signature!,
-      Deno.env.get('STRIPE_WEBHOOK_SECRET')!,
-      undefined,
-      cryptoProvider
-    );
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err instanceof Error ? err.message : 'Unknown error');
+  const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+
+  if (!signatureHeader || !webhookSecret) {
+    console.error('Missing Stripe-Signature header or STRIPE_WEBHOOK_SECRET env var');
     return new Response(
-      JSON.stringify({ error: 'Webhook signature verification failed' }),
-      { status: 400 }
+      JSON.stringify({ error: 'Missing signature or secret' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const isValid = await verifyStripeSignature(body, signatureHeader, webhookSecret);
+  if (!isValid) {
+    console.error('Webhook signature verification failed');
+    return new Response(
+      JSON.stringify({ error: 'Invalid signature' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  let event: Stripe.Event;
+  try {
+    event = JSON.parse(body) as Stripe.Event;
+  } catch (err) {
+    console.error('Failed to parse event body:', err);
+    return new Response(
+      JSON.stringify({ error: 'Invalid JSON body' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
     );
   }
 
@@ -68,21 +121,16 @@ serve(async (req) => {
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
-        
         await supabaseAdmin
           .from('profiles')
-          .update({
-            subscription_status: subscription.status,
-          })
+          .update({ subscription_status: subscription.status })
           .eq('stripe_subscription_id', subscription.id);
-
         console.log(`Updated subscription status: ${subscription.status}`);
         break;
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-        
         await supabaseAdmin
           .from('profiles')
           .update({
@@ -91,7 +139,6 @@ serve(async (req) => {
             stripe_subscription_id: null,
           })
           .eq('stripe_subscription_id', subscription.id);
-
         console.log('Subscription canceled, reverted to free plan');
         break;
       }
@@ -108,7 +155,7 @@ serve(async (req) => {
     console.error('Error processing webhook:', error);
     return new Response(
       JSON.stringify({ error: 'Webhook processing failed' }),
-      { status: 500 }
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 });
