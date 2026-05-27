@@ -11,7 +11,7 @@ Migrated from Lovable to Claude Code — no Lovable dependencies remain.
 - @tanstack/react-query v5
 - Framer Motion
 - PWA via vite-plugin-pwa
-- Deployed on Render (see `render.yaml`)
+- Deployed on **Cloudflare Pages** (auto-deploys on push to GitHub `LittleGreenNest/LGN`). `render.yaml` is a leftover from Lovable and is no longer used.
 - Express backend placeholder in `/server/` (currently empty)
 
 ## Key files

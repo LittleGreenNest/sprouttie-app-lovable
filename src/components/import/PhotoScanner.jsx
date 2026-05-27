@@ -11,6 +11,29 @@ import { useNavigate } from 'react-router-dom';
 import { usePlanAccess } from '@/hooks/usePlanAccess';
 
 const STEPS = { UPLOAD: 'upload', SCANNING: 'scanning', REVIEW: 'review', DONE: 'done' };
+
+// Resize image to max `maxPx` on longest side and return raw base64 JPEG string.
+// Keeps file size under ~500KB so edge function body limits are never hit.
+const resizeImageToBase64 = (file, maxPx = 1280) =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+      if (width > maxPx || height > maxPx) {
+        if (width >= height) { height = Math.round((height / width) * maxPx); width = maxPx; }
+        else { width = Math.round((width / height) * maxPx); height = maxPx; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+    };
+    img.onerror = reject;
+    img.src = objectUrl;
+  });
 const MODES = { TEXT: 'text', IDENTIFY: 'identify' };
 
 const PhotoScanner = () => {
@@ -74,14 +97,11 @@ const PhotoScanner = () => {
         if (data.words?.length) words.push(...data.words);
       }
     } else {
-      // Use FileReader for efficient base64 encoding (avoids O(n²) string concat for large photos)
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      const data = await scanImage(base64, file.type || 'image/jpeg');
+      // Resize large images before encoding — iPhone photos can be 4–8MB which
+      // strains the edge function body limit. Cap at 1280px, output as JPEG.
+      const base64 = await resizeImageToBase64(file, 1280);
+      const data = await scanImage(base64, 'image/jpeg');
+      if (data.error) throw new Error(data.error);
       if (data.message) message = data.message;
       words = data.words || [];
     }
@@ -152,7 +172,8 @@ const PhotoScanner = () => {
       setStep(STEPS.REVIEW);
     } catch (err) {
       console.error('Scan error:', err);
-      toast.error('Failed to scan. Please try again.');
+      const msg = err?.message || err?.error || 'Failed to scan. Please try again.';
+      toast.error(msg.length > 120 ? msg.slice(0, 120) + '…' : msg);
       setStep(STEPS.UPLOAD);
     } finally {
       setScanningProgress('');
