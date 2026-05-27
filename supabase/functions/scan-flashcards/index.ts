@@ -124,7 +124,20 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    console.log("Gemini raw response:", JSON.stringify(data).slice(0, 500));
+
+    const finishReason = data.candidates?.[0]?.finishReason;
     const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    console.log("finishReason:", finishReason, "content length:", content.length);
+
+    // Surface safety blocks or empty responses clearly
+    if (!content) {
+      const blockReason = data.promptFeedback?.blockReason || finishReason || "empty response";
+      return new Response(
+        JSON.stringify({ words: [], error: `Gemini returned no content: ${blockReason}` }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     let jsonStr = content.trim();
     const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -135,7 +148,8 @@ serve(async (req) => {
       parsed = JSON.parse(jsonStr);
     } catch {
       console.error("Failed to parse AI response:", content);
-      parsed = { words: [], message: "Could not parse the AI response. Please try again." };
+      // Return the raw content as error so we can see what Gemini actually said
+      parsed = { words: [], error: `Parse failed. Raw: ${content.slice(0, 200)}` };
     }
 
     return new Response(JSON.stringify(parsed), {
