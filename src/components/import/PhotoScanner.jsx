@@ -12,14 +12,21 @@ import { usePlanAccess } from '@/hooks/usePlanAccess';
 
 const STEPS = { UPLOAD: 'upload', SCANNING: 'scanning', REVIEW: 'review', DONE: 'done' };
 
-// Resize image to max `maxPx` on longest side and return raw base64 JPEG string.
-// Keeps file size under ~500KB so edge function body limits are never hit.
-const resizeImageToBase64 = (file, maxPx = 1280) =>
+// Resize image only if over 4MB — preserves quality for text/character recognition.
+// Resizes to max 2048px and keeps PNG (lossless) for best OCR accuracy.
+const resizeImageToBase64 = (file, maxPx = 2048) =>
   new Promise((resolve, reject) => {
+    // Skip resizing for small files — send original as-is
+    if (file.size < 4 * 1024 * 1024) {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+      return;
+    }
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
     img.onload = () => {
-      URL.revokeObjectURL(objectUrl);
       let { width, height } = img;
       if (width > maxPx || height > maxPx) {
         if (width >= height) { height = Math.round((height / width) * maxPx); width = maxPx; }
@@ -29,7 +36,9 @@ const resizeImageToBase64 = (file, maxPx = 1280) =>
       canvas.width = width;
       canvas.height = height;
       canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+      URL.revokeObjectURL(objectUrl);
+      // Use PNG for lossless quality — critical for accurate character recognition
+      resolve(canvas.toDataURL('image/png').split(',')[1]);
     };
     img.onerror = reject;
     img.src = objectUrl;
@@ -99,8 +108,9 @@ const PhotoScanner = () => {
     } else {
       // Resize large images before encoding — iPhone photos can be 4–8MB which
       // strains the edge function body limit. Cap at 1280px, output as JPEG.
-      const base64 = await resizeImageToBase64(file, 1280);
-      const data = await scanImage(base64, 'image/jpeg');
+      const base64 = await resizeImageToBase64(file, 2048);
+      const mimeType = file.size < 4 * 1024 * 1024 ? (file.type || 'image/jpeg') : 'image/png';
+      const data = await scanImage(base64, mimeType);
       if (data.error) throw new Error(data.error);
       if (data.message) message = data.message;
       words = data.words || [];
