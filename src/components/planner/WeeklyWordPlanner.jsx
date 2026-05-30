@@ -627,8 +627,28 @@ const WeeklyWordPlanner = () => {
               )}
             </div>
             <div className="divide-y divide-[hsl(var(--border))]">
-              {pendingSuggestions.map((s) => (
-                <div key={s.id} className="px-5 py-3">
+              {(() => {
+                // Sort: set-assigned first (ascending), then unassigned
+                const sorted = [...pendingSuggestions].sort((a, b) => {
+                  if (a.set_number == null && b.set_number == null) return 0;
+                  if (a.set_number == null) return 1;
+                  if (b.set_number == null) return -1;
+                  return a.set_number - b.set_number;
+                });
+                let lastSetNumber = undefined;
+                return sorted.map((s) => {
+                  const showSetHeader = s.set_number != null && s.set_number !== lastSetNumber;
+                  lastSetNumber = s.set_number;
+                  return (
+                    <React.Fragment key={s.id}>
+                      {showSetHeader && (
+                        <div className="px-5 py-1.5 bg-blue-50 border-b border-[hsl(var(--border))]">
+                          <span className="text-[10px] font-semibold text-blue-600 uppercase tracking-wide">
+                            → Set {s.set_number}
+                          </span>
+                        </div>
+                      )}
+                      <div className="px-5 py-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -636,6 +656,17 @@ const WeeklyWordPlanner = () => {
                         {s.category && (
                           <span className="text-xs bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] px-2 py-0.5 rounded-full">
                             {s.category}
+                          </span>
+                        )}
+                        {s.tier && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-normal ${
+                            s.tier === 'reinforce'
+                              ? 'bg-green-100 text-green-700'
+                              : s.tier === 'bridge'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            {s.tier}
                           </span>
                         )}
                       </div>
@@ -738,7 +769,10 @@ const WeeklyWordPlanner = () => {
                     )}
                   </AnimatePresence>
                 </div>
-              ))}
+                    </React.Fragment>
+                  );
+                });
+              })()}
             </div>
             <div className="px-5 py-4 border-t border-[hsl(var(--border))] space-y-2">
               <button
