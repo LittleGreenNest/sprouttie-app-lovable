@@ -675,6 +675,11 @@ const WeeklyWordPlanner = () => {
                           {s.reason}
                         </p>
                       )}
+                      {s.activity_tip && (
+                        <p className="text-xs text-[hsl(var(--foreground))] mt-1 leading-relaxed">
+                          💡 {s.activity_tip}
+                        </p>
+                      )}
                     </div>
                     <div className="flex-shrink-0 flex items-center gap-1">
                       <button
