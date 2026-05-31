@@ -191,7 +191,11 @@ Return exactly 3 alternative words as a JSON array of strings. Example: ["word1"
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemPrompt }] },
           contents: [{ role: "user", parts: [{ text: userMessage }] }],
-          generation_config: { response_mime_type: "application/json", temperature: 0.5 },
+          generation_config: {
+            response_mime_type: "application/json",
+            temperature: 0.5,
+            thinking_config: { thinking_budget: 0 },
+          },
         }),
       }
     );

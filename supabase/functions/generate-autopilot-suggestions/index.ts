@@ -406,7 +406,7 @@ serve(async (req) => {
     const literalExclusionSet = new Set(
       exclusionRaw.filter(Boolean).map((w: string) => String(w).toLowerCase().trim())
     );
-    const exclusionDisplay = Array.from(literalExclusionSet).slice(0, 250);
+    const exclusionDisplay = Array.from(literalExclusionSet).slice(0, 80);
 
     // ─── Feedback loop: structured rejection + outcome signals ───
     const dismissedWithReasons = allPastSuggestions
@@ -655,7 +655,11 @@ Return JSON only. No preamble. No markdown. Random seed for variety: ${Math.floo
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemPrompt }] },
           contents: [{ role: "user", parts: [{ text: userMessage }] }],
-          generation_config: { response_mime_type: "application/json", temperature: 0.9 },
+          generation_config: {
+            response_mime_type: "application/json",
+            temperature: 0.9,
+            thinking_config: { thinking_budget: 0 },
+          },
         }),
       }
     );
