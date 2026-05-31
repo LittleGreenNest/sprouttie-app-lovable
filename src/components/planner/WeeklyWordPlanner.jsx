@@ -20,6 +20,15 @@ import {
 
 const MAX_ACTIVATION_WORDS = 5;
 
+const LOADING_STEPS = [
+  "Reading your child's profile…",
+  "Analysing their spoken words…",
+  "Finding vocabulary patterns…",
+  "Picking this week's theme…",
+  "Writing the rationale…",
+  "Almost ready…",
+];
+
 const WeeklyWordPlanner = () => {
   const { currentUser } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -44,6 +53,7 @@ const WeeklyWordPlanner = () => {
   const [wordRatings, setWordRatings] = useState({}); // { [lowercaseWord]: { id, outcome } } for current week
   const [ratingWord, setRatingWord] = useState(null); // word currently being saved
   const [addingToFlashcards, setAddingToFlashcards] = useState(null); // wp.id being added to deck
+  const [loadingStep, setLoadingStep] = useState(0);
 
   function getWeekStart(date) {
     const d = new Date(date);
@@ -207,6 +217,17 @@ const WeeklyWordPlanner = () => {
     loadPendingSuggestions();
     loadWordRatings();
   }, [loadWordPlans, loadTrackingData, loadPendingSuggestions, loadWordRatings]);
+
+  useEffect(() => {
+    if (!generatingSuggestions) {
+      setLoadingStep(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setLoadingStep(prev => Math.min(prev + 1, LOADING_STEPS.length - 1));
+    }, 3200);
+    return () => clearInterval(timer);
+  }, [generatingSuggestions]);
 
   const fetchSwapAlternatives = async (suggestionId, word, category) => {
     if (swapAlternatives[suggestionId]) return; // already loaded
@@ -596,12 +617,49 @@ const WeeklyWordPlanner = () => {
 
       {/* Loading state for autopilot generation */}
       {generatingSuggestions && pendingSuggestions.length === 0 && (
-        <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl p-6 text-center">
-          <Loader2 className="w-6 h-6 animate-spin text-[hsl(var(--sprouttie-green))] mx-auto mb-2" />
-          <p className="text-sm text-[hsl(var(--muted-foreground))]">
-            Sprouttie is reading your logs and picking a theme…
-          </p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl p-6"
+        >
+          <div className="text-center mb-4">
+            <span className="text-3xl">🌿</span>
+          </div>
+          {/* Progress bar */}
+          <div className="w-full bg-[hsl(var(--muted))] rounded-full h-1 mb-4 overflow-hidden">
+            <motion.div
+              className="h-full bg-[hsl(var(--sprouttie-green))] rounded-full"
+              animate={{ width: `${Math.round(((loadingStep + 1) / LOADING_STEPS.length) * 92)}%` }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+            />
+          </div>
+          {/* Step dots */}
+          <div className="flex justify-center gap-1.5 mb-3">
+            {LOADING_STEPS.map((_, i) => (
+              <div
+                key={i}
+                className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
+                  i <= loadingStep
+                    ? 'bg-[hsl(var(--sprouttie-green))]'
+                    : 'bg-[hsl(var(--muted))]'
+                }`}
+              />
+            ))}
+          </div>
+          {/* Animated message */}
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={loadingStep}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.25 }}
+              className="text-sm text-center text-[hsl(var(--muted-foreground))]"
+            >
+              {LOADING_STEPS[loadingStep]}
+            </motion.p>
+          </AnimatePresence>
+        </motion.div>
       )}
 
       {/* This Week's Plan — auto-pilot review section */}
