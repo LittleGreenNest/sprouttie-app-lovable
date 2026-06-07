@@ -665,7 +665,7 @@ const SpokenWords = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
         <div className="text-muted-foreground text-sm">Loading…</div>
       </div>
     );
@@ -674,7 +674,7 @@ const SpokenWords = () => {
   const totalWords = spokenWords.length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-24">
+    <div className="min-h-screen bg-background pb-24">
       <div className="max-w-xl mx-auto px-4 pt-6 space-y-5">
 
         {/* Header */}
