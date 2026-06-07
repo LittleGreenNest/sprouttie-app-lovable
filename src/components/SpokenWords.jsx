@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Trash2, Calendar, Video, Square, X, ChevronDown, ChevronUp, Upload } from 'lucide-react';
+import { Plus, Trash2, Calendar, Video, Square, X, ChevronDown, ChevronUp, Upload, FileUp, AlertCircle, CheckCircle2 } from 'lucide-react';
 import VideoWordExtractor from './spoken-words/VideoWordExtractor';
 import { toast } from 'react-toastify';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import Papa from 'papaparse';
 
 // Stage config — single source of truth for emoji, labels, copy, sort order
 const STAGES = {
@@ -187,6 +188,201 @@ const WordCard = ({ word, onStageChange, onDelete }) => {
   );
 };
 
+// ── Import Words Modal ────────────────────────────────────────────────────────
+const TEMPLATE_CSV = `word,stage,notes\nalarm clock,growing,\nwatering can,new,first said at home\nyellow duck,owned,`;
+
+const ImportWordsModal = ({ currentUser, existingWords, onImported, onClose }) => {
+  const [parsed, setParsed] = useState(null); // array of {word, stage, notes}
+  const [importing, setImporting] = useState(false);
+  const [result, setResult] = useState(null); // {imported, skipped}
+  const fileInputRef = useRef(null);
+
+  const existingSet = new Set((existingWords || []).map(w => w.word?.toLowerCase().trim()));
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: h => h.trim().toLowerCase(),
+      complete: ({ data }) => {
+        const rows = data
+          .map(row => ({
+            word: (row.word || row['word or phrase'] || row['words'] || '').trim(),
+            stage: (['new', 'growing', 'owned'].includes((row.stage || '').toLowerCase().trim())
+              ? (row.stage || '').toLowerCase().trim()
+              : 'new'),
+            notes: (row.notes || row.context || row.note || '').trim() || null,
+          }))
+          .filter(r => r.word.length > 0);
+        setParsed(rows);
+        setResult(null);
+      },
+      error: () => toast.error('Could not read file — make sure it is a valid CSV'),
+    });
+  };
+
+  const newRows = parsed ? parsed.filter(r => !existingSet.has(r.word.toLowerCase())) : [];
+  const skipCount = parsed ? parsed.length - newRows.length : 0;
+
+  const handleImport = async () => {
+    if (!newRows.length) return;
+    setImporting(true);
+    try {
+      const inserts = newRows.map(r => ({
+        user_id: currentUser.id,
+        word: r.word,
+        word_stage: r.stage,
+        notes: r.notes || null,
+      }));
+
+      const { error } = await supabase.from('spoken_words').insert(inserts);
+      if (error) throw error;
+
+      setResult({ imported: newRows.length, skipped: skipCount });
+      onImported();
+    } catch (err) {
+      console.error(err);
+      toast.error('Import failed — please try again');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const downloadTemplate = () => {
+    const blob = new Blob([TEMPLATE_CSV], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sprouttie-words-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="w-full max-w-md bg-card rounded-2xl shadow-2xl border border-border overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <div>
+            <h2 className="font-semibold text-foreground text-base">Import words from file</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Upload a CSV — one word per row</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-4">
+          {/* Template download */}
+          <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 border border-border">
+            <AlertCircle size={15} className="text-muted-foreground mt-0.5 shrink-0" />
+            <div className="text-xs text-muted-foreground leading-relaxed">
+              File needs columns: <strong className="text-foreground">word</strong>, <strong className="text-foreground">stage</strong> (new/growing/owned), <strong className="text-foreground">notes</strong>.{' '}
+              <button onClick={downloadTemplate} className="underline text-primary hover:text-primary/80">Download template</button>
+            </div>
+          </div>
+
+          {/* File picker */}
+          {!result && (
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={handleFile}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-border rounded-xl py-6 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+              >
+                <FileUp size={24} />
+                <span className="text-sm font-medium">Choose CSV file</span>
+                <span className="text-xs">or save your Excel sheet as .csv first</span>
+              </button>
+            </div>
+          )}
+
+          {/* Preview */}
+          {parsed && !result && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground">{parsed.length} words found</span>
+                {skipCount > 0 && (
+                  <span className="text-xs text-muted-foreground">{skipCount} already in your list (will skip)</span>
+                )}
+              </div>
+              <div className="rounded-xl border border-border overflow-hidden">
+                <div className="max-h-48 overflow-y-auto divide-y divide-border">
+                  {parsed.slice(0, 30).map((r, i) => {
+                    const isDupe = existingSet.has(r.word.toLowerCase());
+                    return (
+                      <div key={i} className={`flex items-center justify-between px-3 py-2 text-sm ${isDupe ? 'opacity-40' : ''}`}>
+                        <span className="font-medium text-foreground truncate">{r.word}</span>
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                          {isDupe && <span className="text-xs text-muted-foreground">skip</span>}
+                          <span className="text-xs text-muted-foreground">{STAGES[r.stage]?.emoji || '🌱'} {r.stage}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {parsed.length > 30 && (
+                    <div className="px-3 py-2 text-xs text-muted-foreground text-center">
+                      …and {parsed.length - 30} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Success state */}
+          {result && (
+            <div className="flex flex-col items-center gap-3 py-4">
+              <CheckCircle2 size={36} className="text-primary" />
+              <div className="text-center">
+                <p className="font-semibold text-foreground">Import complete!</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {result.imported} word{result.imported !== 1 ? 's' : ''} added
+                  {result.skipped > 0 ? ` · ${result.skipped} skipped (already exist)` : ''}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-4 border-t border-border flex gap-2">
+          {result ? (
+            <button onClick={onClose} className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2.5 rounded-lg text-sm transition-colors">
+              Done
+            </button>
+          ) : (
+            <>
+              <button onClick={onClose} className="flex-1 bg-muted hover:bg-muted/80 text-muted-foreground font-medium py-2.5 rounded-lg text-sm transition-colors">
+                Cancel
+              </button>
+              <button
+                onClick={handleImport}
+                disabled={!parsed || newRows.length === 0 || importing}
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2.5 rounded-lg text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {importing ? 'Importing…' : `Import ${newRows.length} word${newRows.length !== 1 ? 's' : ''}`}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Add Word Form ─────────────────────────────────────────────────────────────
 const AddWordForm = ({ currentUser, onWordAdded }) => {
   const [newWord, setNewWord] = useState('');
@@ -356,6 +552,7 @@ const SpokenWords = () => {
   const [spokenWords, setSpokenWords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showVideoExtractor, setShowVideoExtractor] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   useEffect(() => {
     if (currentUser) fetchSpokenWords();
@@ -471,17 +668,24 @@ const SpokenWords = () => {
         <div className="space-y-1">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-foreground">Words Your Child Is Saying</h1>
-            <button
-              onClick={() => setShowVideoExtractor(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border transition-colors"
-              style={{
-                background: '#F0F7F4', borderColor: '#C6E6D4',
-                color: '#2D6A4F'
-              }}
-            >
-              <Upload className="w-3.5 h-3.5" />
-              Video
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowImport(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border transition-colors"
+                style={{ background: '#F0F7F4', borderColor: '#C6E6D4', color: '#2D6A4F' }}
+              >
+                <FileUp className="w-3.5 h-3.5" />
+                Import
+              </button>
+              <button
+                onClick={() => setShowVideoExtractor(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border transition-colors"
+                style={{ background: '#F0F7F4', borderColor: '#C6E6D4', color: '#2D6A4F' }}
+              >
+                <Upload className="w-3.5 h-3.5" />
+                Video
+              </button>
+            </div>
           </div>
           <p className="text-sm text-muted-foreground">
             A gentle record of what you notice — not a test, just observations.
@@ -496,6 +700,16 @@ const SpokenWords = () => {
           <VideoWordExtractor
             onWordsExtracted={fetchSpokenWords}
             onClose={() => setShowVideoExtractor(false)}
+          />
+        )}
+
+        {/* Import Words Modal */}
+        {showImport && (
+          <ImportWordsModal
+            currentUser={currentUser}
+            existingWords={spokenWords}
+            onImported={fetchSpokenWords}
+            onClose={() => setShowImport(false)}
           />
         )}
 
