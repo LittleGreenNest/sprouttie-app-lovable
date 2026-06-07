@@ -189,7 +189,7 @@ const WordCard = ({ word, onStageChange, onDelete }) => {
 };
 
 // ── Import Words Modal ────────────────────────────────────────────────────────
-const TEMPLATE_CSV = `word,stage,notes\nalarm clock,growing,\nwatering can,new,first said at home\nyellow duck,owned,`;
+const TEMPLATE_CSV = `word,stage,date,notes\nalarm clock,growing,2026-04-01,\nwatering can,new,2026-03-15,first said at home\nyellow duck,owned,2026-02-20,`;
 
 const ImportWordsModal = ({ currentUser, existingWords, onImported, onClose }) => {
   const [parsed, setParsed] = useState(null); // array of {word, stage, notes}
@@ -209,13 +209,22 @@ const ImportWordsModal = ({ currentUser, existingWords, onImported, onClose }) =
       transformHeader: h => h.trim().toLowerCase(),
       complete: ({ data }) => {
         const rows = data
-          .map(row => ({
-            word: (row.word || row['word or phrase'] || row['words'] || '').trim(),
-            stage: (['new', 'growing', 'owned'].includes((row.stage || '').toLowerCase().trim())
-              ? (row.stage || '').toLowerCase().trim()
-              : 'new'),
-            notes: (row.notes || row.context || row.note || '').trim() || null,
-          }))
+          .map(row => {
+            const rawDate = (row.date || row['started_saying_at'] || row['date_added'] || '').trim();
+            let parsedDate = null;
+            if (rawDate) {
+              const d = new Date(rawDate);
+              if (!isNaN(d.getTime())) parsedDate = d.toISOString().split('T')[0];
+            }
+            return {
+              word: (row.word || row['word or phrase'] || row['words'] || '').trim(),
+              stage: (['new', 'growing', 'owned'].includes((row.stage || '').toLowerCase().trim())
+                ? (row.stage || '').toLowerCase().trim()
+                : 'new'),
+              notes: (row.notes || row.context || row.note || '').trim() || null,
+              date: parsedDate,
+            };
+          })
           .filter(r => r.word.length > 0);
         setParsed(rows);
         setResult(null);
@@ -236,6 +245,10 @@ const ImportWordsModal = ({ currentUser, existingWords, onImported, onClose }) =
         word: r.word,
         word_stage: r.stage,
         notes: r.notes || null,
+        ...(r.date && {
+          started_saying_at: r.date,
+          stage_updated_at: new Date(r.date + 'T12:00:00').toISOString(),
+        }),
       }));
 
       const { error } = await supabase.from('spoken_words').insert(inserts);
