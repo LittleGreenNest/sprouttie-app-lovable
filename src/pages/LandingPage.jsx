@@ -211,7 +211,7 @@ const LandingPage = () => {
               custom={4}
               className="mt-5 font-body text-xs text-[hsl(var(--muted-foreground))]"
             >
-              Used by 100+ parents teaching Mandarin at home
+              Free to start · No card required · Cancel anytime
             </motion.p>
           </div>
 
@@ -306,7 +306,7 @@ const LandingPage = () => {
         <div className="max-w-3xl mx-auto relative text-center">
           <motion.p variants={fade} initial="hidden" whileInView="visible" viewport={{ once: true }}
             className="font-body text-xs font-semibold tracking-widest uppercase text-[hsl(var(--sprouttie-coral))] mb-10">
-            From our community
+            Why we built this
           </motion.p>
           <motion.blockquote
             variants={fade}
@@ -317,15 +317,15 @@ const LandingPage = () => {
           >
             <div className="text-[hsl(var(--sprouttie-green))] text-5xl font-display leading-none mb-4 opacity-60">"</div>
             <p className="font-display text-xl sm:text-2xl text-white leading-relaxed mb-8 italic">
-              Sprouttie has helped me effectively plan flashcard sessions for my kids and keep track of everything better. It is also a great way to introduce Chinese words to them!
+              I built Sprouttie because I needed it. Planning flashcard sessions for my kids, tracking what they'd seen, knowing when to retire a card — I was doing it all in my head. Now it's all in one place.
             </p>
             <footer className="flex items-center justify-center gap-3">
               <div className="w-9 h-9 rounded-full bg-[hsl(var(--sprouttie-green)/0.3)] flex items-center justify-center text-sm font-semibold text-[hsl(var(--sprouttie-green))]">
                 C
               </div>
               <div className="text-left">
-                <div className="font-body font-semibold text-white text-sm">Cyrena C.</div>
-                <div className="font-body text-xs text-white/40">Parent of 2 · Singapore</div>
+                <div className="font-body font-semibold text-white text-sm">Cyrena, Sprouttie founder</div>
+                <div className="font-body text-xs text-white/40">Mum of 2 · Singapore</div>
               </div>
             </footer>
           </motion.blockquote>
