@@ -22,10 +22,6 @@ import ForgotPassword from './components/auth/ForgotPassword';
 import ResetPassword from './components/auth/ResetPassword';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
-// Landing Page
-import LandingPage from './pages/LandingPage';
-
-
 // Supabase
 import { supabase } from '@/integrations/supabase/client';
 
@@ -181,7 +177,7 @@ function App() {
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
               {/* Public routes - NO FlashcardProvider needed */}
-              <Route path="/" element={<LandingPage />} />
+              <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
