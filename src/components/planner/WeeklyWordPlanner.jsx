@@ -81,6 +81,11 @@ const WeeklyWordPlanner = () => {
     return formatDate(today) === formatDate(currentWeekStart);
   };
 
+  const isPastWeek = () => {
+    const today = getWeekStart(new Date());
+    return formatDate(currentWeekStart) < formatDate(today);
+  };
+
   // Load word plans
   const loadWordPlans = useCallback(async () => {
     if (!currentUser) return;
@@ -527,27 +532,17 @@ const WeeklyWordPlanner = () => {
       </motion.div>
 
       {/* Action buttons row */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => generateSuggestions(1)}
-          disabled={generatingSuggestions}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-        >
-          {generatingSuggestions ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Sparkles className="w-4 h-4" />
-          )}
-          AI Suggest
-        </button>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-2 px-4 py-2.5 border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add Word
-        </button>
-      </div>
+      {!isPastWeek() && (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="flex items-center gap-2 px-4 py-2.5 border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add Word
+          </button>
+        </div>
+      )}
 
       {/* Week Navigation */}
       <div className="flex items-center justify-between">
@@ -578,11 +573,19 @@ const WeeklyWordPlanner = () => {
         </button>
       </div>
 
+      {/* Past week read-only notice */}
+      {isPastWeek() && (
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-[hsl(var(--muted))] rounded-xl text-xs text-[hsl(var(--muted-foreground))]">
+          <span>🔒</span>
+          <span>Past week · read only. Navigate to the current week to add or plan words.</span>
+        </div>
+      )}
+
       {/* Outcome review for last week's accepted words (feedback loop) */}
       <WeeklyOutcomeReview currentWeekStart={currentWeekStart} />
 
       {/* Empty-state CTA: Generate themed week with Sprouttie */}
-      {pendingSuggestions.length === 0 && !generatingSuggestions && (
+      {pendingSuggestions.length === 0 && !generatingSuggestions && !isPastWeek() && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -605,10 +608,10 @@ const WeeklyWordPlanner = () => {
                 key={n}
                 onClick={() => generateSuggestions(n)}
                 disabled={generatingSuggestions}
-                className="flex-1 min-w-[90px] py-2.5 px-3 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-1.5"
+                className="flex-1 min-w-[90px] py-2.5 px-3 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex flex-col items-center justify-center gap-0.5"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                {n} set{n > 1 ? 's' : ''}
+                <span className="flex items-center gap-1"><Sparkles className="w-3 h-3" />{n} set{n > 1 ? 's' : ''}</span>
+                <span className="text-[10px] opacity-80">~{n * 5} words</span>
               </button>
             ))}
           </div>
@@ -1019,7 +1022,7 @@ const WeeklyWordPlanner = () => {
           <div className="flex items-center gap-2 mb-1">
             <BookOpen className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
             <h2 className="text-sm font-semibold text-[hsl(var(--foreground))]">
-              Backlog ({wordPlans.length} words)
+              This Week's Words ({wordPlans.length})
             </h2>
           </div>
         )}
@@ -1039,7 +1042,7 @@ const WeeklyWordPlanner = () => {
                 transition={{ delay: index * 0.05 }}
                 className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl overflow-hidden"
               >
-                <div className="px-5 py-4 flex items-center gap-3">
+                <div className="px-5 py-4 flex items-start gap-3">
                   <span className="text-xl">{stage.icon}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -1092,7 +1095,7 @@ const WeeklyWordPlanner = () => {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex flex-col items-end gap-1 pt-0.5">
                     {/* Mid-week reaction ratings */}
                     {(() => {
                       const key = wp.word.toLowerCase();
@@ -1100,37 +1103,40 @@ const WeeklyWordPlanner = () => {
                       const isRating = ratingWord === key;
                       return (
                         <>
-                          {['responded', 'partial', 'no_response'].map((outcome) => {
-                            const emoji = outcome === 'responded' ? '👍' : outcome === 'partial' ? '🤔' : '👎';
-                            const active = rating?.outcome === outcome;
-                            return (
-                              <button
-                                key={outcome}
-                                disabled={isRating}
-                                onClick={(e) => { e.stopPropagation(); rateWord(wp, outcome); }}
-                                className={`text-xs px-1.5 py-1 rounded-lg transition-colors disabled:opacity-50 ${
-                                  active
-                                    ? 'bg-[hsl(var(--sprouttie-green-light))] text-[hsl(var(--sprouttie-green-dark))] border border-[hsl(var(--sprouttie-green))]'
-                                    : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]'
-                                }`}
-                                title={outcome === 'responded' ? 'They responded' : outcome === 'partial' ? 'Some interest' : 'No response'}
-                              >
-                                {isRating && rating?.outcome !== outcome ? '' : emoji}
-                              </button>
-                            );
-                          })}
+                          <span className="text-[10px] text-[hsl(var(--muted-foreground))] leading-none">How did it go?</span>
+                          <div className="flex items-center gap-0.5">
+                            {['responded', 'partial', 'no_response'].map((outcome) => {
+                              const emoji = outcome === 'responded' ? '👍' : outcome === 'partial' ? '🤔' : '👎';
+                              const active = rating?.outcome === outcome;
+                              return (
+                                <button
+                                  key={outcome}
+                                  disabled={isRating}
+                                  onClick={(e) => { e.stopPropagation(); rateWord(wp, outcome); }}
+                                  className={`text-xs px-1.5 py-1 rounded-lg transition-colors disabled:opacity-50 ${
+                                    active
+                                      ? 'bg-[hsl(var(--sprouttie-green-light))] text-[hsl(var(--sprouttie-green-dark))] border border-[hsl(var(--sprouttie-green))]'
+                                      : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]'
+                                  }`}
+                                  title={outcome === 'responded' ? 'They responded' : outcome === 'partial' ? 'Some interest' : 'No response'}
+                                >
+                                  {isRating && rating?.outcome !== outcome ? '' : emoji}
+                                </button>
+                              );
+                            })}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteWord(wp.id);
+                              }}
+                              className="p-1.5 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
                         </>
                       );
                     })()}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteWord(wp.id);
-                      }}
-                      className="p-1.5 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
               </motion.div>
@@ -1151,7 +1157,7 @@ const WeeklyWordPlanner = () => {
             No words planned yet
           </h3>
           <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
-            Use AI Suggest or add words manually to build your backlog.
+            Pick 5–10 words to focus on this week. Sprouttie will suggest words based on your child's progress and interests.
           </p>
         </motion.div>
       )}
