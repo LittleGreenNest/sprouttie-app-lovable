@@ -6,8 +6,8 @@ import { usePlanAccess, UpgradePrompt } from '../hooks/usePlanAccess';
 import { supabase } from '@/integrations/supabase/client';
 
 // CJK range + Latin Extended/combining marks (covers ā á ǎ à, etc.)
-const needsNotoCJK = (s='') => /[\u4E00-\u9FFF]/.test(s);
-const needsLatinDiacritics = (s='') => /[\u0100-\u036F]/.test(s);
+const needsNotoCJK = (s='') => /[一-鿿]/.test(s);
+const needsLatinDiacritics = (s='') => /[Ā-ͯ]/.test(s);
 
 // CJK + Latin-diacritics auto font switch
 const setAutoFont = (doc, s, weight = 'normal') => {
@@ -41,7 +41,7 @@ let NOTO_LAT_B64 = null;    // Noto Sans – for pinyin with tone marks
 const FREE_MONTHLY_PRINT_LIMIT = 3;
 
 function PrintFlashcards({ onClose }) {
-const { 
+const {
 categories,
 flashcards,
 sets,
@@ -57,7 +57,7 @@ getFlashcardsForSet
   const [previewFlashcards, setPreviewFlashcards] = useState([]);
   const [message, setMessage] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  
+
   // Free print tracking
   const [freePrintsUsed, setFreePrintsUsed] = useState(0);
   const [freePrintsLoading, setFreePrintsLoading] = useState(true);
@@ -66,7 +66,7 @@ getFlashcardsForSet
 const [includeBack, setIncludeBack] = useState(false);   // whether to add back pages
 const [previewSide, setPreviewSide] = useState('front'); // 'front' | 'back'
 const [textColor, setTextColor] = useState('red'); // 'red' | 'black'
-  
+
   // State for preview pages - organized how they'll appear on A4 pages
   const [previewPages, setPreviewPages] = useState([]);
 
@@ -105,18 +105,18 @@ useEffect(() => {
         setFreePrintsLoading(false);
         return;
       }
-      
+
       // Get first day of current month
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      
+
       const { data, error } = await supabase
         .from('activity_logs')
         .select('id')
         .eq('user_id', user.id)
         .eq('activity_type', 'print_flashcards')
         .gte('created_at', monthStart);
-      
+
       if (!error) {
         setFreePrintsUsed(data?.length || 0);
       }
@@ -126,7 +126,7 @@ useEffect(() => {
       setFreePrintsLoading(false);
     }
   };
-  
+
   loadFreePrintCount();
 }, []);
 
@@ -165,7 +165,7 @@ useEffect(() => {
       const newSelection = prevSelected.includes(setId)
         ? prevSelected.filter(id => id !== setId)
         : [...prevSelected, setId];
-      
+
       // Update selected flashcards based on selected sets
       const setFlashcards = [];
       newSelection.forEach(selectedSetId => {
@@ -174,9 +174,9 @@ useEffect(() => {
           setFlashcards.push(...set.flashcardIds);
         }
       });
-      
+
       setSelectedFlashcards([...new Set(setFlashcards)]); // Remove duplicates
-      
+
       return newSelection;
     });
   };
@@ -193,18 +193,18 @@ useEffect(() => {
   const calculateSafeFontSize = (word, doc, maxWidth) => {
     // Start with ideal 250pt size for all words (Sprouttie recommends maximum size)
     let fontSize = 250;
-    
+
     // Set font size and measure
     doc.setFontSize(fontSize);
     let textWidth = doc.getStringUnitWidth(word) * fontSize / doc.internal.scaleFactor;
-    
+
     // If already too big, reduce
     if (textWidth > maxWidth) {
       // Calculate precise reduction needed
       fontSize = Math.floor((maxWidth / textWidth) * fontSize);
       doc.setFontSize(fontSize);
       textWidth = doc.getStringUnitWidth(word) * fontSize / doc.internal.scaleFactor;
-      
+
       // Fine-tune by single points if needed
       while (textWidth > maxWidth && fontSize > 40) {
         fontSize -= 1;
@@ -212,25 +212,25 @@ useEffect(() => {
         textWidth = doc.getStringUnitWidth(word) * fontSize / doc.internal.scaleFactor;
       }
     }
-    
+
     // Apply minimal safety margins only when necessary
     // Short words (3 letters or less) - keep at max size whenever possible
     if (word.length > 3 && word.length <= 6) {
       // Medium words
       fontSize = Math.floor(fontSize * 0.995);
     } else if (word.length > 6) {
-      // Longer words 
+      // Longer words
       fontSize = Math.floor(fontSize * 0.99);
     }
-    
+
     return fontSize;
   };
 
-  
+
 const generatePreview = () => {
   // Create temp document for measuring
   const tempDoc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-  
+
   // Register fonts
   if (NOTO_SC_B64) {
     tempDoc.addFileToVFS('NotoSansSC-Regular.ttf', NOTO_SC_B64);
@@ -240,9 +240,9 @@ const generatePreview = () => {
     tempDoc.addFileToVFS('NotoSans-Regular.ttf', NOTO_LAT_B64);
     tempDoc.addFont('NotoSans-Regular.ttf', 'NotoSans-Regular', 'normal');
   }
-  
+
   tempDoc.setFontSize(250);
-  
+
   const pageWidth = tempDoc.internal.pageSize.getWidth();
   const marginSize = 8;
   const maxWidth = pageWidth - marginSize * 2;
@@ -254,7 +254,7 @@ const generatePreview = () => {
 
     const category = categories.find(cat => cat.id === flashcard.categoryId);
     const word = flashcard.word;
-    
+
     const text = (word ?? '').toString();
     setAutoFont(tempDoc, text, 'bold');
     const fontSize = calculateSafeFontSize(text, tempDoc, maxWidth);
@@ -273,8 +273,8 @@ const generatePreview = () => {
   setPreviewPages(pages);
 };
 
-   
-    
+
+
 
   // Generate and download PDF
   const generatePDF = () => {
@@ -291,7 +291,7 @@ const generatePreview = () => {
         unit: 'mm',
         format: 'a4'
       });
-      
+
       // Register fonts
       if (NOTO_SC_B64) {
         doc.addFileToVFS('NotoSansSC-Regular.ttf', NOTO_SC_B64);
@@ -301,42 +301,42 @@ const generatePreview = () => {
         doc.addFileToVFS('NotoSans-Regular.ttf', NOTO_LAT_B64);
         doc.addFont('NotoSans-Regular.ttf', 'NotoSans-Regular', 'normal');
       }
-      
+
       doc.setFontSize(250);
 
       const pageWidth = doc.internal.pageSize.getWidth();    // A4 landscape width (297mm)
       const pageHeight = doc.internal.pageSize.getHeight();  // A4 landscape height (210mm)
-      
+
       // Use 8mm margins as requested
       const marginSize = 8; // 8mm on each side
       const maxWidth = pageWidth - (marginSize * 2);
-      
+
       // Create flashcards for front side (2 per page)
       previewPages.forEach((page, pageIndex) => {
         // Create a new page for every page after the first
         if (pageIndex > 0) {
           doc.addPage();
         }
-        
+
         // Process each flashcard on the page (1 or 2)
         page.forEach((flashcard, cardIndex) => {
           // Calculate position based on which card on the page (top or bottom)
           // Ensure each word is exactly in the vertical center of its half
           // Updated: Use precise vertical center points
-          const yPosition = cardIndex === 0 
+          const yPosition = cardIndex === 0
             ? pageHeight / 4     // Exact center of top half
             : (pageHeight * 3) / 4;  // Exact center of bottom half
-          
+
           // Set text properties
           doc.setTextColor(textColor === 'red' ? 255 : 0, 0, 0);
-          
+
           // Get the word and render it
           const text = (flashcard.word ?? '').toString();
           setAutoFont(doc, text, 'bold');
           doc.setFontSize(flashcard.fontSize);
           doc.text(text, pageWidth / 2, yPosition, { align: 'center', baseline: 'middle' });
 
-          
+
           // Add a dividing line between cards (except for single-card pages)
           if (cardIndex === 0 && page.length > 1) {
             doc.setDrawColor(0);
@@ -345,7 +345,7 @@ const generatePreview = () => {
           }
         });
       });
-      
+
       // Save the PDF
       // === BACK PAGES (only if includeBack) ===
       if (includeBack) {
@@ -353,8 +353,10 @@ const generatePreview = () => {
           doc.addPage(); // back side for this corresponding front page
 
           page.forEach((flashcard, cardIndex) => {
-            const baseY = cardIndex === 0 ? 20 : (pageHeight / 2 + 20);
-const xRight = pageWidth - 20;
+            // Vertical center of this card's half
+            const halfH = pageHeight / 2;
+            const centerY = cardIndex === 0 ? halfH / 2 : halfH + halfH / 2;
+            const cx = pageWidth / 2;
 
             const cn = (flashcard.word ?? '').toString().trim();
             const en = (flashcard.english ?? '').toString().trim();
@@ -362,54 +364,41 @@ const xRight = pageWidth - 20;
 
             doc.setTextColor(0, 0, 0);
 
-            if (en && !/[\u3400-\u9FFF]/.test(cn)) {
-              // English-only card: show just English (top-right)
+            if (en && !/[㐀-鿿]/.test(cn)) {
+              // English-only card: English word centered
+              doc.setFontSize(24);
               setAutoFont(doc, en, 'normal');
-              doc.setFontSize(16);
-              doc.text(en, xRight, baseY, { align: 'right' });
+              doc.text(en, cx, centerY, { align: 'center', baseline: 'middle' });
             } else {
-              // Chinese card: English / 中文 / Pinyin (top-right stack)
-              // English line
-              doc.setFontSize(14);
-              setAutoFont(doc, 'English:', 'normal');
-              const enLabel = 'English: ';
-              const enWidth = doc.getStringUnitWidth(enLabel) * 14 / doc.internal.scaleFactor;
-              doc.text(enLabel, xRight, baseY, { align: 'right' });
-              setAutoFont(doc, en || '—', 'normal');
-              doc.text(en || '—', xRight - enWidth, baseY, { align: 'right' });
+              // Chinese card: three centered lines — English / Chinese / Pinyin
+              const line1 = `English: ${en || '—'}`;
+              const line3 = `Pinyin: ${py || '—'}`;
+              const lineGap = 14; // mm between lines
 
-              // Chinese line - ensure proper font for label
-              doc.setFontSize(18);
-              setAutoFont(doc, '中文:', 'normal');
-              const cnLabel = '中文: ';
-              const cnLabelWidth = doc.getStringUnitWidth(cnLabel) * 18 / doc.internal.scaleFactor;
-              doc.text(cnLabel, xRight, baseY + 16, { align: 'right' });
+              doc.setFontSize(13);
+              setAutoFont(doc, line1, 'normal');
+              doc.text(line1, cx, centerY - lineGap, { align: 'center', baseline: 'middle' });
+
+              doc.setFontSize(22);
               setAutoFont(doc, cn || '—', 'normal');
-              doc.text(cn || '—', xRight - cnLabelWidth, baseY + 16, { align: 'right' });
+              doc.text(cn || '—', cx, centerY, { align: 'center', baseline: 'middle' });
 
-              // Pinyin line
-              doc.setFontSize(14);
-              setAutoFont(doc, 'Pinyin:', 'normal');
-              const pyLabel = 'Pinyin: ';
-              const pyWidth = doc.getStringUnitWidth(pyLabel) * 14 / doc.internal.scaleFactor;
-              doc.text(pyLabel, xRight, baseY + 32, { align: 'right' });
-              setAutoFont(doc, py || '—', 'normal');
-              doc.text(py || '—', xRight - pyWidth, baseY + 32, { align: 'right' });
+              doc.setFontSize(13);
+              setAutoFont(doc, line3, 'normal');
+              doc.text(line3, cx, centerY + lineGap, { align: 'center', baseline: 'middle' });
             }
 
-// divider between halves (keep)
-if (cardIndex === 0 && page.length > 1) {
-  doc.setDrawColor(0);
-  doc.setLineWidth(0.1);
-  doc.line(0, pageHeight / 2, pageWidth, pageHeight / 2);
-}
-
+            if (cardIndex === 0 && page.length > 1) {
+              doc.setDrawColor(0);
+              doc.setLineWidth(0.1);
+              doc.line(0, pageHeight / 2, pageWidth, pageHeight / 2);
+            }
+          });
         });
- });
       }
 
       doc.save('sprouttie-flashcards.pdf');
-      
+
       // Log activity (fire and forget)
       import('@/utils/activityLogger').then(({ logActivity, ACTIVITY_TYPES }) => {
         logActivity(
@@ -418,12 +407,12 @@ if (cardIndex === 0 && page.length > 1) {
           { count: previewFlashcards.length, includeBack }
         );
       });
-      
+
       // Update free print counter
       if (userPlan === 'free') {
         setFreePrintsUsed(prev => prev + 1);
       }
-      
+
       setMessage('PDF generated successfully! Check your downloads folder.');
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
@@ -470,23 +459,23 @@ if (cardIndex === 0 && page.length > 1) {
           </div>
         )}
         <h3 className="font-semibold text-foreground mb-4">Print Flashcards</h3>
-        
+
         {/* Selection Mode Tabs */}
         <div className="flex mb-4 bg-secondary/50 rounded-lg p-1 gap-1">
-          <button 
+          <button
             className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${selectionMode === 'manual-flashcards' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             onClick={() => setSelectionMode('manual-flashcards')}
           >
             Select Flashcards
           </button>
-          <button 
+          <button
             className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${selectionMode === 'next-day-sets' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             onClick={() => setSelectionMode('next-day-sets')}
           >
             Next Day Sets
           </button>
         </div>
-        
+
         {/* Selection Area */}
         <div className="mb-6">
           {selectionMode === 'manual-flashcards' && (
@@ -507,17 +496,17 @@ if (cardIndex === 0 && page.length > 1) {
                   ))}
                 </select>
               </div>
-              
+
               <h4 className="text-sm font-medium text-foreground mb-2">Select flashcards to print:</h4>
               <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto p-2 border border-border rounded-lg">
                 {getFilteredFlashcards().map(flashcard => {
                   const category = categories.find(c => c.id === flashcard.categoryId);
                   return (
-                    <div 
+                    <div
                       key={flashcard.id}
                       className={`px-3 py-2.5 rounded-lg border-2 cursor-pointer transition-all text-center ${
-                        selectedFlashcards.includes(flashcard.id) 
-                          ? 'bg-primary/10 border-primary text-foreground' 
+                        selectedFlashcards.includes(flashcard.id)
+                          ? 'bg-primary/10 border-primary text-foreground'
                           : 'bg-secondary/30 border-transparent hover:border-border'
                       }`}
                       onClick={() => toggleFlashcardSelection(flashcard.id)}
@@ -530,7 +519,7 @@ if (cardIndex === 0 && page.length > 1) {
               </div>
             </div>
           )}
-          
+
           {selectionMode === 'next-day-sets' && (
             <div>
               <h4 className="text-sm font-medium text-foreground mb-2">Select sets:</h4>
@@ -549,7 +538,7 @@ if (cardIndex === 0 && page.length > 1) {
                   </button>
                 ))}
               </div>
-              
+
               {/* Show selected flashcards */}
               {selectedFlashcards.length > 0 && (
                 <div>
@@ -559,7 +548,7 @@ if (cardIndex === 0 && page.length > 1) {
                       const card = flashcards.find(c => c.id === cardId);
                       if (!card) return null;
                       return (
-                        <div 
+                        <div
                           key={cardId}
                           className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm border border-green-300"
                         >
@@ -573,7 +562,7 @@ if (cardIndex === 0 && page.length > 1) {
             </div>
           )}
         </div>
-        
+
         {/* Control Buttons - Mobile Responsive */}
         <div className="space-y-3">
           {/* Primary Actions Row */}
@@ -652,20 +641,20 @@ if (cardIndex === 0 && page.length > 1) {
         </div>
 
       </div>
-      
+
       {/* Status Message */}
       {message && (
         <div className={`p-3 rounded ${
-          message.includes('Error') 
-            ? 'bg-red-100 text-red-700' 
-            : message.includes('success') 
+          message.includes('Error')
+            ? 'bg-red-100 text-red-700'
+            : message.includes('success')
               ? 'bg-green-100 text-green-700'
               : 'bg-blue-100 text-blue-700'
         }`}>
           {message}
         </div>
       )}
-      
+
       {/* Updated Preview Section - with PDF-like styling */}
      {previewPages.length > 0 && (
   <div className="bg-card rounded-xl border border-border p-4 sm:p-6">
@@ -729,22 +718,22 @@ if (cardIndex === 0 && page.length > 1) {
                 {page.map((fc, idx) => (
                   <div
                     key={fc.id}
-                    className={`absolute ${idx === 0 ? 'top-0' : 'bottom-0'} left-0 w-full h-1/2 flex items-start justify-end p-3`}
+                    className={`absolute ${idx === 0 ? 'top-0' : 'bottom-0'} left-0 w-full h-1/2 flex items-center justify-center p-3`}
                   >
-                    <div className="text-right">
-                      {fc.english && !/[\u3400-\u9FFF]/.test(fc.word) ? (
+                    <div className="text-center">
+                      {fc.english && !/[㐀-鿿]/.test(fc.word) ? (
                         <div className="text-xs sm:text-sm font-semibold text-foreground">
                           {fc.english}
                         </div>
                       ) : (
                         <>
-                          <div className="text-xs sm:text-sm font-semibold text-foreground">
+                          <div className="text-xs sm:text-sm text-muted-foreground">
                             English: {fc.english || '—'}
                           </div>
-                          <div className="text-base sm:text-xl text-foreground my-0.5">
+                          <div className="text-base sm:text-xl font-semibold text-foreground my-0.5">
                             {fc.word || '—'}
                           </div>
-                          <div className="text-xs sm:text-sm font-semibold text-muted-foreground">
+                          <div className="text-xs sm:text-sm text-muted-foreground">
                             Pinyin: {fc.pinyin || '—'}
                           </div>
                         </>
