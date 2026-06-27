@@ -89,6 +89,19 @@ const FlashedHistory = () => {
         flashcardMap[card.id] = card;
       });
 
+      // Fetch session notes from daily_flashing_sessions
+      const { data: sessionRecords } = await supabase
+        .from('daily_flashing_sessions')
+        .select('session_date, notes')
+        .eq('user_id', currentUser.id)
+        .gte('session_date', startDateStr)
+        .lte('session_date', endDateStr);
+
+      const notesByDate = {};
+      (sessionRecords || []).forEach(r => {
+        if (r.notes?.trim()) notesByDate[r.session_date] = r.notes.trim();
+      });
+
       // Fetch spoken words for the month to populate "Words Logged" column
       const { data: spokenWords } = await supabase
         .from('spoken_words')
@@ -119,8 +132,7 @@ const FlashedHistory = () => {
             date,
             setsUsed: new Set(),
             flashcardIds: new Set(),
-            engagements: [],
-            notes: []
+            engagements: []
           };
         }
         
@@ -145,41 +157,22 @@ const FlashedHistory = () => {
         }
         
         sessionsByDate[date].flashcardIds.add(record.flashcard_id);
-        
+
         if (record.engagement) {
           sessionsByDate[date].engagements.push(record.engagement);
-        }
-        // Only add non-metadata notes to display
-        if (record.notes && !isMetadataNote) {
-          try {
-            const parsed = JSON.parse(record.notes);
-            if (parsed && typeof parsed === 'object' && parsed.text) {
-              sessionsByDate[date].notes.push(parsed.text);
-            } else if (typeof parsed === 'string') {
-              sessionsByDate[date].notes.push(parsed);
-            } else {
-              // Skip objects without text (likely metadata)
-            }
-          } catch {
-            sessionsByDate[date].notes.push(record.notes);
-          }
         }
       });
 
       // Convert to array
-      const sessions = Object.values(sessionsByDate).map(session => {
-        // Get unique notes and format nicely
-        const uniqueNotes = session.notes.filter((n, i, arr) => arr.indexOf(n) === i);
-        return {
-          date: session.date,
-          setsUsed: Array.from(session.setsUsed).sort((a, b) => a - b),
-          flashcardCount: session.flashcardIds.size,
-          avgEngagement: session.engagements.length > 0 
-            ? (session.engagements.reduce((a, b) => a + b, 0) / session.engagements.length).toFixed(1)
-            : null,
-          notes: uniqueNotes.join('; ')
-        };
-      });
+      const sessions = Object.values(sessionsByDate).map(session => ({
+        date: session.date,
+        setsUsed: Array.from(session.setsUsed).sort((a, b) => a - b),
+        flashcardCount: session.flashcardIds.size,
+        avgEngagement: session.engagements.length > 0
+          ? (session.engagements.reduce((a, b) => a + b, 0) / session.engagements.length).toFixed(1)
+          : null,
+        notes: notesByDate[session.date] || ''
+      }));
 
       sessions.sort((a, b) => new Date(b.date) - new Date(a.date));
       setSessionHistory(sessions);
