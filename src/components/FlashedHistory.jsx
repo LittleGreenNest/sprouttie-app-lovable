@@ -291,60 +291,92 @@ const FlashedHistory = () => {
         </div>
       </div>
 
-      {/* History Table */}
+      {/* History — cards on mobile, table on sm+ */}
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+
+        {/* Mobile card list */}
+        <div className="sm:hidden divide-y divide-border">
+          {sessionHistory.length === 0 ? (
+            <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+              No tracking data found for this month.
+            </p>
+          ) : (
+            sessionHistory.map((session, idx) => {
+              const sw = spokenWordsByDate[session.date];
+              const wordsLabel = sw && sw.total > 0
+                ? (sw.newCount > 0 && sw.newCount < sw.total
+                    ? `${sw.total} words (${sw.newCount} new)`
+                    : sw.newCount === sw.total
+                      ? `${sw.total} new`
+                      : `${sw.total} words`)
+                : null;
+              return (
+                <motion.div
+                  key={session.date}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.02 }}
+                  className="px-5 py-4 space-y-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-foreground">{formatDate(session.date)}</span>
+                    {session.avgEngagement && (
+                      <span className="inline-flex items-center gap-1 text-sm">
+                        <span className="text-amber-500">⭐</span>
+                        <span className="font-medium text-foreground">{session.avgEngagement}/5</span>
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    {session.setsUsed.length > 0 && (
+                      <span>{session.setsUsed.map(s => `Set ${s}`).join(', ')}</span>
+                    )}
+                    <span>{session.flashcardCount} cards</span>
+                    {wordsLabel && <span className="text-foreground font-medium">{wordsLabel}</span>}
+                  </div>
+                  {session.notes && (
+                    <p className="text-xs text-muted-foreground truncate">{session.notes}</p>
+                  )}
+                </motion.div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted/50 border-b border-border">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Sets Used
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Flashcards
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Words Logged
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Engagement
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Notes
-                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sets Used</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Flashcards</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Words Logged</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Engagement</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Notes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {sessionHistory.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                    No tracking data found for this user yet.
+                    No tracking data found for this month.
                   </td>
                 </tr>
               ) : (
                 sessionHistory.map((session, idx) => (
-                  <motion.tr 
+                  <motion.tr
                     key={session.date}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.02 }}
                     className="hover:bg-muted/30 transition-colors"
                   >
-                    <td className="px-6 py-4 text-sm font-medium text-foreground">
-                      {formatDate(session.date)}
-                    </td>
+                    <td className="px-6 py-4 text-sm font-medium text-foreground">{formatDate(session.date)}</td>
                     <td className="px-6 py-4 text-sm text-muted-foreground">
-                      {session.setsUsed.length > 0 
-                        ? session.setsUsed.map(s => `Set ${s}`).join(', ')
-                        : '-'
-                      }
+                      {session.setsUsed.length > 0 ? session.setsUsed.map(s => `Set ${s}`).join(', ') : '-'}
                     </td>
-                    <td className="px-6 py-4 text-sm text-foreground font-medium">
-                      {session.flashcardCount}
-                    </td>
+                    <td className="px-6 py-4 text-sm text-foreground font-medium">{session.flashcardCount}</td>
                     <td className="px-6 py-4 text-sm">
                       {(() => {
                         const sw = spokenWordsByDate[session.date];
@@ -355,8 +387,7 @@ const FlashedHistory = () => {
                               ? `${sw.total} words (${sw.newCount} new)`
                               : sw.newCount === sw.total
                                 ? `${sw.total} new`
-                                : `${sw.total} words`
-                            }
+                                : `${sw.total} words`}
                           </span>
                         );
                       })()}
