@@ -123,8 +123,20 @@ const FlashedHistory = () => {
       });
       setSpokenWordsByDate(swByDate);
 
-      // Group by date to create session history
+      // Seed sessions from daily_flashing_sessions first so note-only days appear
       const sessionsByDate = {};
+      (sessionRecords || []).forEach(r => {
+        if (!sessionsByDate[r.session_date]) {
+          sessionsByDate[r.session_date] = {
+            date: r.session_date,
+            setsUsed: new Set(),
+            flashcardIds: new Set(),
+            engagements: []
+          };
+        }
+      });
+
+      // Merge in daily_tracking data
       (trackingData || []).forEach(record => {
         const date = record.date;
         if (!sessionsByDate[date]) {
@@ -135,27 +147,23 @@ const FlashedHistory = () => {
             engagements: []
           };
         }
-        
-        // Primary: extract setId from notes JSON metadata (how SessionLogTracker stores it)
-        let isMetadataNote = false;
+
         if (record.notes) {
           try {
             const metadata = JSON.parse(record.notes);
             if (metadata && typeof metadata === 'object' && metadata.setId !== undefined) {
               sessionsByDate[date].setsUsed.add(metadata.setId);
-              isMetadataNote = true; // Don't display this as a user note
             }
           } catch {
             // Not JSON metadata
           }
         }
-        
-        // Fallback: get set from flashcard's set_number
+
         const card = flashcardMap[record.flashcard_id];
         if (card?.set_number) {
           sessionsByDate[date].setsUsed.add(card.set_number);
         }
-        
+
         sessionsByDate[date].flashcardIds.add(record.flashcard_id);
 
         if (record.engagement) {
