@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Rolling alias, not a pinned version — Google retired gemini-2.5-flash from
+// the v1beta API ahead of its announced shutdown date and every call started
+// 404ing. Same alias scan-flashcards uses.
+const GEMINI_MODEL = "gemini-flash-latest";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -291,6 +296,13 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
+
+    // numSets drives how many words we ask for (~5 words per set), matching
+    // the "1 set / 2 sets / 3 sets / 5 sets" options on the client. Previously
+    // this was accepted from the client but never read, so every option
+    // silently generated the same fixed 5 words regardless of what was picked.
+    const numSets = Math.min(Math.max(Number(body?.numSets) || 1, 1), 5);
+    const targetWordCount = numSets * 5;
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
@@ -633,7 +645,7 @@ ${setAnalysis.map(s => {
 Graduation threshold: word is owned by child OR has been flashed ≥${GRADUATION_ROUND_THRESHOLD} times in the last 30 days.
 
 ` : ""}TASK:
-Suggest ONE weekly theme and 5 words.
+Suggest ONE weekly theme and ${targetWordCount} words.
 
 The theme MUST emerge from the dominant interest categories above.${setAware ? ` Where possible, assign each word to a set (via set_number) where it fits thematically and there are open slots. Prioritise filling sets that have graduating words first.` : ""} If cold-start, pick a theme appropriate for the age band and any profile interests listed.
 
@@ -648,7 +660,7 @@ For each word provide:
 Return JSON only. No preamble. No markdown. Random seed for variety: ${Math.floor(Math.random() * 100000)}`;
 
     const aiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -658,7 +670,7 @@ Return JSON only. No preamble. No markdown. Random seed for variety: ${Math.floo
           generation_config: {
             response_mime_type: "application/json",
             temperature: 0.9,
-            thinking_config: { thinking_budget: 0 },
+            thinking_config: { thinking_level: "low" },
           },
         }),
       }
@@ -727,7 +739,7 @@ Return JSON only. No preamble. No markdown. Random seed for variety: ${Math.floo
       return true;
     });
 
-    const finalSuggestions = (filtered.length >= 3 ? filtered : suggestions).slice(0, 5);
+    const finalSuggestions = (filtered.length >= 3 ? filtered : suggestions).slice(0, targetWordCount);
 
     // ─── STEP 5: Write to Supabase ───
     let weekStart = body?.weekStart;

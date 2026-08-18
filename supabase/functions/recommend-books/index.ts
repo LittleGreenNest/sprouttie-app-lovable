@@ -1,5 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+// Rolling alias, not a pinned version — Google retired gemini-2.5-flash from
+// the v1beta API ahead of its announced shutdown date and every call started
+// 404ing. Same alias scan-flashcards uses.
+const GEMINI_MODEL = "gemini-flash-latest";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -188,14 +193,14 @@ Respond with valid JSON only:
 }`;
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           system_instruction: { parts: [{ text: "You are a helpful children's book recommendation assistant. Always respond with valid JSON only." }] },
           contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generation_config: { response_mime_type: "application/json", temperature: 0.5 },
+          generation_config: { response_mime_type: "application/json", temperature: 0.5, thinking_config: { thinking_level: "low" } },
         }),
       }
     );

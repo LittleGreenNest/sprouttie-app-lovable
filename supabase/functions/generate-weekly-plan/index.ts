@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Rolling alias, not a pinned version — Google retired gemini-2.5-flash from
+// the v1beta API ahead of its announced shutdown date and every call started
+// 404ing. Same alias scan-flashcards uses.
+const GEMINI_MODEL = "gemini-flash-latest";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -185,14 +190,14 @@ LAST WEEK ADHERENCE: ${daysCompleted} of 7 days completed
 Generate exactly ${setsPerDay} sets with exactly 5 words each. Maximum 1 phrase per set.`;
 
     const aiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemPrompt }] },
           contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-          generation_config: { response_mime_type: 'application/json', temperature: 0.4 },
+          generation_config: { response_mime_type: 'application/json', temperature: 0.4, thinking_config: { thinking_level: 'low' } },
         }),
       }
     );

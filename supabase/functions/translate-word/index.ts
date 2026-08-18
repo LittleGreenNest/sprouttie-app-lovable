@@ -1,5 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+// Rolling alias, not a pinned version — Google retired gemini-2.5-flash from
+// the v1beta API ahead of its announced shutdown date and every call started
+// 404ing. Same alias scan-flashcards uses.
+const GEMINI_MODEL = "gemini-flash-latest";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -78,14 +83,18 @@ Return ONLY the JSON object, no markdown, no explanation.`;
         };
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemPrompt }] },
           contents: [{ role: "user", parts: [{ text: word.trim() }] }],
-          generation_config: { response_mime_type: "application/json", temperature: 0.2 },
+          generation_config: {
+            response_mime_type: "application/json",
+            temperature: 0.2,
+            thinking_config: { thinking_level: "low" },
+          },
         }),
       }
     );
@@ -99,11 +108,18 @@ Return ONLY the JSON object, no markdown, no explanation.`;
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      throw new Error("Gemini API error");
+      // Keep the upstream status and body — a bare "Gemini API error" hid a
+      // model retirement for weeks.
+      throw new Error(`Gemini API error ${response.status}: ${text.slice(0, 300)}`);
     }
 
     const data = await response.json();
     const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    if (!content.trim()) {
+      throw new Error(
+        `Gemini returned no text (finishReason: ${data.candidates?.[0]?.finishReason ?? "unknown"})`
+      );
+    }
     const parsed = JSON.parse(content.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

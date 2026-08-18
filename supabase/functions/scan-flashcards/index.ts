@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-flash-latest";
 
 const TEXT_SYSTEM_PROMPT = `You are a word extractor for a bilingual Chinese-English learning app for young children.
 
@@ -25,6 +25,30 @@ Return ONLY a JSON object with this structure:
 {
   "words": [
     { "chinese": "猫", "english": "cat", "pinyin": "māo", "category": "Animals", "originalLanguage": "chinese" }
+  ]
+}
+
+If you cannot read a word clearly, skip it. Do not guess wildly.
+If the image doesn't contain any readable text, return { "words": [], "message": "No words detected in this image." }`;
+
+const TEXT_SYSTEM_PROMPT_NO_TRANSLATE = `You are a word extractor for a bilingual Chinese-English learning app for young children.
+
+The user will send you a photo that may contain Chinese words, English words, or both. This could be physical flashcards, educational toys, puzzles, posters, book pages, packaging, or any object with text on it.
+
+Your job:
+1. Detect every distinct word/phrase visible in the image — both Chinese AND English.
+2. For each word, provide:
+   - "chinese": the Chinese characters, ONLY if the word was originally written in Chinese in the photo. If the word is English-only, leave "chinese" as an empty string "" — do NOT translate it to Chinese.
+   - "english": the English translation (if the word is Chinese-only, provide the English translation; if the word is English, use it as-is)
+   - "pinyin": the Hanyu Pinyin with tone marks (e.g. māo, not mao1) for the Chinese text, ONLY if "chinese" is non-empty. Otherwise leave "pinyin" as an empty string "".
+    - "category": suggest a category from this list: Animals, Food, Vehicles, Household, Nature, Body Parts, Colors, Numbers, Family, Actions, Clothing, Greetings, Fruits, Shapes, Weather, Places, Toys. Pick the best fit.
+    - "originalLanguage": "chinese" if the word was originally in Chinese, "english" if originally in English
+
+Return ONLY a JSON object with this structure:
+{
+  "words": [
+    { "chinese": "猫", "english": "cat", "pinyin": "māo", "category": "Animals", "originalLanguage": "chinese" },
+    { "chinese": "", "english": "dog", "pinyin": "", "category": "Animals", "originalLanguage": "english" }
   ]
 }
 
@@ -68,7 +92,7 @@ serve(async (req) => {
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not configured");
 
-    const { imageBase64, mimeType, mode } = await req.json();
+    const { imageBase64, mimeType, mode, skipTranslation } = await req.json();
 
     if (!imageBase64) {
       return new Response(JSON.stringify({ error: "No image provided" }), {
@@ -78,10 +102,14 @@ serve(async (req) => {
     }
 
     const isIdentifyMode = mode === "identify";
-    const systemPrompt = isIdentifyMode ? IDENTIFY_SYSTEM_PROMPT : TEXT_SYSTEM_PROMPT;
+    const systemPrompt = isIdentifyMode
+      ? IDENTIFY_SYSTEM_PROMPT
+      : (skipTranslation ? TEXT_SYSTEM_PROMPT_NO_TRANSLATE : TEXT_SYSTEM_PROMPT);
     const userText = isIdentifyMode
       ? "Please look at this photo and identify the main objects, animals, or items visible. Return the Chinese word, pinyin, and English for each."
-      : "Please scan this photo and extract all the words you can see — both Chinese and English. This could be flashcards, a toy, a puzzle, a poster, or any object with text. For English-only words, provide the Chinese translation too.";
+      : (skipTranslation
+          ? "Please scan this photo and extract all the words you can see — both Chinese and English. This could be flashcards, a toy, a puzzle, a poster, or any object with text. For English-only words, do NOT translate them to Chinese — leave the Chinese field empty and keep them as English."
+          : "Please scan this photo and extract all the words you can see — both Chinese and English. This could be flashcards, a toy, a puzzle, a poster, or any object with text. For English-only words, provide the Chinese translation too.");
 
     // Use native Gemini generateContent API (more stable than OpenAI-compat shim)
     const response = await fetch(
@@ -108,7 +136,7 @@ serve(async (req) => {
           generation_config: {
             response_mime_type: "application/json",
             temperature: 0.2,
-            thinking_config: { thinking_budget: 0 },
+            thinking_config: { thinking_level: "low" },
           },
         }),
       }

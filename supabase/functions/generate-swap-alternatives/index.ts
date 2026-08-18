@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Rolling alias, not a pinned version — Google retired gemini-2.5-flash from
+// the v1beta API ahead of its announced shutdown date and every call started
+// 404ing. Same alias scan-flashcards uses.
+const GEMINI_MODEL = "gemini-flash-latest";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -184,7 +189,7 @@ ${existingWords.slice(0, 50).join(", ") || "none"}
 Return exactly 3 alternative words as a JSON array of strings. Example: ["word1", "word2", "word3"]`;
 
     const aiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -194,7 +199,7 @@ Return exactly 3 alternative words as a JSON array of strings. Example: ["word1"
           generation_config: {
             response_mime_type: "application/json",
             temperature: 0.5,
-            thinking_config: { thinking_budget: 0 },
+            thinking_config: { thinking_level: "low" },
           },
         }),
       }
