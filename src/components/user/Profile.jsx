@@ -15,7 +15,7 @@ const REPLY_LABELS = { english: 'Replies in English', mixes: 'Mixes languages', 
 const TIME_LABELS = { '1-2': '1–2 minutes', '3-5': '3–5 minutes', '5-10': '5–10 minutes' };
 
 const Profile = () => {
-  const { currentUser, profile, refreshProfile, logout } = useAuth();
+  const { currentUser, profile, refreshProfile, refreshCurrentUser, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || '');
   const [email, setEmail] = useState(currentUser?.email || '');
@@ -151,6 +151,10 @@ const Profile = () => {
         setName(updatedAuth.user.user_metadata.full_name);
       }
 
+      // Force-sync AuthContext's currentUser so the new name shows immediately
+      // everywhere it's read (e.g. the dashboard greeting), instead of waiting
+      // on the auth listener to pick up the change on its own.
+      await refreshCurrentUser();
       await refreshProfile(currentUser);
       setIsEditing(false);
     } catch (err) {

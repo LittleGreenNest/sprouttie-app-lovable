@@ -186,17 +186,16 @@ const PersonaliseFlow = ({ onComplete }) => {
   // ── Handlers ─────────────────────────────────────────────────────
 
   const goNext = () => {
-    if (step < total - 1) {
-      setDirection(1);
-      setStep(s => s + 1);
-    }
+    setDirection(1);
+    // Clamp inside the functional update so a rapid double-tap (two clicks
+    // before React re-renders) can't skip past the last screen — both calls
+    // would otherwise read the same stale `step` from this render's closure.
+    setStep(s => Math.min(s + 1, total - 1));
   };
 
   const goBack = () => {
-    if (step > 0) {
-      setDirection(-1);
-      setStep(s => s - 1);
-    }
+    setDirection(-1);
+    setStep(s => Math.max(s - 1, 0));
   };
 
   const handleSelect = (value) => {

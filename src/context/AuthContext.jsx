@@ -352,6 +352,21 @@ export const AuthProvider = ({ children }) => {
     return await refreshProfile(currentUser);
   };
 
+  /**
+   * Re-fetches the auth user and syncs currentUser.
+   * Belt-and-suspenders for callers of supabase.auth.updateUser(): that call
+   * should emit a USER_UPDATED event that onAuthStateChange picks up on its
+   * own, but relying on that alone left the UI showing a stale name after a
+   * profile edit. Call this right after updateUser() to guarantee the fresh
+   * user_metadata lands in context immediately.
+   */
+  const refreshCurrentUser = useCallback(async () => {
+    const { data, error: getUserErr } = await supabase.auth.getUser();
+    if (getUserErr) return null;
+    setCurrentUser(data?.user ?? null);
+    return data?.user ?? null;
+  }, []);
+
   const value = useMemo(
     () => ({
       currentUser,
@@ -378,6 +393,7 @@ export const AuthProvider = ({ children }) => {
       // profile utilities
       getUserProfile,
       refreshProfile,
+      refreshCurrentUser,
       ensureProfileExists,
       setError,
     }),
@@ -391,6 +407,7 @@ export const AuthProvider = ({ children }) => {
       profileLoading,
       error,
       refreshProfile,
+      refreshCurrentUser,
       ensureProfileExists,
     ]
   );

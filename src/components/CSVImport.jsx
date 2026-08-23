@@ -177,20 +177,20 @@ const CSVImport = ({ onClose }) => {
         
         // If creating a new category
         if (!categoryId || categoryId === 'new') {
-          const newCategory = addCategory(categoryName);
+          const newCategory = await addCategory(categoryName);
           categoryId = newCategory.id;
           results.categoriesAdded.push(categoryName);
         } else {
           results.categoriesMapped.push(categoryName);
         }
-        
+
         // Add flashcards for this category
         for (const flashcard of importData.flashcards[categoryName]) {
           // Skip if the word already exists in this category
           if (doesFlashcardExist(flashcard.word, categoryId)) {
             results.flashcardsSkipped++;
           } else {
-            addFlashcard(flashcard.word, categoryId);
+            await addFlashcard(flashcard.word, categoryId);
             results.flashcardsAdded++;
           }
         }

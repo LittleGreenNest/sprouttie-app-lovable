@@ -426,19 +426,8 @@ const FlashcardManager = () => {
         </div>
       )}
 
-      {/* CSV Import Modal */}
-      {showCSVImport && (
-        <div className="fixed inset-0 z-10 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen p-4 text-center sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-              <CSVImport onClose={toggleCSVImport} />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* CSV Import Modal — CSVImport renders its own full-screen overlay */}
+      {showCSVImport && <CSVImport onClose={toggleCSVImport} />}
 
       {/* Flashed History + Import/Export Buttons */}
       <div className="flex justify-between items-center mb-4">
@@ -731,6 +720,7 @@ const FlashcardManager = () => {
                       className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       value={newFlashcardCategory}
                       onChange={(e) => setNewFlashcardCategory(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                       required
                     >
                       <option value="">Select a category</option>
@@ -741,9 +731,9 @@ const FlashcardManager = () => {
                       ))}
                     </select>
                   </div>
-                  
+
                   <div className="flex gap-2">
-                    <button 
+                    <button
                       type="submit"
                       className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition"
                     >
@@ -916,6 +906,7 @@ const FlashcardManager = () => {
                       className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       value={newFlashcardCategory}
                       onChange={(e) => setNewFlashcardCategory(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                       required
                     >
                       <option value="">Select a category</option>
@@ -926,9 +917,9 @@ const FlashcardManager = () => {
                       ))}
                     </select>
                   </div>
-                  
+
                   <div className="flex gap-2">
-                    <button 
+                    <button
                       type="submit"
                       className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition"
                     >
@@ -1058,6 +1049,7 @@ const FlashcardManager = () => {
                                 className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 value={editFlashcardCategory}
                                 onChange={(e) => setEditFlashcardCategory(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                                 required
                               >
                                 {categories.map(category => (

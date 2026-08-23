@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, CalendarCheck, MessageCircle, Layers, MoreHorizontal, X, ScanText, CalendarRange, Clock, BookOpen } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -50,6 +50,13 @@ const BottomTabBar = () => {
   const [moreOpen, setMoreOpen] = useState(false);
 
   const currentPath = location.pathname.replace('/', '');
+
+  // Belt-and-suspenders: guarantees the menu closes on any route change,
+  // even when the click that triggered navigation doesn't (e.g. lazy-loaded
+  // route chunks can cause the setMoreOpen(false) in handleNav to get lost).
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [location.pathname]);
 
   const handleNav = (id) => {
     if (id === 'more') {

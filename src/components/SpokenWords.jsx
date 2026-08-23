@@ -40,9 +40,35 @@ const STAGE_ORDER = ['new', 'growing', 'owned'];
 // ── Word Card ────────────────────────────────────────────────────────────────
 const SWIPE_THRESHOLD = 68;
 
+// Resolves whatever is in spoken_words.video_url into something a <video> can
+// play. New rows store a storage path (the bucket is private, so it needs a
+// signed URL); older rows may hold a full URL from before that change.
+const useVideoSrc = (videoUrl) => {
+  const [src, setSrc] = useState(null);
+
+  useEffect(() => {
+    if (!videoUrl) { setSrc(null); return; }
+    if (/^https?:\/\//.test(videoUrl)) { setSrc(videoUrl); return; }
+
+    let cancelled = false;
+    supabase.storage
+      .from('spoken-word-videos')
+      .createSignedUrl(videoUrl, 60 * 60)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) { console.warn('Could not sign video URL:', error.message); setSrc(null); return; }
+        setSrc(data?.signedUrl ?? null);
+      });
+    return () => { cancelled = true; };
+  }, [videoUrl]);
+
+  return src;
+};
+
 const WordCard = ({ word, onStageChange, onDelete }) => {
   const [expanded, setExpanded] = useState(false);
   const [playingVideo, setPlayingVideo] = useState(false);
+  const videoSrc = useVideoSrc(word.video_url);
 
   const x = useMotionValue(0);
   const stage = STAGES[word.word_stage] || STAGES.new;
@@ -154,7 +180,7 @@ const WordCard = ({ word, onStageChange, onDelete }) => {
               <div>
                 {playingVideo ? (
                   <video
-                    src={word.video_url}
+                    src={videoSrc ?? undefined}
                     controls
                     autoPlay
                     className="w-full max-w-xs rounded-lg"
@@ -450,22 +476,24 @@ const AddWordForm = ({ currentUser, onWordAdded }) => {
     if (!newWord.trim()) return;
 
     try {
-      let videoUrl = null;
+      // Store the storage PATH, not a getPublicUrl() result. The bucket is
+      // owner-scoped by RLS, so a "public" URL for it does not resolve and the
+      // saved clip would never play back. Playback signs the path on demand.
+      let videoPath = null;
       if (recordedVideo) {
         const fileName = `${currentUser.id}/${Date.now()}.webm`;
         const { error: uploadError } = await supabase.storage
           .from('spoken-word-videos')
-          .upload(fileName, recordedVideo);
+          .upload(fileName, recordedVideo, { contentType: 'video/webm' });
         if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from('spoken-word-videos').getPublicUrl(fileName);
-        videoUrl = urlData.publicUrl;
+        videoPath = fileName;
       }
 
       const { error } = await supabase.from('spoken_words').insert({
         user_id: currentUser.id,
         word: newWord.trim(),
         notes: notes.trim() || null,
-        video_url: videoUrl,
+        video_url: videoPath,
         word_stage: 'new',
       });
 
