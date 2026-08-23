@@ -204,6 +204,7 @@ export type Database = {
           last_reviewed_at: string | null
           mastery_level: number | null
           phrase_group: string | null
+          pinyin: string | null
           review_count: number | null
           set_display_order: number | null
           set_number: number | null
@@ -225,6 +226,7 @@ export type Database = {
           last_reviewed_at?: string | null
           mastery_level?: number | null
           phrase_group?: string | null
+          pinyin?: string | null
           review_count?: number | null
           set_display_order?: number | null
           set_number?: number | null
@@ -246,6 +248,7 @@ export type Database = {
           last_reviewed_at?: string | null
           mastery_level?: number | null
           phrase_group?: string | null
+          pinyin?: string | null
           review_count?: number | null
           set_display_order?: number | null
           set_number?: number | null

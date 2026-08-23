@@ -251,6 +251,32 @@ const WeeklyWordPlanner = () => {
     }
   };
 
+  // Looks up English + pinyin for words we are about to save. weekly_suggestions
+  // only stores the word itself, so without this the accepted cards land with an
+  // empty English side and no pinyin, and the parent has to fill 25 of them in by
+  // hand — exactly the admin the planner is supposed to remove.
+  // Chunked rather than fired all at once so a 25-word accept doesn't trip the
+  // translate-word rate limit. A failed lookup degrades to blank, never blocks.
+  const translateWords = async (words) => {
+    const out = {};
+    const CHUNK = 5;
+    for (let i = 0; i < words.length; i += CHUNK) {
+      const batch = words.slice(i, i + CHUNK);
+      const results = await Promise.all(batch.map(async (w) => {
+        try {
+          const { data, error } = await supabase.functions.invoke('translate-word', { body: { word: w } });
+          if (error) throw error;
+          return [w, { english: data?.english || '', pinyin: data?.pinyin || '' }];
+        } catch (err) {
+          console.warn('translate-word failed for', w, err);
+          return [w, { english: '', pinyin: '' }];
+        }
+      }));
+      results.forEach(([w, v]) => { out[w] = v; });
+    }
+    return out;
+  };
+
   const handleAcceptAll = async () => {
     if (!currentUser || pendingSuggestions.length === 0) return;
     setAcceptingAll(true);
@@ -258,22 +284,44 @@ const WeeklyWordPlanner = () => {
       const ids = pendingSuggestions.map(s => s.id);
       await supabase.from('weekly_suggestions').update({ status: 'accepted' }).in('id', ids);
 
-      // Add each word to backlog (word_plans) and flashcards if needed
-      for (const s of pendingSuggestions) {
-        const existsInBacklog = wordPlans.some(wp => wp.word.toLowerCase() === s.word.toLowerCase());
-        if (!existsInBacklog) {
-          await supabase.from('word_plans').insert({
-            user_id: currentUser.id, word: s.word, theme: s.category || null,
-            planned_week_start: formatDate(currentWeekStart), display_order: wordPlans.length,
-          });
-        }
-        const existsInFlashcards = userFlashcards.some(f => f.front?.toLowerCase() === s.word.toLowerCase());
-        if (!existsInFlashcards) {
-          await supabase.from('flashcards').insert({
-            user_id: currentUser.id, front: s.word, back: '', folder: s.category || 'default',
-            card_type: 'word', card_status: 'waiting',
-          });
-        }
+      // Batched: the old version issued two sequential round trips per word, so a
+      // 5-set accept meant 50 of them back to back while the parent waited.
+      const newForBacklog = pendingSuggestions.filter(
+        s => !wordPlans.some(wp => wp.word.toLowerCase() === s.word.toLowerCase())
+      );
+      const newForCards = pendingSuggestions.filter(
+        s => !userFlashcards.some(f => f.front?.toLowerCase() === s.word.toLowerCase())
+      );
+
+      const translations = await translateWords([
+        ...new Set([...newForBacklog, ...newForCards].map(s => s.word)),
+      ]);
+
+      if (newForBacklog.length > 0) {
+        await supabase.from('word_plans').insert(
+          newForBacklog.map((s, i) => ({
+            user_id: currentUser.id,
+            word: s.word,
+            pinyin: translations[s.word]?.pinyin || null,
+            theme: s.category || null,
+            planned_week_start: formatDate(currentWeekStart),
+            display_order: wordPlans.length + i,
+          }))
+        );
+      }
+
+      if (newForCards.length > 0) {
+        await supabase.from('flashcards').insert(
+          newForCards.map(s => ({
+            user_id: currentUser.id,
+            front: s.word,
+            back: translations[s.word]?.english || '',
+            pinyin: translations[s.word]?.pinyin || null,
+            folder: s.category || 'default',
+            card_type: 'word',
+            card_status: 'waiting',
+          }))
+        );
       }
       toast.success(`${pendingSuggestions.length} words added to your backlog 🌱`);
       setPendingSuggestions([]);
@@ -387,16 +435,24 @@ const WeeklyWordPlanner = () => {
   const handleAddToFlashcards = async (wp) => {
     setAddingToFlashcards(wp.id);
     try {
+      // `back` is the English meaning (FlashcardContext maps english -> back), so
+      // the old `back: wp.pinyin` filed pinyin into the English field. Look up the
+      // real meaning, and keep the pinyin we already have on the word plan.
+      const looked = (await translateWords([wp.word]))[wp.word] || {};
+      const english = looked.english || '';
+      const pinyin = wp.pinyin || looked.pinyin || null;
+
       const { error } = await supabase.from('flashcards').insert({
         user_id: currentUser.id,
         front: wp.word,
-        back: wp.pinyin || '',
+        back: english,
+        pinyin,
         folder: wp.theme || 'default',
         card_type: 'word',
         card_status: 'waiting',
       });
       if (error) throw error;
-      setUserFlashcards(prev => [...prev, { front: wp.word, back: wp.pinyin || '', folder: wp.theme || 'default' }]);
+      setUserFlashcards(prev => [...prev, { front: wp.word, back: english, pinyin, folder: wp.theme || 'default' }]);
       toast.success(`"${wp.word}" added to flashcard deck`);
     } catch (err) {
       console.error('Error adding to flashcards:', err);
@@ -523,8 +579,11 @@ const WeeklyWordPlanner = () => {
         animate={{ opacity: 1, y: 0 }}
         className="text-center"
       >
-        <h1 className="text-2xl font-display font-bold text-[hsl(var(--foreground))]">
+        <h1 className="text-2xl font-display font-bold text-[hsl(var(--foreground))] flex items-center justify-center gap-2">
           Weekly Word Planner
+          <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 align-middle">
+            Beta
+          </span>
         </h1>
         <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
           Plan your flashcard words by theme and week
@@ -603,7 +662,7 @@ const WeeklyWordPlanner = () => {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {[1, 2, 3].map((n) => (
+            {[1, 2, 3, 5].map((n) => (
               <button
                 key={n}
                 onClick={() => generateSuggestions(n)}

@@ -62,6 +62,7 @@ const PhotoScanner = () => {
   const [adding, setAdding] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
   const [scanMode, setScanMode] = useState(MODES.TEXT);
+  const [skipTranslation, setSkipTranslation] = useState(false);
   const [scanningProgress, setScanningProgress] = useState('');
   const [wordCategories, setWordCategories] = useState({}); // { [wordId]: categoryName }
   const [setFilter, setSetFilter] = useState('all'); // 'all', 'in-set', 'not-in-set', or a set id
@@ -82,7 +83,12 @@ const PhotoScanner = () => {
 
   const scanImage = async (base64, mimeType) => {
     const { data, error } = await supabase.functions.invoke('scan-flashcards', {
-      body: { imageBase64: base64, mimeType, mode: scanMode === MODES.IDENTIFY ? 'identify' : 'text' },
+      body: {
+        imageBase64: base64,
+        mimeType,
+        mode: scanMode === MODES.IDENTIFY ? 'identify' : 'text',
+        skipTranslation: scanMode === MODES.TEXT ? skipTranslation : false,
+      },
     });
     if (error) throw error;
     return data;
@@ -151,11 +157,13 @@ const PhotoScanner = () => {
 
       if (message) setAiMessage(message);
 
-      // Deduplicate by chinese character
+      // Deduplicate by chinese character, falling back to english for words with no Chinese translation
+      // (e.g. skip-translation scans, where every such word would otherwise share the key "")
       const seen = new Set();
       const uniqueWords = allWords.filter(w => {
-        if (seen.has(w.chinese)) return false;
-        seen.add(w.chinese);
+        const key = w.chinese?.trim() || w.english;
+        if (seen.has(key)) return false;
+        seen.add(key);
         return true;
       });
 
@@ -188,14 +196,17 @@ const PhotoScanner = () => {
     } finally {
       setScanningProgress('');
     }
-  }, [existingWordsSet, scanMode, maxImages]);
+  }, [existingWordsSet, scanMode, skipTranslation, maxImages]);
 
   const toggleWord = (id) => {
     setSelectedWords(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const cycleLanguage = (id, e) => {
+  const cycleLanguage = (word, e) => {
     e.stopPropagation();
+    // Words with no Chinese translation (skip-translation scans) can only be saved as English
+    if (!word.chinese?.trim()) return;
+    const id = word.id;
     setCardLanguage(prev => {
       const current = prev[id] || 'chinese';
       // Cycle: english → chinese → both → english
@@ -366,6 +377,18 @@ const PhotoScanner = () => {
             </button>
           </div>
 
+          {scanMode === MODES.TEXT && (
+            <label className="flex items-center gap-2 px-1 text-xs text-slate-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={skipTranslation}
+                onChange={(e) => setSkipTranslation(e.target.checked)}
+                className="rounded border-slate-300 text-[hsl(var(--sprouttie-green))] focus:ring-[hsl(var(--sprouttie-green))]"
+              />
+              Keep English words as English (don't translate to Chinese)
+            </label>
+          )}
+
           {/* 3-step explainer strip */}
           <div className="flex items-center justify-between gap-2 bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
             {(scanMode === MODES.TEXT
@@ -474,7 +497,9 @@ const PhotoScanner = () => {
               {scanMode === MODES.IDENTIFY ? 'Identifying objects...' : 'Scanning for words...'}
             </p>
             <p className="text-sm text-slate-500">
-              {scanningProgress || (scanMode === MODES.IDENTIFY ? 'Looking at the photo and finding the Chinese words' : 'Detecting Chinese & English words and generating translations')}
+              {scanningProgress || (scanMode === MODES.IDENTIFY
+                ? 'Looking at the photo and finding the Chinese words'
+                : (skipTranslation ? 'Detecting Chinese & English words' : 'Detecting Chinese & English words and generating translations'))}
             </p>
           </div>
         </motion.div>
@@ -554,6 +579,7 @@ const PhotoScanner = () => {
                   const lang = cardLanguage[word.id] || 'chinese';
                   const wordSetName = getWordSetName(word);
                   const wordCat = wordCategories[word.id] || word.category || 'default';
+                  const hasChinese = !!word.chinese?.trim();
                   return (
                     <motion.div
                       key={word.id}
@@ -580,11 +606,11 @@ const PhotoScanner = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-lg font-bold text-[hsl(var(--sprouttie-ink))]">
-                              {word.chinese}
+                              {word.chinese || word.english}
                             </span>
                             {word.originalLanguage === 'english' && (
                               <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600">
-                                FROM EN
+                                {hasChinese ? 'FROM EN' : 'EN ONLY'}
                               </span>
                             )}
                             {word.isDuplicate && (
@@ -598,18 +624,21 @@ const PhotoScanner = () => {
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-slate-500">
-                            <span>{word.pinyin}</span>
-                            <span>·</span>
-                            <span>{word.english}</span>
-                          </div>
+                          {hasChinese && (
+                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                              <span>{word.pinyin}</span>
+                              <span>·</span>
+                              <span>{word.english}</span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Language toggle badge */}
                         <button
-                          onClick={(e) => cycleLanguage(word.id, e)}
-                          className={`text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0 transition-colors ${getLangColor(lang)}`}
-                          title="Tap to change: EN / CN / Both"
+                          onClick={(e) => cycleLanguage(word, e)}
+                          disabled={!hasChinese}
+                          className={`text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0 transition-colors ${getLangColor(lang)} ${!hasChinese ? 'opacity-60 cursor-default' : ''}`}
+                          title={hasChinese ? 'Tap to change: EN / CN / Both' : 'English only — no Chinese translation'}
                         >
                           {getLangLabel(lang)}
                         </button>

@@ -142,7 +142,7 @@ export const FlashcardProvider = ({ children }) => {
         front: card.front,
         back: card.back,
         english: card.back,
-        pinyin: '', // Supabase doesn't store pinyin separately yet
+        pinyin: card.pinyin || '',
         categoryId: card.folder || 'default',
         folder: card.folder || 'default',
         card_type: card.card_type || 'word',
@@ -332,6 +332,7 @@ export const FlashcardProvider = ({ children }) => {
             user_id: currentUser.id,
             front: word,
             back: english,
+            pinyin: pinyin || null,
             folder: categoryName,
             card_type: cardType,
             phrase_group: phraseGroup,
@@ -410,6 +411,7 @@ export const FlashcardProvider = ({ children }) => {
         const supabaseUpdates = {};
         if (updates.word !== undefined) supabaseUpdates.front = updates.word;
         if (updates.english !== undefined) supabaseUpdates.back = updates.english;
+        if (updates.pinyin !== undefined) supabaseUpdates.pinyin = updates.pinyin || null;
         if (categoryName !== undefined) supabaseUpdates.folder = categoryName;
         if (updates.card_type !== undefined) supabaseUpdates.card_type = updates.card_type;
         if (updates.phrase_group !== undefined) supabaseUpdates.phrase_group = updates.phrase_group;
