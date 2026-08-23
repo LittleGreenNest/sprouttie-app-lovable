@@ -28,10 +28,16 @@ Migrated from Lovable to Claude Code — no Lovable dependencies remain.
 
 ## Routes
 
+## Architecture
+| Domain | Purpose |
+|---|---|
+| sprouttie.com | Marketing site (Lovable) — hub + /app product page + /shop |
+| sprouttie.online | App only — `/` redirects to `/login`. No homepage. |
+
 ### Public
 | Path | Component |
 |---|---|
-| `/` | `pages/LandingPage` |
+| `/` | Redirects to `/login` (LandingPage.jsx exists but is unrouted as of 2026-06) |
 | `/login` | `components/auth/Login` |
 | `/signup` | `components/auth/Signup` |
 | `/forgot-password` | `components/auth/ForgotPassword` |

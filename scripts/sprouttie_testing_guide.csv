@@ -1,0 +1,29 @@
+#,Area,Where,What to do,Expected result,Status,Notes
+,— ALREADY LIVE: the Gemini fix. Test on sprouttie.online —,,,,,
+1,AI autofill (Chinese),Live,/cards > Chinese Card > Type in Chinese > Phrase/Sentence. Enter: 我要跟姐姐一样，穿漂亮的裙子。,Pinyin and English Meaning both fill in on their own after about 1 second,,Verified by Claude via API
+2,AI autofill (English),Live,/cards > Type in English. Enter: let's go for a walk,"Chinese fills in as 我们去散步吧, plus pinyin and English",,Verified by Claude via API
+3,AI autofill (single word),Live,/cards > Single Word. Enter: 狗,Fills in dog / gǒu,,Verified by Claude via API
+4,Book recommendations,Live,"/book-recommendations, request recommendations","Real book titles come back, no error message",,Verified by Claude via API
+5,Photo scanner,Live,"/scan-flashcards, scan any flashcard or object with text",Words are detected and listed,,Verified by Claude via API
+6,Weekly planner: generate,Live,"/word-planner, generate a plan",A theme and a word list appear,,NOT verified by Claude. Broken for ~6 weeks. Highest priority.
+7,Weekly planner: swap,Live,"/word-planner, use Swap on any word",Alternative words are offered,,NOT verified by Claude. Broken for ~6 weeks. Highest priority.
+8,Weekly planner: set count,Live,"/word-planner, choose 2 sets, generate","About 10 words, not 5",,Behaviour CHANGED on live already. Used to always give 5 regardless.
+,— NOT LIVE YET: uncommitted work. Test on localhost:8090 —,,,,,
+9,Planner: Beta badge,Local,"/word-planner, look at the page heading",An amber 'Beta' pill sits next to the title,,Cosmetic
+10,Planner: 5 sets option,Local,"/word-planner, open the set count picker","Options are 1, 2, 3 and 5 (live only has 1, 2, 3)",,Pairs with row 8. Backend already supports 5.
+11,Scanner: keep English,Local,/scan-flashcards > Text mode. Tick 'Keep English words as English'. Scan something with English words on it,English words stay English. Chinese column stays empty for them.,,"New feature. Backend already live, switch is not."
+12,Scanner: duplicate handling,Local,"With the tick box ON, scan an item showing two different English-only words",Both words appear separately,,Without the fix they collapse into one
+13,CSV import: overlay,Local,"/cards, open CSV Import",One clean modal. No doubled or doubly-dark grey background.,,Bug fix
+14,CSV import: correctness,Local,Import a CSV that uses a category name that does not exist yet,"Every row lands in the correct new category, none go missing",,Race condition fix. Worth doing carefully.
+15,Enter key,Local,"/cards, type in the Chinese field and press Enter","Nothing submits, form stays put",,Bug fix
+16,Profile name,Local,"/profile, change the name, save, then go to the dashboard","Greeting shows the new name straight away, no refresh needed",,Bug fix
+17,Bottom menu,Local,"Open the 'More' menu, tap through to any page",Menu closes by itself on arrival,,Bug fix
+18,Onboarding double-tap,Local,"On a brand new signup, tap Next twice very fast","It moves forward one screen only, never skips",,Hard to trigger. Skip if awkward.
+19,Fonts,Local,Look at any page and compare against live,Headings and body text look identical to live,,Font loading was moved for speed. Checking for a visual regression.
+20,Mascot image,Local,Look at the mascot wherever it appears,"Still sharp, not blurry or blocky",,File was shrunk from 893KB to 456KB
+,— RESTORED: video recording is back in —,,,,,
+21,Spoken words: video,Local,"/words-said > Add Word. Record a short clip, save the word, then tap 'Watch video clip' on that word.","Record button is there, clip saves, and it plays back straight after",,"RESTORED at your request, and the playback bug fixed. Playback is the bit that was broken before, so test that specifically."
+,"— PINYIN + CARD DATA FIX (new, needs a schema change that is already live) —",,,,,
+22,Pinyin actually saves,Local,"/cards > add a Chinese card, let the AI fill pinyin, save. Then RELOAD the page and open that card.",Pinyin is still there after the reload,,"THE ORIGINAL BUG. Autofill worked but flashcards had no pinyin column, so it was dropped on save. Column added 2026-08-23."
+23,Planner accept fills cards,Local,/word-planner > generate a set > Accept all. Then go to /cards and look at the new cards.,"Each new card has its English meaning filled in, not blank",,"Accept-all used to write an empty English side, leaving you to fill them in by hand."
+24,Add single word to deck,Local,"/word-planner > on a backlog word, tap add-to-deck. Then open that card in /cards.","English meaning is in the English field, pinyin in the Pinyin field",,Used to put pinyin into the English field.
