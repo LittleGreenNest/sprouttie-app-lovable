@@ -17,7 +17,7 @@ const TIME_LABELS = { '1-2': '1–2 minutes', '3-5': '3–5 minutes', '5-10': '5
 const Profile = () => {
   const { currentUser, profile, refreshProfile, refreshCurrentUser, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || '');
+  const [name, setName] = useState(currentUser?.user_metadata?.display_name || currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || '');
   const [email, setEmail] = useState(currentUser?.email || '');
   const [userPlan, setUserPlan] = useState(null);
   const [planLoading, setPlanLoading] = useState(true);
@@ -141,14 +141,20 @@ const Profile = () => {
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     try {
-      // Update Supabase auth user metadata
+      // Update Supabase auth user metadata.
+      // display_name is the source of truth: Google's OAuth identity re-sync
+      // overwrites full_name/name on every sign-in, but never touches
+      // display_name, so the user's chosen name survives. full_name is still
+      // written so anything reading it shows the right name between sign-ins.
       const { data: updatedAuth, error: authErr } = await supabase.auth.updateUser({
-        data: { full_name: name }
+        data: { display_name: name, full_name: name }
       });
       if (authErr) throw authErr;
 
-      if (updatedAuth?.user?.user_metadata?.full_name !== undefined) {
-        setName(updatedAuth.user.user_metadata.full_name);
+      const savedName = updatedAuth?.user?.user_metadata?.display_name
+        ?? updatedAuth?.user?.user_metadata?.full_name;
+      if (savedName !== undefined) {
+        setName(savedName);
       }
 
       // Force-sync AuthContext's currentUser so the new name shows immediately
@@ -349,7 +355,7 @@ const Profile = () => {
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Full name</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || 'Not provided'}
+                  {currentUser?.user_metadata?.display_name || currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || 'Not provided'}
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
