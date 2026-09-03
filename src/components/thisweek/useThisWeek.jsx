@@ -93,7 +93,13 @@ export const useThisWeek = () => {
   const [loading, setLoading] = useState(true);
   const [flashcards, setFlashcards] = useState([]);
   const weekStart = getCurrentWeekStart();
-  const childName = currentUser?.user_metadata?.child_name || currentUser?.user_metadata?.name?.split(' ')[0] || 'Your child';
+  // Name precedence must match Dashboard.jsx so the two never disagree:
+  // display_name is the user's own saved name and survives Google's OAuth re-sync.
+  const childName = currentUser?.user_metadata?.child_name
+    || currentUser?.user_metadata?.display_name?.split(' ')[0]
+    || currentUser?.user_metadata?.full_name?.split(' ')[0]
+    || currentUser?.user_metadata?.name?.split(' ')[0]
+    || 'Your child';
   const ageBand = profile?.child_age_band;
   const stage = getStageLabel(ageBand);
 
