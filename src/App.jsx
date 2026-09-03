@@ -1,6 +1,7 @@
 // App.js - Main Application File with Lazy Loading for Performance
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense } from 'react';
 import ErrorBoundary from './components/ui/ErrorBoundary';
+import { lazyWithRetry } from './utils/lazyWithRetry';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import './App.css';
@@ -26,31 +27,31 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import { supabase } from '@/integrations/supabase/client';
 
 // Lazy-loaded components for better initial load
-const PersonaliseFlow = lazy(() => import('./components/onboarding/PersonaliseFlow'));
-const PDFSuccess = lazy(() => import('./pdf-success'));
-const UpgradeSuccess = lazy(() => import('./components/subscription/UpgradeSuccess'));
-const Profile = lazy(() => import('./components/user/Profile'));
-const Dashboard = lazy(() => import('./components/Dashboard'));
-const SessionLogTracker = lazy(() => import('./components/tracking/SessionLogTracker'));
-const FlashcardManager = lazy(() => import('./components/FlashcardManager'));
-const SpokenWords = lazy(() => import('./components/SpokenWords'));
+const PersonaliseFlow = lazyWithRetry(() => import('./components/onboarding/PersonaliseFlow'));
+const PDFSuccess = lazyWithRetry(() => import('./pdf-success'));
+const UpgradeSuccess = lazyWithRetry(() => import('./components/subscription/UpgradeSuccess'));
+const Profile = lazyWithRetry(() => import('./components/user/Profile'));
+const Dashboard = lazyWithRetry(() => import('./components/Dashboard'));
+const SessionLogTracker = lazyWithRetry(() => import('./components/tracking/SessionLogTracker'));
+const FlashcardManager = lazyWithRetry(() => import('./components/FlashcardManager'));
+const SpokenWords = lazyWithRetry(() => import('./components/SpokenWords'));
 
-const Plans = lazy(() => import('./components/subscription/Plans'));
-const PrintFlashcards = lazy(() => import('./components/PrintFlashcards'));
-const FlashedHistory = lazy(() => import('./components/FlashedHistory'));
-const FlashingTrackerMockup = lazy(() => import('./components/tracking/FlashingTrackerMockup'));
-const GardenGuide = lazy(() => import('./components/dashboard/GardenGuide'));
-const Install = lazy(() => import('./pages/Install'));
-const Terms = lazy(() => import('./pages/Terms'));
-const Privacy = lazy(() => import('./pages/Privacy'));
+const Plans = lazyWithRetry(() => import('./components/subscription/Plans'));
+const PrintFlashcards = lazyWithRetry(() => import('./components/PrintFlashcards'));
+const FlashedHistory = lazyWithRetry(() => import('./components/FlashedHistory'));
+const FlashingTrackerMockup = lazyWithRetry(() => import('./components/tracking/FlashingTrackerMockup'));
+const GardenGuide = lazyWithRetry(() => import('./components/dashboard/GardenGuide'));
+const Install = lazyWithRetry(() => import('./pages/Install'));
+const Terms = lazyWithRetry(() => import('./pages/Terms'));
+const Privacy = lazyWithRetry(() => import('./pages/Privacy'));
 
-const ComingSoonPage = lazy(() => import('./components/ui/ComingSoonPage'));
-const PronunciationPortal = lazy(() => import('./components/pronunciation/PronunciationPortal'));
-const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlanner'));
-const BookRecommendations = lazy(() => import('./components/storybooks/BookRecommendations'));
-const WordJourney = lazy(() => import('./components/tracking/WordJourney'));
-const PhotoScanner = lazy(() => import('./components/import/PhotoScanner'));
-const Support = lazy(() => import('@/pages/Support'));
+const ComingSoonPage = lazyWithRetry(() => import('./components/ui/ComingSoonPage'));
+const PronunciationPortal = lazyWithRetry(() => import('./components/pronunciation/PronunciationPortal'));
+const WeeklyWordPlanner = lazyWithRetry(() => import('./components/planner/WeeklyWordPlanner'));
+const BookRecommendations = lazyWithRetry(() => import('./components/storybooks/BookRecommendations'));
+const WordJourney = lazyWithRetry(() => import('./components/tracking/WordJourney'));
+const PhotoScanner = lazyWithRetry(() => import('./components/import/PhotoScanner'));
+const Support = lazyWithRetry(() => import('@/pages/Support'));
 
 
 // Loading spinner component

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
+import { lazyWithRetry } from '../utils/lazyWithRetry';
 
-const SpokenWords = lazy(() => import('./SpokenWords'));
-const FlashcardManager = lazy(() => import('./FlashcardManager'));
+const SpokenWords = lazyWithRetry(() => import('./SpokenWords'));
+const FlashcardManager = lazyWithRetry(() => import('./FlashcardManager'));
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-[200px]">

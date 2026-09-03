@@ -1,14 +1,15 @@
 import React from 'react';
 import { RefreshCw } from 'lucide-react';
+import { isStaleBuildError, recoverFromStaleBuild } from '../../utils/lazyWithRetry';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
@@ -16,7 +17,14 @@ class ErrorBoundary extends React.Component {
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false });
+    // React.lazy caches the rejected promise, so clearing state alone re-throws
+    // the same error forever. A failed chunk also needs the stale service worker
+    // and its caches gone before reloading, or we just get the old shell back.
+    if (isStaleBuildError(this.state.error)) {
+      recoverFromStaleBuild();
+      return;
+    }
+    this.setState({ hasError: false, error: null });
   };
 
   render() {

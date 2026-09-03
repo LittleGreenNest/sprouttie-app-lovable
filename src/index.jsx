@@ -3,6 +3,16 @@ import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './index.css';
 import App from './App.jsx';
+import { handleStaleBuildError } from './utils/lazyWithRetry';
+
+// Vite fires this when a <link rel="modulepreload"> for a route chunk fails,
+// which is what happens when a client is still running the app shell from a
+// previous deploy. Recover before React ever sees the error.
+window.addEventListener('vite:preloadError', (event) => {
+  if (handleStaleBuildError(event.payload)) {
+    event.preventDefault();
+  }
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {

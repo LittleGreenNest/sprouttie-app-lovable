@@ -1,0 +1,18 @@
+# The service worker script and the app shell must never be served stale.
+# Cloudflare's default is 4 hours, which pins clients to the previous deploy's
+# precache manifest and its now-deleted chunk filenames.
+/sw.js
+  Cache-Control: no-cache, must-revalidate
+
+/registerSW.js
+  Cache-Control: no-cache, must-revalidate
+
+/index.html
+  Cache-Control: no-cache, must-revalidate
+
+/manifest.webmanifest
+  Cache-Control: no-cache, must-revalidate
+
+# Hashed build output is immutable, so it can be cached hard.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
