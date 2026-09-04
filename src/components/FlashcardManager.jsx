@@ -8,6 +8,11 @@ import CSVImport from './CSVImport';
 import PrintFlashcards from './PrintFlashcards';
 import { History } from 'lucide-react';
 
+// The lookup itself takes roughly a second, so it is the long pole, not the
+// wait before it. 450ms still coalesces a burst of typing without adding a
+// noticeable pause of its own.
+const DEBOUNCE_MS = 450;
+
 const FlashcardManager = () => {
   const navigate = useNavigate();
   const {
@@ -52,6 +57,9 @@ const FlashcardManager = () => {
   // AI auto-fill state
   const [aiLoading, setAiLoading] = useState(false);
   const aiTimeoutRef = useRef(null);
+  const translationCache = useRef(new Map());
+  // Responses can land out of order, so only the newest lookup may fill fields.
+  const aiRequestRef = useRef(0);
   
   // Card language: 'zh' (Chinese) or 'en' (English)
   const [cardLanguage, setCardLanguage] = useState('zh');
@@ -69,55 +77,95 @@ const FlashcardManager = () => {
     setTimeout(() => setMessage({ text: '', type: '' }), 3000);
   };
 
+  // Words repeat constantly while building a set, and a repeat lookup costs a
+  // full round trip for an answer we already had. Cache per session.
+  const applyTranslation = (data) => {
+    if (data?.chinese) setNewFlashcardWord(data.chinese);
+    if (data?.english) setNewFlashcardEnglish(data.english);
+    if (data?.pinyin) setNewFlashcardPinyin(data.pinyin);
+  };
+
   // AI auto-fill: debounce Chinese word input → English + Pinyin
   const handleWordChange = (value) => {
     setNewFlashcardWord(value);
-    
+
     if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
-    
-    const hasChinese = /[\u4e00-\u9fff]/.test(value.trim());
-    if (!hasChinese || value.trim().length === 0) return;
-    
-    setAiLoading(true);
+
+    const term = value.trim();
+    const hasChinese = /[\u4e00-\u9fff]/.test(term);
+    if (!hasChinese || term.length === 0) {
+      // Without this the spinner sticks on forever when the field is cleared
+      // or edited back below the threshold.
+      aiRequestRef.current++;
+      setAiLoading(false);
+      return;
+    }
+
+    const cached = translationCache.current.get(`zh:${term}`);
+    if (cached) {
+      aiRequestRef.current++;
+      setAiLoading(false);
+      applyTranslation(cached);
+      return;
+    }
+
+    const requestId = ++aiRequestRef.current;
     aiTimeoutRef.current = setTimeout(async () => {
+      // Only now is a request actually in flight. Setting this on keystroke
+      // showed "Translating…" through the whole time the user was still typing.
+      setAiLoading(true);
       try {
         const { data, error } = await supabase.functions.invoke('translate-word', {
-          body: { word: value.trim() },
+          body: { word: term },
         });
         if (error) throw error;
-        if (data?.english) setNewFlashcardEnglish(data.english);
-        if (data?.pinyin) setNewFlashcardPinyin(data.pinyin);
+        translationCache.current.set(`zh:${term}`, data);
+        if (requestId === aiRequestRef.current) applyTranslation(data);
       } catch (err) {
         console.error('AI auto-fill error:', err);
       } finally {
-        setAiLoading(false);
+        if (requestId === aiRequestRef.current) setAiLoading(false);
       }
-    }, 800);
+    }, DEBOUNCE_MS);
   };
 
   // AI auto-fill: debounce English input → Chinese + Pinyin
   const handleEnglishInputChange = (value) => {
     setEnglishInput(value);
-    
+
     if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
-    if (!value.trim() || value.trim().length < 2) return;
-    
-    setAiLoading(true);
+
+    const term = value.trim();
+    if (term.length < 2) {
+      aiRequestRef.current++;
+      setAiLoading(false);
+      return;
+    }
+
+    const cached = translationCache.current.get(`en:${term}`);
+    if (cached) {
+      aiRequestRef.current++;
+      setAiLoading(false);
+      applyTranslation(cached);
+      return;
+    }
+
+    const requestId = ++aiRequestRef.current;
     aiTimeoutRef.current = setTimeout(async () => {
+      setAiLoading(true);
       try {
         const { data, error } = await supabase.functions.invoke('translate-word', {
-          body: { word: value.trim(), direction: 'en-to-zh' },
+          body: { word: term, direction: 'en-to-zh' },
         });
         if (error) throw error;
-        if (data?.chinese) setNewFlashcardWord(data.chinese);
-        if (data?.pinyin) setNewFlashcardPinyin(data.pinyin);
-        if (data?.english) setNewFlashcardEnglish(data.english);
+        translationCache.current.set(`en:${term}`, data);
+        if (requestId === aiRequestRef.current) applyTranslation(data);
       } catch (err) {
         console.error('AI English→Chinese error:', err);
       } finally {
-        setAiLoading(false);
+        if (requestId === aiRequestRef.current) setAiLoading(false);
       }
-    }, 800);
+    }, DEBOUNCE_MS);
   };
 
   // Cleanup timeout on unmount

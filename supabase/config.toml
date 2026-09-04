@@ -359,4 +359,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.translate-word]
-verify_jwt = false
+# Called only from the Add Card form and the weekly planner, both behind auth,
+# so requiring a JWT breaks nothing. Left open, the URL is discoverable in the
+# public bundle and anyone can loop it against the Gemini key.
+verify_jwt = true
