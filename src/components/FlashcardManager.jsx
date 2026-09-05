@@ -60,6 +60,7 @@ const FlashcardManager = () => {
   const translationCache = useRef(new Map());
   // Responses can land out of order, so only the newest lookup may fill fields.
   const aiRequestRef = useRef(0);
+  const [aiError, setAiError] = useState(false);
   
   // Card language: 'zh' (Chinese) or 'en' (English)
   const [cardLanguage, setCardLanguage] = useState('zh');
@@ -98,6 +99,7 @@ const FlashcardManager = () => {
       // or edited back below the threshold.
       aiRequestRef.current++;
       setAiLoading(false);
+      setAiError(false);
       return;
     }
 
@@ -105,6 +107,7 @@ const FlashcardManager = () => {
     if (cached) {
       aiRequestRef.current++;
       setAiLoading(false);
+      setAiError(false);
       applyTranslation(cached);
       return;
     }
@@ -114,6 +117,7 @@ const FlashcardManager = () => {
       // Only now is a request actually in flight. Setting this on keystroke
       // showed "Translating…" through the whole time the user was still typing.
       setAiLoading(true);
+      setAiError(false);
       try {
         const { data, error } = await supabase.functions.invoke('translate-word', {
           body: { word: term },
@@ -123,6 +127,7 @@ const FlashcardManager = () => {
         if (requestId === aiRequestRef.current) applyTranslation(data);
       } catch (err) {
         console.error('AI auto-fill error:', err);
+        if (requestId === aiRequestRef.current) setAiError(true);
       } finally {
         if (requestId === aiRequestRef.current) setAiLoading(false);
       }
@@ -139,6 +144,7 @@ const FlashcardManager = () => {
     if (term.length < 2) {
       aiRequestRef.current++;
       setAiLoading(false);
+      setAiError(false);
       return;
     }
 
@@ -146,6 +152,7 @@ const FlashcardManager = () => {
     if (cached) {
       aiRequestRef.current++;
       setAiLoading(false);
+      setAiError(false);
       applyTranslation(cached);
       return;
     }
@@ -153,6 +160,7 @@ const FlashcardManager = () => {
     const requestId = ++aiRequestRef.current;
     aiTimeoutRef.current = setTimeout(async () => {
       setAiLoading(true);
+      setAiError(false);
       try {
         const { data, error } = await supabase.functions.invoke('translate-word', {
           body: { word: term, direction: 'en-to-zh' },
@@ -162,6 +170,7 @@ const FlashcardManager = () => {
         if (requestId === aiRequestRef.current) applyTranslation(data);
       } catch (err) {
         console.error('AI English→Chinese error:', err);
+        if (requestId === aiRequestRef.current) setAiError(true);
       } finally {
         if (requestId === aiRequestRef.current) setAiLoading(false);
       }
@@ -872,9 +881,15 @@ const FlashcardManager = () => {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">
-                        AI will auto-fill the Chinese word, pinyin & meaning below (Singapore Mandarin)
-                      </p>
+                      {aiError && !aiLoading ? (
+                        <p className="text-xs text-rose-600 mt-1">
+                          Couldn't reach the translator just now. Edit the word to try again, or fill the Chinese in yourself.
+                        </p>
+                      ) : (
+                        <p className="text-xs text-slate-500 mt-1">
+                          AI will auto-fill the Chinese word, pinyin & meaning below (Singapore Mandarin)
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -896,6 +911,11 @@ const FlashcardManager = () => {
                       {aiLoading && inputMode === 'chinese' && (
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-600 animate-pulse">
                           ✨ AI filling...
+                        </span>
+                      )}
+                      {aiError && !aiLoading && inputMode === 'chinese' && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-rose-600">
+                          Couldn't auto-fill
                         </span>
                       )}
                     </div>

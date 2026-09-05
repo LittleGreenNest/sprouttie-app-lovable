@@ -82,22 +82,33 @@ Return ONLY the JSON object, no markdown, no explanation.`;
           additionalProperties: false,
         };
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: "user", parts: [{ text: word.trim() }] }],
-          generation_config: {
-            response_mime_type: "application/json",
-            temperature: 0.2,
-            thinking_config: { thinking_level: "low" },
-          },
-        }),
-      }
-    );
+    const callGemini = () =>
+      fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: systemPrompt }] },
+            contents: [{ role: "user", parts: [{ text: word.trim() }] }],
+            generation_config: {
+              response_mime_type: "application/json",
+              temperature: 0.2,
+              thinking_config: { thinking_level: "low" },
+            },
+          }),
+        }
+      );
+
+    // gemini-flash-latest returns 503 "high demand" for roughly one call in six,
+    // and a single miss used to surface as an empty form with no explanation.
+    // These clear on an immediate retry. 429 is excluded on purpose: a rate
+    // limit is not something to hammer.
+    let response = await callGemini();
+    for (let attempt = 0; attempt < 2 && (response.status === 503 || response.status === 500); attempt++) {
+      await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+      response = await callGemini();
+    }
 
     if (!response.ok) {
       const text = await response.text();
