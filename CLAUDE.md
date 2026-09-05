@@ -11,7 +11,7 @@ Migrated from Lovable to Claude Code — no Lovable dependencies remain.
 - @tanstack/react-query v5
 - Framer Motion
 - PWA via vite-plugin-pwa
-- Deployed on **Cloudflare Pages** (auto-deploys on push to GitHub `LittleGreenNest/LGN`). `render.yaml` is a leftover from Lovable and is no longer used.
+- Deployed on **Cloudflare Pages** (auto-deploys on push to `main` in GitHub `LittleGreenNest/sprouttie-app-lovable`). Verified against a live deploy 2026-09-05.
 - Express backend placeholder in `/server/` (currently empty)
 
 ## Key files
@@ -24,7 +24,6 @@ Migrated from Lovable to Claude Code — no Lovable dependencies remain.
 | `src/integrations/supabase/client.ts` | Supabase client (reads from `VITE_SUPABASE_*` env vars) |
 | `src/integrations/supabase/types.ts` | Generated DB types |
 | `vite.config.js` | Build config, env injection, PWA manifest |
-| `render.yaml` | Render deployment config — DO NOT TOUCH |
 
 ## Routes
 
@@ -110,6 +109,5 @@ If `currentUser` exists but `profile.onboarding_completed` is falsy, `App.jsx` r
 
 ## Do not touch
 
-- `render.yaml`
 - Supabase schema or live data
 - Any working auth flow
