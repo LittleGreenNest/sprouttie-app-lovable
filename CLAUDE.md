@@ -108,6 +108,72 @@ Both have public fallbacks hard-coded in `vite.config.js` so the app won't blank
 
 If `currentUser` exists but `profile.onboarding_completed` is falsy, `App.jsx` renders `PersonaliseFlow` instead of the main app. On completion it calls `refreshProfile(currentUser)`.
 
+## ⚠️ There are TWO checkouts of this repo and they have diverged
+
+Both are working copies of `LittleGreenNest/sprouttie-app-lovable`:
+
+| Path | State (2026-09-05) |
+|---|---|
+| `~/sprouttie-app-lovable` (**this one — the active repo**) | ahead by commits, latest `d436fd4` 2026-09-05 |
+| `.../Google Drive/.../Sprouttie-Claude-Marketing/Sprouttie-App` | last commit 2026-08-23, but holds **uncommitted work not in git**: `20260829000000_insight_photos.sql` and ~118 extra lines of CLAUDE.md |
+
+Neither is a superset of the other. Before editing either, check which one you are in.
+The uncommitted work in the Drive copy needs committing or copying across, or it will be
+lost the moment anyone cleans that folder up.
+
+## Pending — needs a human (opened 2026-09-03)
+
+Plain-language versions, because these are easy to misread. Fuller detail lives in the
+**Launch Checklist** tab of the Sprouttie Google Sheet, rows 13-15.
+
+### 1. ~~Exposed database key~~ — RESOLVED 2026-09-05
+
+A Supabase secret key (`sb_secret_Ngydq…`) was pasted into a chat transcript on
+2026-08-30 and stayed live for six days. **Deleted 2026-09-05 and verified dead** — the
+same request that returned HTTP 200 while it was live now returns HTTP 401. The project's
+`default` secret key was left untouched. No further action.
+
+Lesson worth keeping: paste a secret with a hidden prompt, never into a chat message —
+`read -s -p "paste key: " k && echo "NAME=$k" >> .env`
+
+### 2. Server-side code cannot read most tables
+
+The app works; anything server-side (edge functions, Stripe webhook, reporting, admin
+tooling) gets `42501 permission denied` on all 14 tables except `profiles`.
+
+**Cause:** `20260621082843_fix_all_table_grants.sql` granted `authenticated` but never
+`service_role`. End users are `authenticated`, which is why the app is fine.
+
+**Consequence:** usage and engagement cannot be measured at all, so any claim that people
+actually use the app is currently unsupported.
+
+**Fix written, NOT applied:** `supabase/migrations/20260903000000_grant_service_role_all_tables.sql`.
+Permissions only — no data, no policies, no RLS change. Apply with `supabase db push`.
+
+### 3. The database claims 4 paying subscribers; Stripe says 0
+
+Four profiles have `plan='print'` + `subscription_status='active'`. Three have **no
+`stripe_customer_id` at all** so cannot ever have paid; the fourth is cancelled or past due
+in Stripe. They get Print Plan features free, and anything reading `profiles` overstates
+revenue. **For revenue, trust Stripe, never `profiles`.**
+
+Fix drafted, deliberately **not** a migration so it cannot be pushed by accident:
+`scratchpad/fix-entitlements.sql` — a SELECT first, UPDATEs commented out.
+
+**Deeper bug:** nothing downgrades a profile when a Stripe subscription is cancelled.
+Trace the `stripe-webhook` cancellation path before a real subscriber ever signs up.
+
+### Also open, non-urgent
+
+- The two Sprouttie Google Sheets belong to `hellolittlegreennest@gmail.com`; the Drive
+  connector is authed as `cyrenachio@gmail.com` and cannot see them. Share as Viewer to
+  unblock reading.
+- `profiles.caregivers` is **null for 100% of profiles** — onboarding never captures it.
+  The "who is flashing today" household angle carries positioning weight but has no data
+  behind it. Product decision, not a bug.
+- `last_activity_date` is null for everyone and `longest_streak` maxes at 0. The streak
+  columns are dead. Nothing to remove; do not start surfacing them.
+
 ## Do not touch
 
 - `render.yaml`
