@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useFlashcards } from '@/context/FlashcardContext';
+import { cardIdFrom } from '@/utils/cardId';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -76,7 +77,7 @@ const CalendarGridView = () => {
             if (!flashedByDate[record.date]) {
               flashedByDate[record.date] = new Set();
             }
-            flashedByDate[record.date].add(record.flashcard_id);
+            flashedByDate[record.date].add(cardIdFrom(record.flashcard_id));
           }
         });
 

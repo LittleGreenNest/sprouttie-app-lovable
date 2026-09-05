@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MessageCircle, BookOpen, Handshake } from 'lucide-react';
+import { getAgeBandLabel } from '../useThisWeek';
 
 const FOCUS_AREAS = [
   { id: 'words', icon: MessageCircle, emoji: '🗣', label: 'Words', sub: '5–10 new words this week' },
@@ -23,7 +24,7 @@ const SnapshotScreen = ({ childName, ageBand, stage, onNext }) => {
         <h2 className="text-2xl font-bold text-[hsl(var(--sprouttie-ink))]">{childName}'s Week</h2>
         {ageBand && (
           <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-            {ageBand} months
+            {getAgeBandLabel(ageBand)}
           </p>
         )}
         <div className="mt-3 inline-block bg-[hsl(var(--sprouttie-green)/0.1)] text-[hsl(var(--sprouttie-green-dark))] px-4 py-1.5 rounded-full text-sm font-medium">

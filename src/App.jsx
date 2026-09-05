@@ -1,7 +1,8 @@
 // App.js - Main Application File with Lazy Loading for Performance
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import ErrorBoundary from './components/ui/ErrorBoundary';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { isPasswordRecovery } from './utils/recoveryLink';
 import { ToastContainer } from 'react-toastify';
 import './App.css';
 
@@ -47,6 +48,7 @@ const Privacy = lazy(() => import('./pages/Privacy'));
 const ComingSoonPage = lazy(() => import('./components/ui/ComingSoonPage'));
 const PronunciationPortal = lazy(() => import('./components/pronunciation/PronunciationPortal'));
 const WeeklyWordPlanner = lazy(() => import('./components/planner/WeeklyWordPlanner'));
+const WeeklyReview = lazy(() => import('./components/review/WeeklyReview'));
 const BookRecommendations = lazy(() => import('./components/storybooks/BookRecommendations'));
 const WordJourney = lazy(() => import('./components/tracking/WordJourney'));
 const PhotoScanner = lazy(() => import('./components/import/PhotoScanner'));
@@ -130,7 +132,8 @@ const AppContent = () => {
             
             <Route path="/pronunciation" element={<PronunciationPortal />} />
             <Route path="/word-planner" element={<WeeklyWordPlanner />} />
-            
+            <Route path="/weekly-review" element={<WeeklyReview />} />
+
             <Route path="/book-recommendations" element={<BookRecommendations />} />
             <Route path="/word-journey" element={<WordJourney />} />
             <Route path="/scan-flashcards" element={<PhotoScanner />} />
@@ -166,10 +169,34 @@ const ProtectedPrint = () => {
   );
 };
 
+/**
+ * Sends a password-recovery visit to the reset screen no matter where Supabase
+ * dropped it. Without this, a reset link whose redirect URL is not on the
+ * project's allowlist lands on the dashboard, signed in, with no way to set a
+ * password. Runs inside the Router so it can use client-side navigation, and
+ * keeps the URL fragment intact for ResetPassword's own token check.
+ */
+const RecoveryRedirect = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (location.pathname === '/reset-password') return;
+    if (!isPasswordRecovery()) return;
+    navigate(
+      { pathname: '/reset-password', hash: location.hash, search: location.search },
+      { replace: true }
+    );
+  }, [location.pathname, location.hash, location.search, navigate]);
+
+  return null;
+};
+
 // Main App component
 function App() {
   return (
     <Router>
+      <RecoveryRedirect />
       <AuthProvider>
         <div className="min-h-screen bg-[hsl(var(--background))]">
           <Navbar />

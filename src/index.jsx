@@ -1,3 +1,7 @@
+// Must come first: this records a password-recovery URL before the Supabase
+// client is created and strips the fragment. See src/utils/recoveryLink.js.
+import './utils/recoveryLink';
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
