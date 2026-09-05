@@ -6,6 +6,14 @@ import sprouttielogo from '../../assets/sprouttie-logo.png';
 
 const Navbar = () => {
   const { currentUser, logout } = useAuth();
+  // Same precedence as Profile.jsx / Dashboard.jsx / useThisWeek.jsx.
+  // Note: the Supabase user object has no top-level `name`, so the old
+  // `currentUser.name` reads here were always undefined.
+  const displayName = currentUser?.user_metadata?.display_name
+    || currentUser?.user_metadata?.full_name
+    || currentUser?.user_metadata?.name
+    || '';
+  const avatarInitial = (displayName || currentUser?.email || 'U').charAt(0).toUpperCase();
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -47,8 +55,7 @@ const Navbar = () => {
                   >
                     <span className="sr-only">Open user menu</span>
                     <div className="h-8 w-8 rounded-full bg-sprouttie-green-light flex items-center justify-center text-sprouttie-green-dark font-medium">
-                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 
-                       currentUser.email ? currentUser.email.charAt(0).toUpperCase() : 'U'}
+                      {avatarInitial}
                     </div>
                   </button>
                 </div>
@@ -180,12 +187,11 @@ const Navbar = () => {
             <div className="flex items-center px-4">
               <div className="flex-shrink-0">
                 <div className="h-10 w-10 rounded-full bg-sprouttie-green-light flex items-center justify-center text-sprouttie-green-dark font-medium">
-                  {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 
-                   currentUser.email ? currentUser.email.charAt(0).toUpperCase() : 'U'}
+                  {avatarInitial}
                 </div>
               </div>
               <div className="ml-3">
-                <div className="text-base font-medium text-gray-800">{currentUser.name || 'User'}</div>
+                <div className="text-base font-medium text-gray-800">{displayName || 'User'}</div>
                 <div className="text-sm font-medium text-gray-500">{currentUser.email}</div>
               </div>
             </div>
