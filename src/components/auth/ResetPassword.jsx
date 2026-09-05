@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { clearPasswordRecovery } from '@/utils/recoveryLink';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
@@ -14,6 +15,10 @@ const ResetPassword = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // The user has arrived, so the redirect flag has done its job. Clearing it
+    // here stops RecoveryRedirect bouncing them back after a successful reset.
+    clearPasswordRecovery();
+
     // Check if we have a valid recovery session
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();

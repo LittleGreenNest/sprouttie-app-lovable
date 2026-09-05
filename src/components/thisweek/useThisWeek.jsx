@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
+import { buildWeeklyPlan, planHeadline, SET_SIZE } from './suggestionEngine';
 
 // Get Monday of the current week
 export const getCurrentWeekStart = () => {
@@ -11,11 +12,28 @@ export const getCurrentWeekStart = () => {
   return monday.toISOString().split('T')[0];
 };
 
-// Parse age band like "13-18" into months
+/**
+ * child_age_band is written by onboarding as a range in YEARS: "0-1", "1-2",
+ * "2-3", "3-5". This used to read the first number as a count of months, so a
+ * "2-3" child came out as 2 months old and was labelled "Absorbing sounds",
+ * and was offered 0 to 2 year board books. Profile.jsx has always rendered
+ * these as years, so the app disagreed with itself.
+ *
+ * Returns the midpoint of the band in months, since a band spans stages and
+ * the midpoint is the fairest single point to classify on.
+ */
 const parseAgeBand = (band) => {
   if (!band) return null;
-  const match = band.match(/(\d+)/);
-  return match ? parseInt(match[1], 10) : null;
+  const numbers = String(band).match(/\d+(?:\.\d+)?/g);
+  if (!numbers || !numbers.length) return null;
+
+  // Tolerate a value that genuinely is in months, e.g. "18 months".
+  const perUnit = /month|\bmo\b/i.test(band) ? 1 : 12;
+
+  const values = numbers.map(Number);
+  const mid =
+    values.length >= 2 ? (values[0] + values[1]) / 2 : values[0];
+  return mid * perUnit;
 };
 
 export const getStageLabel = (ageBand) => {
@@ -28,52 +46,56 @@ export const getStageLabel = (ageBand) => {
   return 'Expanding vocabulary';
 };
 
-// Rule-based word suggestions from existing flashcard categories
-const generateWordSuggestions = (flashcards, ageBand) => {
-  const folders = {};
-  flashcards.forEach(f => {
-    const folder = f.folder || 'default';
-    if (!folders[folder]) folders[folder] = [];
-    folders[folder].push(f);
-  });
+/** Display label for a band. The stored value is a year range, not months. */
+export const getAgeBandLabel = (band) => {
+  if (!band) return '';
+  if (/month|year|\bmo\b|\byr\b/i.test(band)) return band;
+  if (!/\d/.test(band)) return band; // unrecognised value: show it as-is
+  return `${String(band).replace('-', '–')} years`;
+};
 
-  // Pick words from the most populated folders, preferring less-reviewed ones
-  const allCards = [...flashcards].sort((a, b) => (a.review_count || 0) - (b.review_count || 0));
-  const suggestions = allCards.slice(0, 8).map(c => ({
-    id: c.id,
-    word: c.front,
-    translation: c.back,
-    category: c.folder || 'General',
+// Cold start: a brand new account has no deck and no spoken words, so the
+// engine has nothing to rank. These are the fallback, not the normal path.
+const STARTER_WORDS = [
+  { word: 'mama', translation: '妈妈', category: 'Family' },
+  { word: 'water', translation: '水', category: 'Food' },
+  { word: 'ball', translation: '球', category: 'Toys' },
+  { word: 'dog', translation: '狗', category: 'Animals' },
+  { word: 'more', translation: '还要', category: 'Actions' },
+];
+
+const starterSuggestions = () =>
+  STARTER_WORDS.map((d) => ({
+    ...d,
+    id: `starter-${d.word}`,
+    language: 'en',
+    reason: 'a starter word while your deck fills up',
+    setIndex: 0,
+    setName: 'Starter',
     accepted: true,
   }));
 
-  // If not enough flashcards, add some defaults based on age
-  if (suggestions.length < 5) {
-    const defaults = [
-      { word: 'mama', translation: '妈妈', category: 'Family' },
-      { word: 'water', translation: '水', category: 'Food' },
-      { word: 'ball', translation: '球', category: 'Toys' },
-      { word: 'dog', translation: '狗', category: 'Animals' },
-      { word: 'more', translation: '还要', category: 'Actions' },
-    ];
-    defaults.forEach(d => {
-      if (suggestions.length < 8 && !suggestions.find(s => s.word === d.word)) {
-        suggestions.push({ ...d, id: `default-${d.word}`, accepted: true });
-      }
-    });
-  }
-
-  return suggestions;
-};
-
 const generateBookSuggestions = (ageBand) => {
   const months = parseAgeBand(ageBand);
-  if (months !== null && months <= 12) {
+
+  // Under two: board books built around single labelled objects.
+  if (months !== null && months <= 24) {
     return [
       { title: 'Baby Loves Chinese', author: 'Tuttle Publishing', ageRange: '0–2 years' },
       { title: 'First 100 Words (Bilingual)', author: 'Roger Priddy', ageRange: '0–2 years' },
+      { title: 'My First Chinese Words', author: 'Faye-Lynn Wu', ageRange: '1–3 years' },
     ];
   }
+
+  // Three and up: books with a story to talk about, not just labels.
+  if (months !== null && months > 42) {
+    return [
+      { title: 'The Great Race', author: 'Christopher Corr', ageRange: '3–6 years' },
+      { title: 'A Big Mooncake for Little Star', author: 'Grace Lin', ageRange: '3–6 years' },
+      { title: 'Bringing In the New Year', author: 'Grace Lin', ageRange: '3–6 years' },
+    ];
+  }
+
   return [
     { title: 'My First Chinese Words', author: 'Faye-Lynn Wu', ageRange: '1–3 years' },
     { title: 'Dim Sum for Everyone!', author: 'Grace Lin', ageRange: '2–4 years' },
@@ -92,6 +114,8 @@ export const useThisWeek = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [flashcards, setFlashcards] = useState([]);
+  const [spokenWords, setSpokenWords] = useState([]);
+  const [tracking, setTracking] = useState([]);
   const weekStart = getCurrentWeekStart();
   // Name precedence must match Dashboard.jsx so the two never disagree:
   // display_name is the user's own saved name and survives Google's OAuth re-sync.
@@ -103,7 +127,25 @@ export const useThisWeek = () => {
   const ageBand = profile?.child_age_band;
   const stage = getStageLabel(ageBand);
 
-  const wordSuggestions = useMemo(() => generateWordSuggestions(flashcards, ageBand), [flashcards, ageBand]);
+  const plan = useMemo(
+    () => buildWeeklyPlan({ flashcards, spokenWords, tracking }),
+    [flashcards, spokenWords, tracking]
+  );
+
+  // Must stay referentially stable: PlanScreen adopts this array in an effect,
+  // so a fresh array each render would loop.
+  const wordSuggestions = useMemo(
+    () => (plan.suggestions.length ? plan.suggestions : starterSuggestions()),
+    [plan]
+  );
+  const planSets = plan.sets;
+  const setCount = plan.setCount || 1;
+  const planSignals = plan.signals;
+  const headline = useMemo(
+    () => (plan.suggestions.length ? planHeadline(plan.signals, plan.setCount) : ''),
+    [plan]
+  );
+
   const bookSuggestions = useMemo(() => generateBookSuggestions(ageBand), [ageBand]);
   const prompts = useMemo(() => {
     const idx = Math.floor(Math.random() * INTERACTION_PROMPTS.length);
@@ -114,12 +156,19 @@ export const useThisWeek = () => {
     if (!currentUser) return;
     setLoading(true);
     try {
-      const [logsRes, cardsRes] = await Promise.all([
+      // 30 days back covers the engine's 14-day ramp window with room to spare.
+      const trackingFrom = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+
+      const [logsRes, cardsRes, spokenRes, trackingRes] = await Promise.all([
         supabase.from('weekly_logs').select('*').eq('user_id', currentUser.id).eq('week_start', weekStart).order('created_at', { ascending: false }),
-        supabase.from('flashcards').select('*').eq('user_id', currentUser.id).limit(100),
+        supabase.from('flashcards').select('*').eq('user_id', currentUser.id).limit(1000),
+        supabase.from('spoken_words').select('word, word_stage, started_saying_at, created_at').eq('user_id', currentUser.id).limit(1000),
+        supabase.from('daily_tracking').select('flashcard_id, date, user_local_date, engagement').eq('user_id', currentUser.id).gte('date', trackingFrom),
       ]);
       setLogs(logsRes.data || []);
       setFlashcards(cardsRes.data || []);
+      setSpokenWords(spokenRes.data || []);
+      setTracking(trackingRes.data || []);
     } catch (e) {
       console.error('ThisWeek fetch error:', e);
     } finally {
@@ -160,6 +209,7 @@ export const useThisWeek = () => {
   return {
     weekStart, childName, ageBand, stage, logs, loading,
     wordSuggestions, bookSuggestions, prompts,
+    planSets, setCount, planSignals, headline, setSize: SET_SIZE,
     addLog, deleteLog, stats, refreshData: fetchData,
   };
 };

@@ -5,6 +5,7 @@ import { useFlashcards } from '../context/FlashcardContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import ThisWeekFlow from './thisweek/ThisWeekFlow';
+import ReviewPrompt from './review/ReviewPrompt';
 import { toast } from 'react-toastify';
 
 // ─── Tip data (pulled from existing TipsCarousel) ───
@@ -163,6 +164,9 @@ const Dashboard = () => {
           {dayName} · {monthDay}
         </p>
       </div>
+
+      {/* Weekly review nudge — only shows when there is something to review */}
+      <ReviewPrompt />
 
       {/* 3. TODAY'S FOCUS CARD */}
       <div className="mx-4 mb-3" style={{ background: '#2D6A4F', borderRadius: 16, padding: '16px 18px' }}>

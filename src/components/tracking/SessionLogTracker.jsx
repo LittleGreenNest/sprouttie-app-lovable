@@ -81,7 +81,11 @@ const SessionLogTracker = () => {
     return Object.values(roundTracking).filter(v => v).length;
   }, [roundTracking]);
 
-  const totalPossibleSessions = sets.length * 3;
+  // Count only sets that actually hold cards. Counting all five slots made this
+  // page report "0 / 15 rounds" while the dashboard, which already filtered out
+  // empty sets, reported "0 / 12" for the same day. An empty set has no rounds
+  // to complete, so 12 was the correct figure.
+  const totalPossibleSessions = sets.filter(s => (s.flashcardIds || []).length > 0).length * 3;
 
   const isToday = useMemo(() => {
     const today = new Date();

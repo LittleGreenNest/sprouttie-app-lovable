@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
 import { useFlashcards } from '../../context/FlashcardContext';
+import { cardIdFrom } from '../../utils/cardId';
 import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 
 const FlashedWordsGrid = () => {
@@ -35,7 +36,7 @@ const FlashedWordsGrid = () => {
       // Get unique flashed flashcard IDs
       const flashedIds = new Set(
         trackingData
-          .map(t => t.flashcard_id)
+          .map(t => cardIdFrom(t.flashcard_id))
           .filter(id => id && !id.startsWith('set-') && id !== 'shared-note')
       );
 

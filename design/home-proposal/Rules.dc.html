@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'DM Sans', system-ui, sans-serif; background: #FFFFFF; }
+    a { color: #2D6A4F; } a:hover { color: #1B4332; }
+    .serif { font-family: 'DM Serif Display', Georgia, serif; }
+  </style>
+</helmet>
+<div style="width: 1330px; height: 620px; background: #FFFFFF; padding: 38px 44px; box-sizing: border-box; display: flex; flex-direction: column;">
+
+  <h2 class="serif" style="font-size: 30px; color: #263036; margin: 0;">What earns &ldquo;Growing&rdquo;?</h2>
+  <p style="font-size: 14px; color: #6B7280; margin: 9px 0 0; max-width: 950px; line-height: 1.6;">
+    Stage is manual-only today: <span style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; background: #F4F4F2; padding: 1px 5px; border-radius: 4px;">handleStageChange</span> in <span style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; background: #F4F4F2; padding: 1px 5px; border-radius: 4px;">SpokenWords.jsx</span> is the only writer, and it fires from a swipe. In roughly eleven months it has never run. Pick a rule and make it automatic, and the reward strip, Garden, Word Journey and the three dashboard counters all start firing at once.
+  </p>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin-top: 30px; flex-grow: 1;">
+
+    <div style="border: 0.5px solid #E5E7EB; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; background: #FFFFFF;">
+      <span style="font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: #2D6A4F; text-transform: uppercase;">Option A</span>
+      <p class="serif" style="font-size: 21px; color: #1F2937; margin: 9px 0 0;">Heard on 3 separate days</p>
+      <div style="height: 1px; background: #F1F1F0; margin: 17px 0;"></div>
+      <div style="display: flex; flex-direction: column; gap: 13px; flex-grow: 1;">
+        <div>
+          <p style="font-size: 11px; font-weight: 600; color: #9CA3AF; margin: 0 0 3px; text-transform: uppercase; letter-spacing: 0.05em;">Data needed</p>
+          <p style="font-size: 13px; color: #374151; margin: 0; line-height: 1.55;">Dates already on <span style="font-family: ui-monospace, monospace; font-size: 12px;">spoken_words</span>. Nothing new to capture.</p>
+        </div>
+        <div>
+          <p style="font-size: 11px; font-weight: 600; color: #9CA3AF; margin: 0 0 3px; text-transform: uppercase; letter-spacing: 0.05em;">Tradeoff</p>
+          <p style="font-size: 13px; color: #374151; margin: 0; line-height: 1.55;">Rewards <em>your</em> logging habit rather than the child's learning. A word you happen to log three times promotes even if it was said once.</p>
+        </div>
+      </div>
+      <div style="background: #F0FDF4; border-radius: 10px; padding: 11px 13px; margin-top: 16px;">
+        <p style="font-size: 12px; color: #2D6A4F; margin: 0;"><strong>Would promote today:</strong> [run query]</p>
+      </div>
+    </div>
+
+    <div style="border: 0.5px solid #E5E7EB; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; background: #FFFFFF;">
+      <span style="font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: #2D6A4F; text-transform: uppercase;">Option B</span>
+      <p class="serif" style="font-size: 21px; color: #1F2937; margin: 9px 0 0;">Said unprompted</p>
+      <div style="height: 1px; background: #F1F1F0; margin: 17px 0;"></div>
+      <div style="display: flex; flex-direction: column; gap: 13px; flex-grow: 1;">
+        <div>
+          <p style="font-size: 11px; font-weight: 600; color: #9CA3AF; margin: 0 0 3px; text-transform: uppercase; letter-spacing: 0.05em;">Data needed</p>
+          <p style="font-size: 13px; color: #374151; margin: 0; line-height: 1.55;">A new flag captured at logging time. Adds one tap to Words&nbsp;Said.</p>
+        </div>
+        <div>
+          <p style="font-size: 11px; font-weight: 600; color: #9CA3AF; margin: 0 0 3px; text-transform: uppercase; letter-spacing: 0.05em;">Tradeoff</p>
+          <p style="font-size: 13px; color: #374151; margin: 0; line-height: 1.55;">The truest signal of the three, but it taxes the one habit that is actually working. Risky to add friction there.</p>
+        </div>
+      </div>
+      <div style="background: #FFFBEB; border-radius: 10px; padding: 11px 13px; margin-top: 16px;">
+        <p style="font-size: 12px; color: #92400E; margin: 0;"><strong>Would promote today:</strong> 0 &mdash; no history to backfill from</p>
+      </div>
+    </div>
+
+    <div style="border: 1.5px solid #52B788; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; background: #FFFFFF;">
+      <span style="font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: #2D6A4F; text-transform: uppercase;">Option C</span>
+      <p class="serif" style="font-size: 21px; color: #1F2937; margin: 9px 0 0;">Flashed 5&times; and heard once</p>
+      <div style="height: 1px; background: #F1F1F0; margin: 17px 0;"></div>
+      <div style="display: flex; flex-direction: column; gap: 13px; flex-grow: 1;">
+        <div>
+          <p style="font-size: 11px; font-weight: 600; color: #9CA3AF; margin: 0 0 3px; text-transform: uppercase; letter-spacing: 0.05em;">Data needed</p>
+          <p style="font-size: 13px; color: #374151; margin: 0; line-height: 1.55;">A <span style="font-family: ui-monospace, monospace; font-size: 12px;">daily_tracking</span> to <span style="font-family: ui-monospace, monospace; font-size: 12px;">spoken_words</span> join. Both exist, and the join bug behind it is now fixed.</p>
+        </div>
+        <div>
+          <p style="font-size: 11px; font-weight: 600; color: #9CA3AF; margin: 0 0 3px; text-transform: uppercase; letter-spacing: 0.05em;">Tradeoff</p>
+          <p style="font-size: 13px; color: #374151; margin: 0; line-height: 1.55;">Only promotes words that are both a flashcard and spoken. Many of the 110 logged words are not cards, so they could never promote.</p>
+        </div>
+      </div>
+      <div style="background: #F0FDF4; border-radius: 10px; padding: 11px 13px; margin-top: 16px;">
+        <p style="font-size: 12px; color: #2D6A4F; margin: 0;"><strong>Would promote today:</strong> [run query]</p>
+      </div>
+    </div>
+
+  </div>
+
+  <p style="font-size: 13px; color: #6B7280; margin: 26px 0 0; line-height: 1.55;">
+    Whichever you pick, it has to run automatically on write. Keeping promotion as a swipe is what produced <strong style="color: #1F2937;">110 / 0 / 0</strong> in the first place.
+  </p>
+
+</div>
+</x-dc>
+</body>
+</html>

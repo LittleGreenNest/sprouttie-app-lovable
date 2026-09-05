@@ -8,6 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { markPasswordRecovery } from "@/utils/recoveryLink";
 
 const AuthContext = createContext(null);
 
@@ -177,6 +178,11 @@ export const AuthProvider = ({ children }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      // Recovery links that arrive without a "type=recovery" marker in the URL
+      // are only identifiable here. RecoveryRedirect reads this and routes to
+      // the reset screen.
+      if (event === "PASSWORD_RECOVERY") markPasswordRecovery();
+
       // Synchronous state updates only - no async in callback
       const user = session?.user ?? null;
       setCurrentUser(user);

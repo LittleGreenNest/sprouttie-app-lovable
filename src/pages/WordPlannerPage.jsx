@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { cardIdFrom } from '../utils/cardId';
 import { Loader2 } from 'lucide-react';
 
 /* ─── colour tokens (spec values) ─── */
@@ -500,7 +501,9 @@ const WordPlannerPage = () => {
       const thisWeekTracking = trackingRes.data || [];
       const trackingMap = {};
       thisWeekTracking.forEach(t => {
-        trackingMap[t.flashcard_id] = (trackingMap[t.flashcard_id] || 0) + 1;
+        const cardId = cardIdFrom(t.flashcard_id);
+        if (!cardId) return;
+        trackingMap[cardId] = (trackingMap[cardId] || 0) + 1;
       });
 
       // Build this week sets
