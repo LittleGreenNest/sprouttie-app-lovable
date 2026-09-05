@@ -147,8 +147,12 @@ tooling) gets `42501 permission denied` on all 14 tables except `profiles`.
 **Consequence:** usage and engagement cannot be measured at all, so any claim that people
 actually use the app is currently unsupported.
 
-**Fix written, NOT applied:** `supabase/migrations/20260903000000_grant_service_role_all_tables.sql`.
-Permissions only — no data, no policies, no RLS change. Apply with `supabase db push`.
+**Fix written and committed, still NOT applied:**
+`supabase/migrations/20260903000000_grant_service_role_all_tables.sql`, committed
+2026-09-05 in `edb40b7` on branch `docs/desk-prompt`. Permissions only — no data, no
+policies, no RLS change. Committing the file changes nothing on its own; the grants take
+effect only when the migration is run, via `supabase db push` or by pasting the SQL into
+the dashboard SQL editor. Until then every symptom above is still live.
 
 ### 3. The database claims 4 paying subscribers; Stripe says 0
 
@@ -162,6 +166,22 @@ Fix drafted, deliberately **not** a migration so it cannot be pushed by accident
 
 **Deeper bug:** nothing downgrades a profile when a Stripe subscription is cancelled.
 Trace the `stripe-webhook` cancellation path before a real subscriber ever signs up.
+
+### 4. Two commits sit on an unmerged branch
+
+`docs/desk-prompt` is pushed to GitHub but never merged, so nothing on it reaches
+production and it is easy to forget:
+
+| Commit | What |
+|---|---|
+| `c6a8b99` | the Sprouttie desk build prompt |
+| `edb40b7` | this file's pending notes, the `service_role` migration, and `server/` added to `.gitignore` |
+
+The migration in particular belongs on `main`. Open a PR at
+`https://github.com/LittleGreenNest/sprouttie-app-lovable/pull/new/docs/desk-prompt`,
+or cherry-pick the migration across if the desk prompt is not wanted on `main` yet.
+
+Note `main` is what auto-deploys to Cloudflare Pages, so work parked here ships nothing.
 
 ### Also open, non-urgent
 
