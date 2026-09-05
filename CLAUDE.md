@@ -136,7 +136,7 @@ same request that returned HTTP 200 while it was live now returns HTTP 401. The 
 Lesson worth keeping: paste a secret with a hidden prompt, never into a chat message —
 `read -s -p "paste key: " k && echo "NAME=$k" >> .env`
 
-### 2. Server-side code cannot read most tables
+### 2. ~~Server-side code cannot read most tables~~ — RESOLVED 2026-09-05
 
 The app works; anything server-side (edge functions, Stripe webhook, reporting, admin
 tooling) gets `42501 permission denied` on all 14 tables except `profiles`.
@@ -147,12 +147,18 @@ tooling) gets `42501 permission denied` on all 14 tables except `profiles`.
 **Consequence:** usage and engagement cannot be measured at all, so any claim that people
 actually use the app is currently unsupported.
 
-**Fix written and committed, still NOT applied:**
-`supabase/migrations/20260903000000_grant_service_role_all_tables.sql`, committed
-2026-09-05 in `edb40b7` on branch `docs/desk-prompt`. Permissions only — no data, no
-policies, no RLS change. Committing the file changes nothing on its own; the grants take
-effect only when the migration is run, via `supabase db push` or by pasting the SQL into
-the dashboard SQL editor. Until then every symptom above is still live.
+**APPLIED 2026-09-05** via `supabase db push`
+(`20260903000000_grant_service_role_all_tables.sql`). Verified after the push: reads as
+`service_role` against `flashcards`, `daily_tracking`, `spoken_words`, `weekly_logs` and
+`audio_cache` all return HTTP 200, where every one returned 403 before. Usage and
+engagement can now be measured.
+
+The push first failed with "Remote migration versions not found in local migrations
+directory". `20260829000000_insight_photos.sql` was applied on remote but existed only
+in the Drive checkout, uncommitted, so local history had a hole and the CLI refused to
+proceed. Recovered in `43d2f1d`. **Do not run the `migration repair --status reverted`
+command the CLI suggests for this** — that migration is applied, not reverted, and
+marking it reverted would leave the history lying about the database.
 
 ### 3. The database claims 4 paying subscribers; Stripe says 0
 
