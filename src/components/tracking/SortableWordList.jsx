@@ -17,6 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, X } from 'lucide-react';
+import WordLabel from '../WordLabel';
 
 const SortableWordItem = ({ word, onRemove }) => {
   const {
@@ -52,7 +53,9 @@ const SortableWordItem = ({ word, onRemove }) => {
       >
         <GripVertical className="w-4 h-4" />
       </button>
-      <span className="flex-1 font-medium text-red-700">{word.front || word.word}</span>
+      <span className="flex-1 font-medium text-red-700">
+        <WordLabel card={word} secondaryStyle={{ color: '#B91C1C' }} />
+      </span>
       {(word.date_introduced || word.created_at) && (
         <span className="text-xs text-muted-foreground whitespace-nowrap">
           {new Date(word.date_introduced || word.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}

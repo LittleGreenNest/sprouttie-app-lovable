@@ -5,6 +5,8 @@ import { useFlashcards } from '../../context/FlashcardContext';
 import { toast } from 'react-toastify';
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronRight as ChevronRightIcon, Pencil, Check, Plus, X, Sparkles, FileText, BookOpen, Tag } from 'lucide-react';
 import SortableWordList from './SortableWordList';
+import WordLabel from '../WordLabel';
+import { wordMatchesQuery, needsEnglish, getPrimaryText } from '@/utils/wordLabel';
 import SetTimeline from './SetTimeline';
 import DailyInsight from './DailyInsight';
 import InterestsCard from './InterestsCard';
@@ -18,9 +20,13 @@ const SET_COLORS = [
   { dot: '#F43F5E', label: 'rose' },
 ];
 
+// Translating is a network round trip per card, so fill in chunks rather than
+// firing a hundred requests at once and leaving the button spinning for minutes.
+const FILL_BATCH = 25;
+
 const SessionLogTracker = () => {
   const { currentUser } = useAuth();
-  const { sets, flashcards, getFlashcardsForSet, updateSetFlashcards, categories, refreshFlashcards, addFlashcard, loading: flashcardsLoading } = useFlashcards();
+  const { sets, flashcards, getFlashcardsForSet, updateSetFlashcards, categories, refreshFlashcards, addFlashcard, updateFlashcard, loading: flashcardsLoading } = useFlashcards();
 
   // Date state
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -53,6 +59,10 @@ const SessionLogTracker = () => {
   const [newWordType, setNewWordType] = useState('word');
   const [newWordCategory, setNewWordCategory] = useState('');
   const [creatingWord, setCreatingWord] = useState(false);
+
+  // Filling in missing English meanings
+  const [fillingEnglish, setFillingEnglish] = useState(false);
+  const [fillProgress, setFillProgress] = useState(0);
 
   // Session occurred flag
   const [sessionOccurred, setSessionOccurred] = useState(false);
@@ -337,14 +347,54 @@ const SessionLogTracker = () => {
     });
     return flashcards.filter(card => {
       if (wordsInSets.has(card.id)) return false;
-      const matchesSearch = !searchQuery ||
-        card.front?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        card.back?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = wordMatchesQuery(card, searchQuery);
       const cardFolder = card.folder || card.categoryId;
       const matchesCategory = selectedCategoryFilter === 'all' || cardFolder === selectedCategoryFilter;
       const matchesType = selectedTypeFilter === 'all' || card.card_type === selectedTypeFilter;
       return matchesSearch && matchesCategory && matchesType;
     });
+  };
+
+  // Cards brought in by CSV import or typed in a hurry often have nothing on the
+  // back, which leaves them unreadable in this list and invisible to an English
+  // search. Fill them as a batch instead of one card at a time.
+  const cardsMissingEnglish = useMemo(() => flashcards.filter(needsEnglish), [flashcards]);
+  const fillBatchSize = Math.min(cardsMissingEnglish.length, FILL_BATCH);
+
+  const handleFillMissingEnglish = async () => {
+    if (fillingEnglish || cardsMissingEnglish.length === 0) return;
+    const batch = cardsMissingEnglish.slice(0, FILL_BATCH);
+
+    setFillingEnglish(true);
+    setFillProgress(0);
+    let filled = 0;
+
+    for (const card of batch) {
+      try {
+        const { data, error } = await supabase.functions.invoke('translate-word', {
+          body: { word: getPrimaryText(card) },
+        });
+        if (error) throw error;
+        if (data?.english) {
+          const updates = { english: data.english };
+          // Never overwrite pinyin the user has already corrected by hand.
+          if (!card.pinyin && data.pinyin) updates.pinyin = data.pinyin;
+          await updateFlashcard(card.id, updates);
+          filled += 1;
+        }
+      } catch (err) {
+        console.error('Fill English error:', getPrimaryText(card), err);
+      }
+      setFillProgress(prev => prev + 1);
+    }
+
+    setFillingEnglish(false);
+    setFillProgress(0);
+    if (filled > 0) {
+      toast.success(`Added English for ${filled} word${filled === 1 ? '' : 's'}`);
+    } else {
+      toast.error('Could not add English right now. Try again in a moment.');
+    }
   };
 
   const getRecommendedWords = () => {
@@ -715,7 +765,7 @@ const SessionLogTracker = () => {
                               return (
                                 <div key={word.id} className="flex items-center gap-1.5">
                                   <span style={{ fontSize: '13px', fontWeight: 500, color: '#1F2937' }}>
-                                    {word.front || word.word}
+                                    <WordLabel card={word} secondaryStyle={{ color: '#6B7280' }} />
                                   </span>
                                   {tagLabel && (
                                     <span style={{
@@ -777,7 +827,7 @@ const SessionLogTracker = () => {
                                     }}
                                   >
                                     <Plus className="w-3 h-3" />
-                                    <span>{word.front || word.word}</span>
+                                    <WordLabel card={word} secondaryStyle={{ color: '#8B5CF6' }} />
                                   </button>
                                 ))}
                               </div>
@@ -817,6 +867,26 @@ const SessionLogTracker = () => {
                               borderRadius: '6px', border: '0.5px solid #D1D5DB', marginBottom: '6px'
                             }}
                           />
+                          {cardsMissingEnglish.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={handleFillMissingEnglish}
+                              disabled={fillingEnglish}
+                              className="flex items-center gap-1 rounded-full transition-colors mb-2"
+                              style={{
+                                padding: '4px 10px', fontSize: '11px',
+                                background: '#FFFBEB', border: '0.5px solid #FDE68A', color: '#92400E',
+                                cursor: fillingEnglish ? 'wait' : 'pointer',
+                              }}
+                            >
+                              <Sparkles className="w-3 h-3" />
+                              <span>
+                                {fillingEnglish
+                                  ? `Adding English… ${fillProgress}/${fillBatchSize}`
+                                  : `Add English for ${fillBatchSize} word${fillBatchSize === 1 ? '' : 's'}`}
+                              </span>
+                            </button>
+                          )}
                           <div className="flex flex-wrap gap-1.5" style={{ maxHeight: '120px', overflowY: 'auto' }}>
                             {getAvailableWords().slice(0, 30).map(word => (
                               <button
@@ -829,7 +899,7 @@ const SessionLogTracker = () => {
                                 }}
                               >
                                 <Plus className="w-3 h-3" />
-                                <span>{word.front || word.word}</span>
+                                <WordLabel card={word} secondaryStyle={{ color: '#3F8F5B' }} />
                               </button>
                             ))}
                             {getAvailableWords().length === 0 && (
