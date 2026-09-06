@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'DM Sans', system-ui, sans-serif; background: #FFFFFF; }
+    a { color: #2D6A4F; } a:hover { color: #1B4332; }
+    .serif { font-family: 'DM Serif Display', Georgia, serif; }
+  </style>
+</helmet>
+<div style="width: 1330px; height: 780px; background: #FFFFFF; padding: 38px 44px; box-sizing: border-box; display: flex; flex-direction: column;">
+
+  <h2 class="serif" style="font-size: 30px; color: #263036; margin: 0;">What earns &ldquo;Growing&rdquo;?</h2>
+  <p style="font-size: 14px; color: #6B7280; margin: 9px 0 0; max-width: 1050px; line-height: 1.6;">
+    Answered against live data on 6 September 2026. <b style="color:#1F2937;">All three options promote zero</b>, and not because the rules are wrong. The flashing history they depend on barely exists: 149 flashcards, but only <b style="color:#1F2937;">22 have ever been flashed</b>, across <b style="color:#1F2937;">58 rows</b> of daily_tracking in total, and <b style="color:#1F2937;">no card has reached more than 3 distinct days</b>.
+  </p>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin-top: 26px;">
+
+    <div style="border: 0.5px solid #E5E7EB; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; background: #FFFFFF;">
+      <span style="font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: #9CA3AF; text-transform: uppercase;">Option A &middot; ruled out</span>
+      <p class="serif" style="font-size: 21px; color: #6B7280; margin: 9px 0 0;">Heard on 3 separate days</p>
+      <div style="height: 1px; background: #F1F1F0; margin: 17px 0;"></div>
+      <div style="display: flex; flex-direction: column; gap: 13px; flex-grow: 1;">
+        <div>
+          <p style="font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: #9CA3AF; text-transform: uppercase; margin: 0 0 5px;">Why it cannot fire</p>
+          <p style="font-size: 13.5px; color: #4B5563; line-height: 1.55; margin: 0;">There is no repeat-observation signal anywhere to count. The board previously said the dates were already on spoken_words; one date per word cannot produce a three-day rule.</p>
+        </div>
+        <div>
+          <p style="font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: #9CA3AF; text-transform: uppercase; margin: 0 0 5px;">Data</p>
+          <p style="font-size: 13.5px; color: #4B5563; line-height: 1.55; margin: 0;">spoken_words holds one row per word with a single started_saying_at. weekly_logs, which would carry repeat observations, has 1 row.</p>
+        </div>
+      </div>
+      <div style="background: #FAFAF9; border-radius: 10px; padding: 11px 13px; margin-top: 15px;">
+        <span style="font-size: 13px; font-weight: 700; color: #4B5563;">Would promote today:</span>
+        <span style="font-size: 13px; font-weight: 700; color: #B45309;"> 0</span>
+      </div>
+    </div>
+
+    <div style="border: 0.5px solid #E5E7EB; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; background: #FFFFFF;">
+      <span style="font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: #9CA3AF; text-transform: uppercase;">Option B &middot; ruled out</span>
+      <p class="serif" style="font-size: 21px; color: #6B7280; margin: 9px 0 0;">Said unprompted</p>
+      <div style="height: 1px; background: #F1F1F0; margin: 17px 0;"></div>
+      <div style="display: flex; flex-direction: column; gap: 13px; flex-grow: 1;">
+        <div>
+          <p style="font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: #9CA3AF; text-transform: uppercase; margin: 0 0 5px;">Why it cannot fire</p>
+          <p style="font-size: 13.5px; color: #4B5563; line-height: 1.55; margin: 0;">Still the truest signal of the three, but it taxes the one habit that is working. 101 words have been logged; adding a tap to that flow is the riskiest place to add friction.</p>
+        </div>
+        <div>
+          <p style="font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: #9CA3AF; text-transform: uppercase; margin: 0 0 5px;">Data</p>
+          <p style="font-size: 13.5px; color: #4B5563; line-height: 1.55; margin: 0;">The flag does not exist. It would be captured at logging time.</p>
+        </div>
+      </div>
+      <div style="background: #FAFAF9; border-radius: 10px; padding: 11px 13px; margin-top: 15px;">
+        <span style="font-size: 13px; font-weight: 700; color: #4B5563;">Would promote today:</span>
+        <span style="font-size: 13px; font-weight: 700; color: #B45309;"> 0</span>
+      </div>
+    </div>
+
+    <div style="border: 0.5px solid #E5E7EB; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; background: #FFFFFF;">
+      <span style="font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: #9CA3AF; text-transform: uppercase;">Option C &middot; ruled out</span>
+      <p class="serif" style="font-size: 21px; color: #6B7280; margin: 9px 0 0;">Flashed 5&times; and heard once</p>
+      <div style="height: 1px; background: #F1F1F0; margin: 17px 0;"></div>
+      <div style="display: flex; flex-direction: column; gap: 13px; flex-grow: 1;">
+        <div>
+          <p style="font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: #9CA3AF; text-transform: uppercase; margin: 0 0 5px;">Why it cannot fire</p>
+          <p style="font-size: 13.5px; color: #4B5563; line-height: 1.55; margin: 0;">Nothing has been flashed on 5 days. The maximum is 3. Lowering the threshold to 3 still promotes 0. Only 13 of 101 spoken words are flashcards at all.</p>
+        </div>
+        <div>
+          <p style="font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: #9CA3AF; text-transform: uppercase; margin: 0 0 5px;">Data</p>
+          <p style="font-size: 13.5px; color: #4B5563; line-height: 1.55; margin: 0;">The daily_tracking to spoken_words join works. The data underneath it does not.</p>
+        </div>
+      </div>
+      <div style="background: #FAFAF9; border-radius: 10px; padding: 11px 13px; margin-top: 15px;">
+        <span style="font-size: 13px; font-weight: 700; color: #4B5563;">Would promote today:</span>
+        <span style="font-size: 13px; font-weight: 700; color: #B45309;"> 0</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="border: 1.5px solid #2D6A4F; border-radius: 16px; padding: 22px 26px; margin-top: 22px; background: #F6FBF8;">
+    <span style="font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: #2D6A4F; text-transform: uppercase;">Recommendation</span>
+    <p class="serif" style="font-size: 22px; color: #1F2937; margin: 8px 0 0;">The Sunday review writes the stage.</p>
+    <p style="font-size: 14px; color: #4B5563; line-height: 1.6; margin: 9px 0 0; max-width: 1080px;">
+      Not a swipe, not a threshold, not a join against flashing data. The four-state question already drawn on board 6 of the weekly canvas: not yet, understands, tried it, says it. It needs no new capture, it is the one surface designed to write stages, and it works on all <b style="color:#1F2937;">101</b> logged words rather than the <b style="color:#1F2937;">13</b> that happen to be cards.
+      <br><br>
+      That moves this decision off the data and onto the weekly merge. Settle it there and the reward strip, Garden, Word Journey and the three dashboard counters all light up from one change.
+    </p>
+  </div>
+
+  <p style="font-size: 12px; color: #9CA3AF; margin: 16px 0 0;">
+    Counts are one account, the founder's own, which is also the only account with data. Stages now read 107 new / 4 growing / 0 owned: promotion has fired 4 times, so the earlier &ldquo;never run in eleven months&rdquo; no longer holds.
+  </p>
+
+</div>
+</x-dc>
+</body>
+</html>
