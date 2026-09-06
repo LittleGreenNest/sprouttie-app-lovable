@@ -39,6 +39,12 @@ last re-seed.
   ready". It says who chose, which is what makes the Sunday ratings mean
   anything.
 - **No em-dashes anywhere**, in the app and in these boards.
+- **Board 4 is drawn on the AI Suggest engine that already exists** in the
+  Lovable build: named theme, per-word rationale grounded in words the child
+  actually says, a BRIDGE / REINFORCE / STRETCH spread, a Try line, swap per
+  word. "Why these words?" is therefore not a new build. It exists, it is just
+  not on the deployed version. What changes is 16 words down to 5, and the
+  rationale cut to one line.
 - **Decision 5 is closed.** Queried live on 2026-09-06: all three candidate
   promotion rules promote zero. 22 of 149 cards ever flashed, 58 `daily_tracking`
   rows total, nothing past 3 distinct days, and only 13 of 101 logged words are

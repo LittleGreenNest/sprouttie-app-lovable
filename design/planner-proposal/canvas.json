@@ -63,7 +63,7 @@
       "x": 0,
       "y": -430,
       "w": 880,
-      "text": "Sprouttie weekly screen proposal\n\nRead left to right. Static mockups, not a clickable prototype. The job is to make an argument.\n\nThe case in one line: the app has TWO weekly experiences built independently, and neither knows what state the week is in. Boards 1 and 2 are both live today. Boards 3 to 6 are one screen showing one state at a time."
+      "text": "Sprouttie weekly screen proposal\n\nRead left to right. Static mockups, not a clickable prototype. The job is to make an argument.\n\nThe case in one line: the app has TWO weekly experiences built independently, and neither knows what state the week is in. Boards 1 and 2 are both live today. Boards 3 to 6 are one screen showing one state at a time.\n\nBoard 4 is drawn on the AI Suggest engine that already exists in the Lovable build, cut from 16 words to 5."
     },
     {
       "id": "note-cur-a",
@@ -91,7 +91,7 @@
       "x": 1570,
       "y": -210,
       "w": 390,
-      "text": "4 · Sprouttie suggests\n\nThe screen that matters. Confirming is ONE tap, so it feels as effortless as auto-accept, but the line between what Sprouttie proposed and what you chose stays real.\n\nANSWERED: always five, never more. What changes is the mix. Three carried forward plus two new, when three did not land. The founder's own account flashes about once every eight days, so carrying forward is the normal case, not the exception.\n\n\"Why these words?\" needs the generator to store a reason, not just UI."
+      "text": "4 · Sprouttie suggests\n\nREDRAWN 6 Sept on the AI Suggest feature that already exists in the Lovable build. That engine is the good part and it is already written: a named theme, a per-word rationale grounded in words the child actually says, a BRIDGE / REINFORCE / STRETCH spread, a Try line, and swap per word.\n\n\"Why these words?\" is therefore NOT a new build. It exists. It just is not on the deployed version.\n\nWhat changes: 16 words becomes 5. The Lovable version asks a tired parent to read 16 paragraphs before reaching Accept All at the bottom. Same engine, one screen's worth of it, with the rationale cut to one line.\n\nTwo carried forward plus three new, so the mix shows the momentum."
     },
     {
       "id": "note-running",
