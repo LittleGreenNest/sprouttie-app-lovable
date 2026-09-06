@@ -39,12 +39,18 @@ last re-seed.
   ready". It says who chose, which is what makes the Sunday ratings mean
   anything.
 - **No em-dashes anywhere**, in the app and in these boards.
-- **Board 4 is drawn on the AI Suggest engine that already exists** in the
-  Lovable build: named theme, per-word rationale grounded in words the child
-  actually says, a BRIDGE / REINFORCE / STRETCH spread, a Try line, swap per
-  word. "Why these words?" is therefore not a new build. It exists, it is just
-  not on the deployed version. What changes is 16 words down to 5, and the
-  rationale cut to one line.
+- **Board 4 is drawn on the suggestion engine that ALREADY SHIPS on `main`.**
+  Verified in code: `generate-autopilot-suggestions` defines
+  `reinforce` / `bridge` / `stretch` tiers, requires a rationale per word
+  referencing the child's observed data, and returns `theme`,
+  `theme_rationale`, `reason` and `tier`. `WeeklyWordPlanner.jsx` renders
+  `s.tier` with per-tier colours (line 781) and `s.reason` (line 793), behind a
+  "Writing the rationale..." loading state.
+
+  **"Why these words?" is not a build.** It is buried behind
+  `generateSuggestions(numSets)`, a 1/2/3/5 set picker producing 5 to 25 words,
+  with the result rendering above an empty state that says nothing is planned.
+  The fix is the entry point, not the engine.
 - **Decision 5 is closed.** Queried live on 2026-09-06: all three candidate
   promotion rules promote zero. 22 of 149 cards ever flashed, 58 `daily_tracking`
   rows total, nothing past 3 distinct days, and only 13 of 101 logged words are

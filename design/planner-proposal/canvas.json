@@ -63,7 +63,7 @@
       "x": 0,
       "y": -430,
       "w": 880,
-      "text": "Sprouttie weekly screen proposal\n\nRead left to right. Static mockups, not a clickable prototype. The job is to make an argument.\n\nThe case in one line: the app has TWO weekly experiences built independently, and neither knows what state the week is in. Boards 1 and 2 are both live today. Boards 3 to 6 are one screen showing one state at a time.\n\nBoard 4 is drawn on the AI Suggest engine that already exists in the Lovable build, cut from 16 words to 5."
+      "text": "Sprouttie weekly screen proposal\n\nRead left to right. Static mockups, not a clickable prototype. The job is to make an argument.\n\nThe case in one line: the app has TWO weekly experiences built independently, and neither knows what state the week is in. Boards 1 and 2 are both live today. Boards 3 to 6 are one screen showing one state at a time.\n\nBoard 4 is drawn on the AI Suggest engine, which already ships on main. It is buried behind a 1/2/3/5 set picker that produces 5 to 25 words. Cut to 5 and given one button, it is this board."
     },
     {
       "id": "note-cur-a",
@@ -91,7 +91,7 @@
       "x": 1570,
       "y": -210,
       "w": 390,
-      "text": "4 · Sprouttie suggests\n\nREDRAWN 6 Sept on the AI Suggest feature that already exists in the Lovable build. That engine is the good part and it is already written: a named theme, a per-word rationale grounded in words the child actually says, a BRIDGE / REINFORCE / STRETCH spread, a Try line, and swap per word.\n\n\"Why these words?\" is therefore NOT a new build. It exists. It just is not on the deployed version.\n\nWhat changes: 16 words becomes 5. The Lovable version asks a tired parent to read 16 paragraphs before reaching Accept All at the bottom. Same engine, one screen's worth of it, with the rationale cut to one line.\n\nTwo carried forward plus three new, so the mix shows the momentum."
+      "text": "4 · Sprouttie suggests\n\nREDRAWN 6 Sept on the AI Suggest engine, which is ALREADY ON main. Verified in the code: generate-autopilot-suggestions defines reinforce / bridge / stretch tiers, requires a rationale per word that references the child's observed data, and returns theme, theme_rationale, reason and tier. WeeklyWordPlanner renders s.tier with per-tier colours at line 781 and s.reason at line 793, with a \"Writing the rationale...\" loading state.\n\nSo \"Why these words?\" is NOT a build. It ships today. It is buried behind generateSuggestions(numSets), a four-way 1/2/3/5 set picker producing 5 to 25 words, and the result renders above an empty state that says nothing is planned.\n\nThe fix is the entry point, not the engine: one button, five words. Decision 1 and this board are the same change."
     },
     {
       "id": "note-running",
