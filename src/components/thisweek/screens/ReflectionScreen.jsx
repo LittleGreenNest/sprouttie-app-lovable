@@ -16,11 +16,17 @@ const ReflectionScreen = ({ childName, stats, onPlanNext, onClose }) => {
     <div className="space-y-6 text-center">
       {/* Headline */}
       <div>
+        <p className="text-xs font-semibold tracking-widest uppercase text-[hsl(var(--muted-foreground))] mb-1.5">
+          Reflection
+        </p>
         <h2 className="text-2xl font-bold text-[hsl(var(--sprouttie-ink))]">
           {said + attempted + read === 0
             ? 'A quiet week.'
             : childName ? `${childName}'s week` : 'Your week'}
         </h2>
+        <p className="mt-1.5 text-sm text-[hsl(var(--muted-foreground))]">
+          A look back at what you noticed. To change an entry, go back and edit it in the list.
+        </p>
       </div>
 
       {/* Stats */}
