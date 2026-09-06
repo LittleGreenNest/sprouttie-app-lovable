@@ -1,22 +1,121 @@
 {
   "artboards": [
-    { "file": "CurrentWizard.dc.html",  "x": 0,    "y": 0,    "w": 390,  "h": 844, "title": "1 · The week today (a) — the dashboard wizard" },
-    { "file": "CurrentPlanner.dc.html", "x": 490,  "y": 0,    "w": 390,  "h": 844, "title": "2 · The week today (b) — /word-planner" },
-    { "file": "StateEmpty.dc.html",     "x": 1080, "y": 0,    "w": 390,  "h": 844, "title": "3 · Proposed — nothing chosen yet" },
-    { "file": "Main.dc.html",           "x": 1570, "y": 0,    "w": 390,  "h": 844, "title": "4 · Proposed — the week is ready" },
-    { "file": "StateRunning.dc.html",   "x": 2060, "y": 0,    "w": 390,  "h": 844, "title": "5 · Proposed — confirmed and running" },
-    { "file": "StateReflect.dc.html",   "x": 2550, "y": 0,    "w": 390,  "h": 844, "title": "6 · Proposed — Sunday reflection" },
-    { "file": "Rules.dc.html",          "x": 0,    "y": 1180, "w": 1330, "h": 760, "title": "7 · What has to be settled first" }
+    {
+      "file": "CurrentWizard.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "1 · The week today (a): the dashboard wizard"
+    },
+    {
+      "file": "CurrentPlanner.dc.html",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "2 · The week today (b): /word-planner"
+    },
+    {
+      "file": "StateEmpty.dc.html",
+      "x": 1080,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "3 · Proposed: nothing chosen yet"
+    },
+    {
+      "file": "Main.dc.html",
+      "x": 1570,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "4 · Proposed: Sprouttie suggests"
+    },
+    {
+      "file": "StateRunning.dc.html",
+      "x": 2060,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "5 · Proposed: confirmed and running"
+    },
+    {
+      "file": "StateReflect.dc.html",
+      "x": 2550,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "6 · Proposed: Sunday reflection"
+    },
+    {
+      "file": "Rules.dc.html",
+      "x": 0,
+      "y": 1180,
+      "w": 1330,
+      "h": 760,
+      "title": "7 · What has to be settled first"
+    }
   ],
   "annotations": [
-    { "id": "note-overview", "x": 0, "y": -430, "w": 880, "text": "Sprouttie weekly screen proposal\n\nRead left to right. Static mockups, not a clickable prototype — the job is to make an argument.\n\nThe case in one line: the app has TWO weekly experiences built independently, and neither knows what state the week is in. Boards 1 and 2 are both live today. Boards 3 to 6 are one screen showing one state at a time." },
-    { "id": "note-cur-a", "x": 0, "y": -210, "w": 390, "text": "1 · The dashboard wizard\n\nFour steps with progress dots, always opening at step 0. Recreated from components/thisweek/.\n\nThis is the flow behind \"why does this show after I click Plan this week?\" — you pressed See Reflection at step 3. The label is honest; the wizard is the problem." },
-    { "id": "note-cur-b", "x": 490, "y": -210, "w": 390, "text": "2 · /word-planner\n\nA second, unrelated weekly screen. Reads weekly_suggestions at the top and wordPlans at the bottom, so it shows five words and \"No words planned yet\" at once.\n\nNot a bug. Two different tables presented as if they were one thing." },
-    { "id": "note-empty", "x": 1080, "y": -210, "w": 390, "text": "3 · Nothing chosen yet\n\nReplaces \"No words planned yet\". It asks rather than reporting a void, and it carries last week forward so the screen is never blank.\n\nThe last-week card assumes the review actually ran. If it did not, this block is omitted rather than faked." },
-    { "id": "note-ready", "x": 1570, "y": -210, "w": 390, "text": "4 · The week is ready\n\nThe screen that matters. Confirming is ONE tap, so it feels as effortless as auto-accept, but the line between what Sprouttie proposed and what you chose stays real — which is what makes the Sunday ratings mean anything.\n\n\"Why these words?\" needs the generator to store a reason, not just UI." },
-    { "id": "note-running", "x": 2060, "y": -210, "w": 390, "text": "5 · Confirmed and running\n\nNo planning language anywhere. One action, sized in seconds.\n\nThe \"Say it today\" block is the U stage and is NOT built — it is drawn here to show where it lands, not to imply it exists." },
-    { "id": "note-reflect", "x": 2550, "y": -210, "w": 390, "text": "6 · Sunday reflection\n\nAppears only when last week was confirmed and has unrated words. Today it renders any day and queries the week on screen while calling it \"last week\".\n\nThe free-text note is shown, not swallowed. There is no \"Plan Next Week\" button: nothing in the code can point the app at another week, so the button never rolled anything over." },
-    { "id": "note-rules", "x": 0, "y": 1000, "w": 1330, "text": "7 · What has to be settled first\n\nFour recommendations and one genuine blocker. Decision 5 — what earns \"Growing\" — is the same open question as board 4 of the Home canvas, because the Sunday review is where stages get written. Settle it once, there, for both screens.\n\nThe tap-to-set-stage fix shipped on fix/launch-blockers makes promotion possible. It does not decide the rule." }
+    {
+      "id": "note-overview",
+      "x": 0,
+      "y": -430,
+      "w": 880,
+      "text": "Sprouttie weekly screen proposal\n\nRead left to right. Static mockups, not a clickable prototype. The job is to make an argument.\n\nThe case in one line: the app has TWO weekly experiences built independently, and neither knows what state the week is in. Boards 1 and 2 are both live today. Boards 3 to 6 are one screen showing one state at a time."
+    },
+    {
+      "id": "note-cur-a",
+      "x": 0,
+      "y": -210,
+      "w": 390,
+      "text": "1 · The dashboard wizard\n\nFour steps with progress dots, always opening at step 0. Recreated from components/thisweek/.\n\nThis is the flow behind \"why does this show after I click Plan this week?\". You pressed See Reflection at step 3. The label is honest; the wizard is the problem.\n\nDONE: copy is now \"Record down what you observed.\", and em-dashes are out of the whole app."
+    },
+    {
+      "id": "note-cur-b",
+      "x": 490,
+      "y": -210,
+      "w": 390,
+      "text": "2 · /word-planner\n\nA second, unrelated weekly screen. Reads weekly_suggestions at the top and wordPlans at the bottom, so it shows five words and \"No words planned yet\" at once.\n\nNot a bug. Two different tables presented as if they were one thing.\n\nAGREED: \"Sprouttie suggests\" is the label. It says who chose, which is what makes the Sunday ratings mean anything."
+    },
+    {
+      "id": "note-empty",
+      "x": 1080,
+      "y": -210,
+      "w": 390,
+      "text": "3 · Nothing chosen yet\n\nReplaces \"No words planned yet\". It asks rather than reporting a void, and it carries last week forward so the screen is never blank.\n\nThe last-week card assumes the review actually ran. If it did not, this block is omitted rather than faked."
+    },
+    {
+      "id": "note-ready",
+      "x": 1570,
+      "y": -210,
+      "w": 390,
+      "text": "4 · Sprouttie suggests\n\nThe screen that matters. Confirming is ONE tap, so it feels as effortless as auto-accept, but the line between what Sprouttie proposed and what you chose stays real.\n\nANSWERED: always five, never more. What changes is the mix. Three carried forward plus two new, when three did not land. The founder's own account flashes about once every eight days, so carrying forward is the normal case, not the exception.\n\n\"Why these words?\" needs the generator to store a reason, not just UI."
+    },
+    {
+      "id": "note-running",
+      "x": 2060,
+      "y": -210,
+      "w": 390,
+      "text": "5 · Confirmed and running\n\nNo planning language anywhere. One action, sized in seconds.\n\nThe \"Say it today\" block is the U stage and is NOT built. It is drawn here to show where it lands, not to imply it exists."
+    },
+    {
+      "id": "note-reflect",
+      "x": 2550,
+      "y": -210,
+      "w": 390,
+      "text": "6 · Sunday reflection\n\nAppears only when last week was confirmed and has unrated words. Today it renders any day and queries the week on screen while calling it \"last week\".\n\nThe free-text note is shown, not swallowed. There is no \"Plan Next Week\" button: nothing in the code can point the app at another week, so the button never rolled anything over."
+    },
+    {
+      "id": "note-rules",
+      "x": 0,
+      "y": 1000,
+      "w": 1330,
+      "text": "7 · What has to be settled first\n\nFour recommendations and one genuine blocker. Decision 5, what earns \"Growing\", is the same open question as board 4 of the Home canvas, because the Sunday review is where stages get written. Settle it once, there, for both screens.\n\nThe tap-to-set-stage fix shipped on fix/launch-blockers makes promotion possible. It does not decide the rule."
+    }
   ],
-  "launch": { "view": "canvas" }
+  "launch": {
+    "view": "canvas"
+  }
 }
