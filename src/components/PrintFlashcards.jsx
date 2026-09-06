@@ -566,6 +566,11 @@ const generatePreview = () => {
         {/* Control Buttons - Mobile Responsive */}
         <div className="space-y-3">
           {/* Primary Actions Row */}
+          {selectedFlashcards.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Select the cards you want, then generate a preview.
+            </p>
+          )}
           <div className="flex flex-col sm:flex-row gap-2">
             <button
               onClick={generatePreview}
@@ -602,24 +607,29 @@ const generatePreview = () => {
               <span>Add back pages</span>
             </label>
 
-            <div className="inline-flex rounded-lg overflow-hidden border border-border">
+            <div className="inline-flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Card text</span>
+              <div className="inline-flex rounded-lg overflow-hidden border border-border">
               <button
                 type="button"
                 onClick={() => setTextColor('red')}
                 className={`px-3 py-2 text-sm font-medium transition-colors ${textColor==='red' ? 'bg-red-600 text-white' : 'bg-background text-foreground hover:bg-secondary'}`}
               >
-                🔴 Red
+                Red
               </button>
               <button
                 type="button"
                 onClick={() => setTextColor('black')}
                 className={`px-3 py-2 text-sm font-medium transition-colors ${textColor==='black' ? 'bg-foreground text-background' : 'bg-background text-foreground hover:bg-secondary'}`}
               >
-                ⚫ Black
+                Black
               </button>
+              </div>
             </div>
 
-            <div className="inline-flex rounded-lg overflow-hidden border border-border">
+            <div className="inline-flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Previewing</span>
+              <div className="inline-flex rounded-lg overflow-hidden border border-border">
               <button
                 type="button"
                 onClick={() => setPreviewSide('front')}
@@ -636,6 +646,7 @@ const generatePreview = () => {
               >
                 Back
               </button>
+              </div>
             </div>
           </div>
         </div>

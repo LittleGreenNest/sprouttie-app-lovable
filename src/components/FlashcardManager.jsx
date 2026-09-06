@@ -6,7 +6,7 @@ import { useFlashcards } from '../context/FlashcardContext';
 import { supabase } from '@/integrations/supabase/client';
 import CSVImport from './CSVImport';
 import PrintFlashcards from './PrintFlashcards';
-import { History } from 'lucide-react';
+import { History, Printer } from 'lucide-react';
 
 // The lookup itself takes roughly a second, so it is the long pole, not the
 // wait before it. 450ms still coalesces a burst of typing without adding a
@@ -32,7 +32,7 @@ const FlashcardManager = () => {
   const isAtFreeLimit = plan === 'free' && flashcards.length >= FREE_CARD_LIMIT;
   
   // UI state
-  const [activeTab, setActiveTab] = useState('categories');
+  const [activeTab, setActiveTab] = useState('flashcards');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [showCSVImport, setShowCSVImport] = useState(false);
   
@@ -498,11 +498,11 @@ const FlashcardManager = () => {
         <div className="flex space-x-3">
         <button
           onClick={handleExportFlashcards}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          className="flex items-center px-2 py-2 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--sprouttie-green))] transition-colors"
         >
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
-            className="h-5 w-5 mr-2" 
+            className="h-4 w-4 mr-1.5" 
             fill="none" 
             viewBox="0 0 24 24" 
             stroke="currentColor"
@@ -514,15 +514,15 @@ const FlashcardManager = () => {
               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" 
             />
           </svg>
-          Export as CSV
+          Export CSV
         </button>
         <button
           onClick={toggleCSVImport}
-          className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+          className="flex items-center px-2 py-2 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--sprouttie-green))] transition-colors"
         >
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
-            className="h-5 w-5 mr-2" 
+            className="h-4 w-4 mr-1.5" 
             fill="none" 
             viewBox="0 0 24 24" 
             stroke="currentColor"
@@ -534,7 +534,7 @@ const FlashcardManager = () => {
               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0l-4 4m4-4v12" 
             />
           </svg>
-          Import from CSV
+          Import CSV
         </button>
         </div>
       </div>
@@ -542,7 +542,7 @@ const FlashcardManager = () => {
       {/* Notification Message */}
       {message.text && (
         <div className={`mb-4 p-3 rounded ${
-          message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+          message.type === 'error' ? 'bg-[#F1E7DC] text-[#8A6A52]' : 'bg-[hsl(var(--sprouttie-mint))] text-[hsl(var(--sprouttie-green-dark,152_42%_28%))]'
         }`}>
           {message.text}
         </div>
@@ -552,23 +552,24 @@ const FlashcardManager = () => {
       <div className="flex items-center justify-between mb-6 border-b">
         <div className="flex">
           <button
-            className={`px-4 py-2 ${activeTab === 'categories' ? 'bg-blue-100 border-b-2 border-blue-500 font-medium' : 'hover:bg-gray-100'}`}
+            className={`px-4 py-2 ${activeTab === 'categories' ? 'border-b-2 border-[hsl(var(--sprouttie-green))] text-[hsl(var(--sprouttie-ink))] font-semibold' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--sprouttie-ink))]'}`}
             onClick={() => setActiveTab('categories')}
           >
             Categories
           </button>
           <button
-            className={`px-4 py-2 ${activeTab === 'flashcards' ? 'bg-blue-100 border-b-2 border-blue-500 font-medium' : 'hover:bg-gray-100'}`}
+            className={`px-4 py-2 ${activeTab === 'flashcards' ? 'border-b-2 border-[hsl(var(--sprouttie-green))] text-[hsl(var(--sprouttie-ink))] font-semibold' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--sprouttie-ink))]'}`}
             onClick={() => setActiveTab('flashcards')}
           >
             Flashcards
           </button>
         </div>
         <button
-          className="flex items-center gap-1.5 px-3 py-1.5 mb-1 text-sm font-medium text-sprouttie-green border border-sprouttie-green rounded-lg hover:bg-sprouttie-mint/30 transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 mb-1 text-sm font-medium bg-[#F0C040] text-[#1A1A1A] rounded-xl hover:brightness-95 transition-all"
           onClick={() => setActiveTab('print-flashcards')}
         >
-          🖨️ Print
+          <Printer className="w-4 h-4" />
+          Print cards
         </button>
       </div>
       
@@ -589,7 +590,7 @@ const FlashcardManager = () => {
               />
               <button 
                 type="submit"
-                className="bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600"
+                className="bg-[#F0C040] text-[#1A1A1A] font-medium px-4 py-2 rounded-xl hover:brightness-95 transition-all"
 >
                 Add
               </button>
@@ -616,7 +617,7 @@ const FlashcardManager = () => {
                         />
                         <button 
                           type="submit"
-                          className="bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600"
+                          className="bg-[hsl(var(--sprouttie-green))] text-white px-3 py-1 rounded-lg hover:brightness-95 transition-all"
                         >
                           Save
                         </button>
