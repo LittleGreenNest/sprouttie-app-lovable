@@ -342,7 +342,7 @@ const WeeklyWordPlanner = () => {
       .update({ status: 'dismissed', dismissal_reason: reason })
       .in('id', ids);
     setPendingSuggestions([]);
-    toast.success(reason ? 'Got it — Sprouttie will learn from this.' : 'Suggestions dismissed.');
+    toast.success(reason ? 'Got it. Sprouttie will learn from this.' : 'Suggestions dismissed.');
   };
 
   const handleDismissOne = async (id, reason) => {
@@ -657,7 +657,7 @@ const WeeklyWordPlanner = () => {
                 Plan this week with Sprouttie
               </h3>
               <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 leading-relaxed">
-                Sprouttie reads your recent logs, your child's interests, and what worked last week — then proposes one themed set of words.
+                Sprouttie reads your recent logs, your child's interests, and what worked last week, then proposes one themed set of words.
               </p>
             </div>
           </div>
@@ -874,7 +874,7 @@ const WeeklyWordPlanner = () => {
                           </p>
                           <div className="flex flex-wrap gap-1.5">
                             {[
-                              { label: 'Too easy', value: 'too easy — already knows similar' },
+                              { label: 'Too easy', value: 'too easy, already knows similar' },
                               { label: 'Already says it', value: 'already says it' },
                               { label: 'Not relevant', value: 'not relevant to our routine' },
                               { label: 'Too hard', value: 'too hard for now' },
@@ -912,10 +912,10 @@ const WeeklyWordPlanner = () => {
                 )}
               </button>
               <button
-                onClick={() => handleDismissAll('dismissed all — planning manually')}
+                onClick={() => handleDismissAll('dismissed all, planning manually')}
                 className="w-full text-center text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors py-1"
               >
-                Dismiss all — I'll plan manually
+                Dismiss all, I'll plan manually
               </button>
             </div>
           </motion.div>

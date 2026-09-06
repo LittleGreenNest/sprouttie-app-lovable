@@ -197,7 +197,7 @@ const Signup = () => {
               disabled={loading}
               className="w-full py-3 rounded-xl bg-[hsl(var(--sprouttie-green))] hover:bg-[hsl(var(--sprouttie-green-dark))] text-white font-semibold text-sm transition-all duration-250 shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-lg)] hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating account…' : 'Create account — it\'s free'}
+              {loading ? 'Creating account…' : 'Create account, it\'s free'}
             </button>
           </form>
 

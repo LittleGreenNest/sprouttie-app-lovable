@@ -13,7 +13,7 @@ const STAGES = {
     key: 'new',
     emoji: '🌱',
     label: 'New',
-    sectionLabel: '🌱 New — just sprouting',
+    sectionLabel: '🌱 New, just sprouting',
     toastLabel: 'Moved to 🌱 New!',
     sortOrder: 0,
   },
@@ -21,7 +21,7 @@ const STAGES = {
     key: 'growing',
     emoji: '🌿',
     label: 'Growing',
-    sectionLabel: '🌿 Growing — update these',
+    sectionLabel: '🌿 Growing, update these',
     toastLabel: 'Moved to 🌿 Growing!',
     sortOrder: 1,
   },
@@ -29,7 +29,7 @@ const STAGES = {
     key: 'owned',
     emoji: '🌳',
     label: 'Owned',
-    sectionLabel: '🌳 Owned — your child\'s got these',
+    sectionLabel: '🌳 Owned, your child\'s got these',
     toastLabel: 'Moved to 🌳 Owned!',
     sortOrder: 2,
   },
@@ -281,7 +281,7 @@ const ImportWordsModal = ({ currentUser, existingWords, onImported, onClose }) =
         setParsed(rows);
         setResult(null);
       },
-      error: () => toast.error('Could not read file — make sure it is a valid CSV'),
+      error: () => toast.error('Could not read that file. Make sure it is a valid CSV.'),
     });
   };
 
@@ -310,7 +310,7 @@ const ImportWordsModal = ({ currentUser, existingWords, onImported, onClose }) =
       onImported();
     } catch (err) {
       console.error(err);
-      toast.error('Import failed — please try again');
+      toast.error('Import failed. Please try again.');
     } finally {
       setImporting(false);
     }
@@ -336,7 +336,7 @@ const ImportWordsModal = ({ currentUser, existingWords, onImported, onClose }) =
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div>
             <h2 className="font-semibold text-foreground text-base">Import words from file</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Upload a CSV — one word per row</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Upload a CSV with one word per row</p>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
             <X size={18} />
@@ -755,7 +755,7 @@ const SpokenWords = () => {
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            A gentle record of what you notice — not a test, just observations.
+            Record down what you observed.
           </p>
           <p className="text-xs text-muted-foreground/60 tracking-wide mt-1">
             Tap a word to open it, then set where it is. Swiping works too.

@@ -115,7 +115,7 @@ const DailyInsight = ({ dateString }) => {
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="More details — what happened, how your child reacted, what surprised you..."
+            placeholder="More details: what happened, how your child reacted, what surprised you..."
             style={{
               width: '100%', border: '0.5px solid #D1D5DB', borderRadius: '8px',
               padding: '10px 12px', fontSize: '13px', lineHeight: 1.5,

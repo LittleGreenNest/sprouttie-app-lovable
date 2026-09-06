@@ -124,7 +124,7 @@ const SCREENS = [
     type: 'quiz',
     key: 'daily_time_commitment',
     title: 'How many minutes a day can you realistically commit?',
-    subtitle: 'Be honest — even 1 minute counts.',
+    subtitle: 'Be honest. Even 1 minute counts.',
     options: [
       { value: '1-2', label: '1–2 minutes', emoji: '⏱️' },
       { value: '3-5', label: '3–5 minutes', emoji: '⏲️' },
@@ -138,8 +138,8 @@ const SCREENS = [
     key: 'meet',
     showLogo: true,
     title: 'Meet Sprouttie 🌱',
-    subtitle: 'Your tiny learning companion — helping you turn everyday moments into learning moments.',
-    footnote: '✨ Choose how Sprouttie speaks at home — from clear Mandarin to local flavours (coming soon)',
+    subtitle: 'Your tiny learning companion, helping you turn everyday moments into learning moments.',
+    footnote: '✨ Choose how Sprouttie speaks at home, from clear Mandarin to local flavours (coming soon)',
     cta: 'Next',
   },
 
@@ -150,7 +150,7 @@ const SCREENS = [
     title: 'A system that grows with your child',
     steps: [
       { num: '1', label: 'Add words (or use ready sets)', desc: "Quickly input what matters to your child's daily life" },
-      { num: '2', label: 'Capture their voice', desc: 'Record what they say — watch their progress over time' },
+      { num: '2', label: 'Capture their voice', desc: 'Record what they say and watch their progress over time' },
       { num: '3', label: 'Continue what works', desc: "Reuse, repeat, or let Sprouttie suggest next week's words" },
     ],
     closeLine: 'Less time prepping.\nMore time connecting.',

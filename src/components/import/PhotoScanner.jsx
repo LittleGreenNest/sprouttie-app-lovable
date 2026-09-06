@@ -429,8 +429,8 @@ const PhotoScanner = () => {
               </p>
               <p className="text-sm text-slate-500 mt-1">
                 {scanMode === MODES.IDENTIFY
-                  ? "Point at a toy, fruit, animal — we'll tell you the Chinese word"
-                  : "Flashcards, toys, posters, books — we'll detect and translate up to 20 words at once"
+                  ? "Point at a toy, fruit or animal and we'll tell you the Chinese word"
+                  : "Flashcards, toys, posters, books. We'll detect and translate up to 20 words at once"
                 }
               </p>
             </div>
@@ -472,7 +472,7 @@ const PhotoScanner = () => {
 
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
             {scanMode === MODES.IDENTIFY
-              ? <><strong>Tip:</strong> Get close to the object with good lighting. Works best with single items — toys, fruit, animals, household objects.</>
+              ? <><strong>Tip:</strong> Get close to the object with good lighting. Works best with single items: toys, fruit, animals, household objects.</>
               : <><strong>Tip:</strong> Use good lighting and lay items flat. You can also upload a PDF (up to 10 pages). Works with up to 20 items at once.</>
             }
           </div>
@@ -638,7 +638,7 @@ const PhotoScanner = () => {
                           onClick={(e) => cycleLanguage(word, e)}
                           disabled={!hasChinese}
                           className={`text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0 transition-colors ${getLangColor(lang)} ${!hasChinese ? 'opacity-60 cursor-default' : ''}`}
-                          title={hasChinese ? 'Tap to change: EN / CN / Both' : 'English only — no Chinese translation'}
+                          title={hasChinese ? 'Tap to change: EN / CN / Both' : 'English only, no Chinese translation'}
                         >
                           {getLangLabel(lang)}
                         </button>

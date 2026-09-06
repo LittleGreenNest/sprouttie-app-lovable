@@ -232,7 +232,7 @@ const SessionLogTracker = () => {
       }
     } catch (error) {
       console.error('Error toggling round:', error);
-      toast.error('Failed to update — please try again');
+      toast.error('Failed to update. Please try again.');
       setRoundTracking(prev => ({ ...prev, [key]: isCurrentlyChecked }));
     } finally {
       setToggling(false);

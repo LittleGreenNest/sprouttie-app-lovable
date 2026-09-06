@@ -82,9 +82,9 @@ const generateBookSuggestions = (ageBand) => {
 };
 
 const INTERACTION_PROMPTS = [
-  ['Point and name objects during meals 🍽', 'Repeat the word slowly when your child looks at you 👀', 'Say the word again when they attempt it — no correction needed 💚'],
-  ['Label what they point at in their own words 🫶', 'Use the word in a short sentence at bath time 🛁', 'Sing a word in a simple melody — repetition through music 🎵'],
-  ['Narrate what you\'re both doing: "We\'re eating rice!" 🍚', 'Wait 3 seconds after saying a word — give space for a response 🕐', 'Celebrate any attempt — a smile is enough 😊'],
+  ['Point and name objects during meals 🍽', 'Repeat the word slowly when your child looks at you 👀', 'Say the word again when they attempt it. No correction needed 💚'],
+  ['Label what they point at in their own words 🫶', 'Use the word in a short sentence at bath time 🛁', 'Sing a word in a simple melody, repetition through music 🎵'],
+  ['Narrate what you\'re both doing: "We\'re eating rice!" 🍚', 'Wait 3 seconds after saying a word, to give space for a response 🕐', 'Celebrate any attempt. A smile is enough 😊'],
 ];
 
 export const useThisWeek = () => {

@@ -113,7 +113,7 @@ const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
         setUploadFile(audioFile);
         setCompressed(true);
         setStep('upload');
-        toast.info(`Video was ${(file.size / 1024 / 1024).toFixed(0)}MB — extracted audio only (${(audioFile.size / 1024 / 1024).toFixed(1)}MB)`);
+        toast.info(`Video was ${(file.size / 1024 / 1024).toFixed(0)}MB, extracted audio only (${(audioFile.size / 1024 / 1024).toFixed(1)}MB)`);
       } catch (err) {
         console.error('Audio extraction failed:', err);
         setStep('upload');
@@ -271,7 +271,7 @@ const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
             {step === 'upload' && (
               <div className="p-5 space-y-4">
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Upload a short clip (under 2 minutes is ideal) of your child speaking. Our AI will listen and extract the words they say — in any language.
+                  Upload a short clip (under 2 minutes is ideal) of your child speaking. Our AI will listen and extract the words they say, in any language.
                 </p>
 
                 {error && (
@@ -317,7 +317,7 @@ const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
 
                     {compressed && (
                       <p className="text-xs text-[hsl(var(--muted-foreground))] text-center">
-                        ✅ Audio extracted — ready to analyze
+                        ✅ Audio extracted, ready to analyse
                       </p>
                     )}
 
@@ -352,7 +352,7 @@ const VideoWordExtractor = ({ onWordsExtracted, onClose }) => {
                     Extracting audio from video...
                   </p>
                   <p className="text-xs text-slate-400 mt-1">
-                    This keeps only the speech — much smaller file
+                    This keeps only the speech, so the file is much smaller
                   </p>
                 </div>
               </div>

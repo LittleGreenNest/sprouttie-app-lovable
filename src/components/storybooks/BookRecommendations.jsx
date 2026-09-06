@@ -442,7 +442,7 @@ const BookRecommendations = () => {
           <h3 className="font-medium text-foreground mb-2">No recommendations yet</h3>
           <p className="text-sm text-muted-foreground">
             Click the button above to get personalised book suggestions
-            {isMultilingual && ' — including bilingual books for your household!'}
+            {isMultilingual && ', including bilingual books for your household'}
           </p>
         </div>
       )}

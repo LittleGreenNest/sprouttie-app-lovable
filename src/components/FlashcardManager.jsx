@@ -471,7 +471,7 @@ const FlashcardManager = () => {
               {flashcards.length}/{FREE_CARD_LIMIT} cards used
             </span>
             {isAtFreeLimit && (
-              <span className="text-amber-700">— You've reached the free limit.</span>
+              <span className="text-amber-700">You've reached the free limit.</span>
             )}
           </div>
           <button

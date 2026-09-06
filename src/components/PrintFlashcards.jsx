@@ -371,8 +371,8 @@ const generatePreview = () => {
               doc.text(en, cx, centerY, { align: 'center', baseline: 'middle' });
             } else {
               // Chinese card: three centered lines — English / Chinese / Pinyin
-              const line1 = `English: ${en || '—'}`;
-              const line3 = `Pinyin: ${py || '—'}`;
+              const line1 = en ? `English: ${en}` : '';
+              const line3 = py ? `Pinyin: ${py}` : '';
               const lineGap = 14; // mm between lines
 
               doc.setFontSize(13);
@@ -380,8 +380,8 @@ const generatePreview = () => {
               doc.text(line1, cx, centerY - lineGap, { align: 'center', baseline: 'middle' });
 
               doc.setFontSize(22);
-              setAutoFont(doc, cn || '—', 'normal');
-              doc.text(cn || '—', cx, centerY, { align: 'center', baseline: 'middle' });
+              setAutoFont(doc, cn || '', 'normal');
+              doc.text(cn || '', cx, centerY, { align: 'center', baseline: 'middle' });
 
               doc.setFontSize(13);
               setAutoFont(doc, line3, 'normal');
@@ -739,13 +739,13 @@ const generatePreview = () => {
                       ) : (
                         <>
                           <div className="text-xs sm:text-sm text-muted-foreground">
-                            English: {fc.english || '—'}
+                            English: {fc.english || ''}
                           </div>
                           <div className="text-base sm:text-xl font-semibold text-foreground my-0.5">
-                            {fc.word || '—'}
+                            {fc.word || ''}
                           </div>
                           <div className="text-xs sm:text-sm text-muted-foreground">
-                            Pinyin: {fc.pinyin || '—'}
+                            Pinyin: {fc.pinyin || ''}
                           </div>
                         </>
                       )}
@@ -768,7 +768,7 @@ const generatePreview = () => {
       <ul className="list-disc list-inside ml-2 space-y-0.5">
         <li>Words printed in {textColor === 'red' ? 'bright red' : 'black'}, A4 landscape, 2 per page</li>
         <li>Short words display at 250pt; longer words auto-scale</li>
-        <li>8mm margins — may be tight for some printers</li>
+        <li>8mm margins, which may be tight for some printers</li>
         <li>Total pages: {previewPages.length}</li>
       </ul>
     </div>

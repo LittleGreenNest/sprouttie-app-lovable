@@ -67,7 +67,7 @@ const QuickLogSheet = ({ type, onSubmit, onClose, books = [] }) => {
           type="text"
           value={context}
           onChange={(e) => setContext(e.target.value)}
-          placeholder="Context (optional) — e.g. during lunch"
+          placeholder="Context (optional), e.g. during lunch"
           className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--sprouttie-green)/0.5)]"
         />
       )}
@@ -115,7 +115,7 @@ const DuringScreen = ({ logs, addLog, deleteLog, onNext, onBack }) => {
   return (
     <div className="space-y-5">
       <p className="text-sm text-[hsl(var(--muted-foreground))] italic text-center">
-        A gentle record of what you notice — not a test.
+        Record down what you observed.
       </p>
 
       {/* Quick log buttons */}
