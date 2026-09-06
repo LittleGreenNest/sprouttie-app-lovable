@@ -53,8 +53,8 @@
       "x": 0,
       "y": 1180,
       "w": 1330,
-      "h": 760,
-      "title": "7 · What has to be settled first"
+      "h": 800,
+      "title": "7 · What has to be settled first: all answered"
     }
   ],
   "annotations": [
@@ -105,14 +105,14 @@
       "x": 2550,
       "y": -210,
       "w": 390,
-      "text": "6 · Sunday reflection\n\nAppears only when last week was confirmed and has unrated words. Today it renders any day and queries the week on screen while calling it \"last week\".\n\nThe free-text note is shown, not swallowed. There is no \"Plan Next Week\" button: nothing in the code can point the app at another week, so the button never rolled anything over."
+      "text": "6 · Sunday reflection\n\nThis board is now the answer to \"what earns Growing\". The four-state question is the promotion mechanism, replacing the swipe. It needs no new capture and it reaches all 101 logged words, not just the 13 that are also flashcards.\n\nAppears only when last week was confirmed and has unrated words. Today it renders any day and queries the week on screen while calling it \"last week\".\n\nThe free-text note is shown, not swallowed. There is no \"Plan Next Week\" button: nothing in the code can point the app at another week, so the button never rolled anything over."
     },
     {
       "id": "note-rules",
       "x": 0,
       "y": 1000,
       "w": 1330,
-      "text": "7 · What has to be settled first\n\nFour recommendations and one genuine blocker. Decision 5, what earns \"Growing\", is the same open question as board 4 of the Home canvas, because the Sunday review is where stages get written. Settle it once, there, for both screens.\n\nThe tap-to-set-stage fix shipped on fix/launch-blockers makes promotion possible. It does not decide the rule."
+      "text": "7 · What has to be settled first\n\nAll five now have an answer. Decision 5, what earns \"Growing\", was the blocker across both proposals and is now closed: queried against live data on 6 September, all three candidate rules promote ZERO. Only 22 of 149 cards have ever been flashed, daily_tracking holds 58 rows in total, and nothing has reached more than 3 distinct days.\n\nThe decisive figure: only 13 of 101 logged words are flashcards at all, so any rule keyed to flashing tops out at 13% of the vocabulary.\n\nIt resolved into BOARD 6 rather than into a rule. The Sunday review writes the stage. That is why this merge now unblocks the Home proposal too: the reward strip, the Garden, Word Journey and the three dashboard counters have all been rendering zeros waiting on a rule that could never have fired."
     }
   ],
   "launch": {

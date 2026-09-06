@@ -13,7 +13,7 @@ into one state-driven screen. Static mockups, not a prototype.
 | `Main.dc.html` | 4 · Proposed: Sprouttie suggests (the screen that matters) |
 | `StateRunning.dc.html` | 5 · Proposed: confirmed and running |
 | `StateReflect.dc.html` | 6 · Proposed: Sunday reflection |
-| `Rules.dc.html` | 7 · Five things to settle first |
+| `Rules.dc.html` | 7 · Five things to settle first, all now answered |
 | `canvas.json` | Layout, titles, sticky notes |
 
 ## Palette note
@@ -39,6 +39,11 @@ last re-seed.
   ready". It says who chose, which is what makes the Sunday ratings mean
   anything.
 - **No em-dashes anywhere**, in the app and in these boards.
+- **Decision 5 is closed.** Queried live on 2026-09-06: all three candidate
+  promotion rules promote zero. 22 of 149 cards ever flashed, 58 `daily_tracking`
+  rows total, nothing past 3 distinct days, and only 13 of 101 logged words are
+  cards at all. It resolved into **board 6** rather than into a rule: the Sunday
+  review writes the stage. See `design/home-proposal-updated/`.
 
 ## Drawn but not built
 
