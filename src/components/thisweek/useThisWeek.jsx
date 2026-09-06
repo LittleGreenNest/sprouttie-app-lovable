@@ -93,13 +93,11 @@ export const useThisWeek = () => {
   const [loading, setLoading] = useState(true);
   const [flashcards, setFlashcards] = useState([]);
   const weekStart = getCurrentWeekStart();
-  // Name precedence must match Dashboard.jsx so the two never disagree:
-  // display_name is the user's own saved name and survives Google's OAuth re-sync.
-  const childName = currentUser?.user_metadata?.child_name
-    || currentUser?.user_metadata?.display_name?.split(' ')[0]
-    || currentUser?.user_metadata?.full_name?.split(' ')[0]
-    || currentUser?.user_metadata?.name?.split(' ')[0]
-    || 'Your child';
+  // Only a real child name may be used here. The old chain fell back to the
+  // ACCOUNT holder's name, so a parent called Rena was shown "Rena had a great
+  // week" about her toddler. Onboarding does not capture child_name yet, so
+  // null is the honest answer and every screen must render without a name.
+  const childName = currentUser?.user_metadata?.child_name || null;
   const ageBand = profile?.child_age_band;
   const stage = getStageLabel(ageBand);
 
