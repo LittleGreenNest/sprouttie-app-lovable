@@ -197,6 +197,32 @@ const WordCard = ({ word, onStageChange, onDelete }) => {
               </div>
             )}
 
+            {/* Stage — tappable, so promotion does not depend on discovering the swipe */}
+            <div className="pt-1">
+              <p className="text-xs text-muted-foreground mb-1.5">Where is this word now?</p>
+              <div className="flex gap-1.5">
+                {STAGE_ORDER.map((key) => {
+                  const isCurrent = (word.word_stage || 'new') === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => { if (!isCurrent) onStageChange(word.id, key); }}
+                      aria-pressed={isCurrent}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                        isCurrent
+                          ? 'bg-[hsl(var(--sprouttie-mint))] border-[hsl(var(--sprouttie-green))] text-[hsl(var(--sprouttie-ink))]'
+                          : 'bg-background border-border text-muted-foreground hover:border-[hsl(var(--sprouttie-green))] hover:text-[hsl(var(--sprouttie-ink))]'
+                      }`}
+                    >
+                      <span>{STAGES[key].emoji}</span>
+                      {STAGES[key].label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Delete */}
             <div className="flex justify-end pt-1">
               <button
@@ -732,7 +758,7 @@ const SpokenWords = () => {
             A gentle record of what you notice — not a test, just observations.
           </p>
           <p className="text-xs text-muted-foreground/60 tracking-wide mt-1">
-            ← swipe cards to change stage →
+            Tap a word to open it, then set where it is. Swiping works too.
           </p>
         </div>
 
