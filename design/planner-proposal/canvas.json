@@ -1,0 +1,121 @@
+{
+  "artboards": [
+    {
+      "file": "CurrentWizard.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "1 · The week today (a): the dashboard wizard"
+    },
+    {
+      "file": "CurrentPlanner.dc.html",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "2 · The week today (b): /word-planner"
+    },
+    {
+      "file": "StateEmpty.dc.html",
+      "x": 1080,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "3 · Proposed: nothing chosen yet"
+    },
+    {
+      "file": "Main.dc.html",
+      "x": 1570,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "4 · Proposed: Sprouttie suggests"
+    },
+    {
+      "file": "StateRunning.dc.html",
+      "x": 2060,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "5 · Proposed: confirmed and running"
+    },
+    {
+      "file": "StateReflect.dc.html",
+      "x": 2550,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "6 · Proposed: Sunday reflection"
+    },
+    {
+      "file": "Rules.dc.html",
+      "x": 0,
+      "y": 1180,
+      "w": 1330,
+      "h": 800,
+      "title": "7 · What has to be settled first: all answered"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "note-overview",
+      "x": 0,
+      "y": -430,
+      "w": 880,
+      "text": "Sprouttie weekly screen proposal\n\nRead left to right. Static mockups, not a clickable prototype. The job is to make an argument.\n\nThe case in one line: the app has TWO weekly experiences built independently, and neither knows what state the week is in. Boards 1 and 2 are both live today. Boards 3 to 6 are one screen showing one state at a time.\n\nBoard 4 is drawn on the AI Suggest engine, which already ships on main. It is buried behind a 1/2/3/5 set picker that produces 5 to 25 words. Cut to 5 and given one button, it is this board."
+    },
+    {
+      "id": "note-cur-a",
+      "x": 0,
+      "y": -210,
+      "w": 390,
+      "text": "1 · The dashboard wizard\n\nFour steps with progress dots, always opening at step 0. Recreated from components/thisweek/.\n\nThis is the flow behind \"why does this show after I click Plan this week?\". You pressed See Reflection at step 3. The label is honest; the wizard is the problem.\n\nDONE: copy is now \"Record down what you observed.\", and em-dashes are out of the whole app."
+    },
+    {
+      "id": "note-cur-b",
+      "x": 490,
+      "y": -210,
+      "w": 390,
+      "text": "2 · /word-planner\n\nA second, unrelated weekly screen. Reads weekly_suggestions at the top and wordPlans at the bottom, so it shows five words and \"No words planned yet\" at once.\n\nNot a bug. Two different tables presented as if they were one thing.\n\nAGREED: \"Sprouttie suggests\" is the label. It says who chose, which is what makes the Sunday ratings mean anything."
+    },
+    {
+      "id": "note-empty",
+      "x": 1080,
+      "y": -210,
+      "w": 390,
+      "text": "3 · Nothing chosen yet\n\nReplaces \"No words planned yet\". It asks rather than reporting a void, and it carries last week forward so the screen is never blank.\n\nThe last-week card assumes the review actually ran. If it did not, this block is omitted rather than faked."
+    },
+    {
+      "id": "note-ready",
+      "x": 1570,
+      "y": -210,
+      "w": 390,
+      "text": "4 · Sprouttie suggests\n\nREDRAWN 6 Sept on the AI Suggest engine, which is ALREADY ON main. Verified in the code: generate-autopilot-suggestions defines reinforce / bridge / stretch tiers, requires a rationale per word that references the child's observed data, and returns theme, theme_rationale, reason and tier. WeeklyWordPlanner renders s.tier with per-tier colours at line 781 and s.reason at line 793, with a \"Writing the rationale...\" loading state.\n\nSo \"Why these words?\" is NOT a build. It ships today. It is buried behind generateSuggestions(numSets), a four-way 1/2/3/5 set picker producing 5 to 25 words, and the result renders above an empty state that says nothing is planned.\n\nThe fix is the entry point, not the engine: one button, five words. Decision 1 and this board are the same change."
+    },
+    {
+      "id": "note-running",
+      "x": 2060,
+      "y": -210,
+      "w": 390,
+      "text": "5 · Confirmed and running\n\nNo planning language anywhere. One action, sized in seconds.\n\nThe \"Say it today\" block is the U stage and is NOT built. It is drawn here to show where it lands, not to imply it exists."
+    },
+    {
+      "id": "note-reflect",
+      "x": 2550,
+      "y": -210,
+      "w": 390,
+      "text": "6 · Sunday reflection\n\nThis board is now the answer to \"what earns Growing\". The four-state question is the promotion mechanism, replacing the swipe. It needs no new capture and it reaches all 101 logged words, not just the 13 that are also flashcards.\n\nAppears only when last week was confirmed and has unrated words. Today it renders any day and queries the week on screen while calling it \"last week\".\n\nThe free-text note is shown, not swallowed. There is no \"Plan Next Week\" button: nothing in the code can point the app at another week, so the button never rolled anything over."
+    },
+    {
+      "id": "note-rules",
+      "x": 0,
+      "y": 1000,
+      "w": 1330,
+      "text": "7 · What has to be settled first\n\nAll five now have an answer. Decision 5, what earns \"Growing\", was the blocker across both proposals and is now closed: queried against live data on 6 September, all three candidate rules promote ZERO. Only 22 of 149 cards have ever been flashed, daily_tracking holds 58 rows in total, and nothing has reached more than 3 distinct days.\n\nThe decisive figure: only 13 of 101 logged words are flashcards at all, so any rule keyed to flashing tops out at 13% of the vocabulary.\n\nIt resolved into BOARD 6 rather than into a rule. The Sunday review writes the stage. That is why this merge now unblocks the Home proposal too: the reward strip, the Garden, Word Journey and the three dashboard counters have all been rendering zeros waiting on a rule that could never have fired."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}
