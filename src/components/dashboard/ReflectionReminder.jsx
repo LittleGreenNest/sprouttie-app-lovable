@@ -75,7 +75,7 @@ const ReflectionReminder = ({ onOpenThisWeek }) => {
             </p>
             <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
               {logCount > 0
-                ? `You logged ${logCount} activit${logCount === 1 ? 'y' : 'ies'} — see your weekly summary`
+                ? `You logged ${logCount} activit${logCount === 1 ? 'y' : 'ies'}. See your weekly summary`
                 : 'Take a moment to celebrate progress and plan ahead'}
             </p>
           </div>

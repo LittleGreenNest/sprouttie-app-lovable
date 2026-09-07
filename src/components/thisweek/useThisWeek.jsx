@@ -82,9 +82,9 @@ const generateBookSuggestions = (ageBand) => {
 };
 
 const INTERACTION_PROMPTS = [
-  ['Point and name objects during meals 🍽', 'Repeat the word slowly when your child looks at you 👀', 'Say the word again when they attempt it — no correction needed 💚'],
-  ['Label what they point at in their own words 🫶', 'Use the word in a short sentence at bath time 🛁', 'Sing a word in a simple melody — repetition through music 🎵'],
-  ['Narrate what you\'re both doing: "We\'re eating rice!" 🍚', 'Wait 3 seconds after saying a word — give space for a response 🕐', 'Celebrate any attempt — a smile is enough 😊'],
+  ['Point and name objects during meals 🍽', 'Repeat the word slowly when your child looks at you 👀', 'Say the word again when they attempt it. No correction needed 💚'],
+  ['Label what they point at in their own words 🫶', 'Use the word in a short sentence at bath time 🛁', 'Sing a word in a simple melody, repetition through music 🎵'],
+  ['Narrate what you\'re both doing: "We\'re eating rice!" 🍚', 'Wait 3 seconds after saying a word, to give space for a response 🕐', 'Celebrate any attempt. A smile is enough 😊'],
 ];
 
 export const useThisWeek = () => {
@@ -93,13 +93,11 @@ export const useThisWeek = () => {
   const [loading, setLoading] = useState(true);
   const [flashcards, setFlashcards] = useState([]);
   const weekStart = getCurrentWeekStart();
-  // Name precedence must match Dashboard.jsx so the two never disagree:
-  // display_name is the user's own saved name and survives Google's OAuth re-sync.
-  const childName = currentUser?.user_metadata?.child_name
-    || currentUser?.user_metadata?.display_name?.split(' ')[0]
-    || currentUser?.user_metadata?.full_name?.split(' ')[0]
-    || currentUser?.user_metadata?.name?.split(' ')[0]
-    || 'Your child';
+  // Only a real child name may be used here. The old chain fell back to the
+  // ACCOUNT holder's name, so a parent called Rena was shown "Rena had a great
+  // week" about her toddler. Onboarding does not capture child_name yet, so
+  // null is the honest answer and every screen must render without a name.
+  const childName = currentUser?.user_metadata?.child_name || null;
   const ageBand = profile?.child_age_band;
   const stage = getStageLabel(ageBand);
 

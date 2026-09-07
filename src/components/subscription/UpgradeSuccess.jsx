@@ -9,7 +9,7 @@ const fade = {
 
 const PLAN_UNLOCKS = {
   print: [
-    { icon: '♾️', title: 'Unlimited Flashcards', description: 'Create as many cards as your little one needs — no cap.' },
+    { icon: '♾️', title: 'Unlimited Flashcards', description: 'Create as many cards as your little one needs. No cap.' },
     { icon: '📄', title: 'Printable PDF Flashcards', description: 'Export beautiful A4-ready flashcard sheets to print at home.' },
     { icon: '📁', title: 'Multiple Export Formats', description: 'Choose from different layouts and sizes for offline learning.' },
   ],
@@ -73,7 +73,7 @@ export default function UpgradeSuccess() {
           <div className="space-y-4">
             {[
               { step: '1', text: 'Go to Cards and create or upload your flashcard sets' },
-              { step: '2', text: 'Head to Print to export your first PDF — ready to print at home' },
+              { step: '2', text: 'Head to Print to export your first PDF, ready to print at home' },
               { step: '3', text: 'Run your first flash session with your child from the Dashboard' },
             ].map(({ step, text }) => (
               <div key={step} className="flex items-start gap-3">

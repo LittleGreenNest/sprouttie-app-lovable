@@ -7,18 +7,26 @@ const ReflectionScreen = ({ childName, stats, onPlanNext, onClose }) => {
   // Simple rule-based suggestion
   const getSuggestion = () => {
     if (said + attempted === 0) return 'Try pointing and naming 3 objects at mealtimes this week.';
-    if (attempted > said) return 'Keep repeating those attempted words — they\'re almost there!';
+    if (attempted > said) return 'Those attempted words are worth repeating this week.';
     if (read === 0) return 'Try reading a short picture book together before bedtime.';
-    return 'Great balance this week! Keep up the variety.';
+    return 'A good mix this week. Keep the variety going.';
   };
 
   return (
     <div className="space-y-6 text-center">
       {/* Headline */}
       <div>
+        <p className="text-xs font-semibold tracking-widest uppercase text-[hsl(var(--muted-foreground))] mb-1.5">
+          Reflection
+        </p>
         <h2 className="text-2xl font-bold text-[hsl(var(--sprouttie-ink))]">
-          {childName} had a great week 🎉
+          {said + attempted + read === 0
+            ? 'A quiet week.'
+            : childName ? `${childName}'s week` : 'Your week'}
         </h2>
+        <p className="mt-1.5 text-sm text-[hsl(var(--muted-foreground))]">
+          A look back at what you noticed. To change an entry, go back and edit it in the list.
+        </p>
       </div>
 
       {/* Stats */}
@@ -28,8 +36,8 @@ const ReflectionScreen = ({ childName, stats, onPlanNext, onClose }) => {
             {said + attempted} new word{said + attempted !== 1 ? 's' : ''} {attempted > 0 ? 'attempted' : 'said'}
           </p>
         </div>
-        <div className="bg-blue-50 p-4 rounded-xl">
-          <p className="text-lg font-semibold text-blue-700">
+        <div className="bg-[hsl(var(--sprouttie-mint))] p-4 rounded-xl">
+          <p className="text-lg font-semibold text-[hsl(var(--sprouttie-ink))]">
             {read} book{read !== 1 ? 's' : ''} read together
           </p>
         </div>
@@ -45,15 +53,9 @@ const ReflectionScreen = ({ childName, stats, onPlanNext, onClose }) => {
       <div className="space-y-3">
         <button
           onClick={onPlanNext}
-          className="w-full bg-[hsl(var(--sprouttie-green))] text-white font-bold py-4 rounded-xl shadow-md"
+          className="w-full bg-[#F0C040] text-[#1A1A1A] font-bold py-4 rounded-xl shadow-md hover:brightness-95 transition-all"
         >
           Plan Next Week →
-        </button>
-        <button
-          disabled
-          className="w-full border-2 border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] font-semibold py-3 rounded-xl opacity-50 cursor-not-allowed"
-        >
-          Share this week (coming soon)
         </button>
         <button
           onClick={onClose}

@@ -172,7 +172,7 @@ const Dashboard = () => {
 
         {sets.length === 0 ? (
           <>
-            <StatusLine dotColor="#95D5B2" text="You're all set up — now add your first flashcard set" />
+            <StatusLine dotColor="#95D5B2" text="You're all set up. Add your first flashcard set." />
             <StatusLine dotColor="#52B788" text="Takes less than 2 minutes to get started" />
             <div style={{ marginTop: 14 }}>
               <button
@@ -512,7 +512,7 @@ function getWeekStart() {
 }
 
 function getLastSessionText(lastDate, todayStr) {
-  if (!lastDate) return 'No sessions yet — start today';
+  if (!lastDate) return 'No sessions yet. Start today.';
   if (lastDate === todayStr) return 'Last session: today';
   const diff = Math.floor((new Date(todayStr) - new Date(lastDate)) / 86400000);
   return `Last session: ${diff} day${diff !== 1 ? 's' : ''} ago`;

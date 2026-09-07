@@ -23,6 +23,7 @@ const Profile = () => {
   const [planLoading, setPlanLoading] = useState(true);
   const [editingChild, setEditingChild] = useState(false);
   const [childForm, setChildForm] = useState({});
+  const [childName, setChildName] = useState(currentUser?.user_metadata?.child_name || '');
   const [savingChild, setSavingChild] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const navigate = useNavigate();
@@ -48,6 +49,12 @@ const Profile = () => {
         .update(childForm)
         .eq('id', currentUser.id);
       if (error) throw error;
+      // profiles has no child_name column and the schema is off-limits, so the
+      // name lives on auth metadata — the field useThisWeek reads first.
+      const { error: nameErr } = await supabase.auth.updateUser({
+        data: { child_name: childName.trim() || null },
+      });
+      if (nameErr) throw nameErr;
       await refreshProfile(currentUser);
       setEditingChild(false);
     } catch (err) {
@@ -165,7 +172,7 @@ const Profile = () => {
       setIsEditing(false);
     } catch (err) {
       console.error('Failed to update profile:', err);
-      toast.error('Failed to save — please try again');
+      toast.error('Failed to save. Please try again.');
     }
   };
 
@@ -235,7 +242,7 @@ const Profile = () => {
         ) : plan === 'print' ? (
           <div>
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              Print Plan – SGD 3/month
+              Print Plan, SGD 3/month
             </span>
             <div className="mt-2">
               <p className="text-sm text-gray-600">
@@ -260,7 +267,7 @@ const Profile = () => {
         ) : plan === 'pro' ? (
           <div>
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-              Pro Sprout – SGD 7/month
+              Pro Sprout, SGD 7/month
             </span>
             <div className="mt-2">
               <p className="text-sm text-gray-600">
@@ -399,7 +406,7 @@ const Profile = () => {
             </button>
           ) : (
             <div className="flex gap-2">
-              <button onClick={() => { setEditingChild(false); setChildForm({ child_age_band: profile?.child_age_band || '', target_language: profile?.target_language || '', speech_level: profile?.speech_level || '', reply_pattern: profile?.reply_pattern || '', daily_time_commitment: profile?.daily_time_commitment || '' }); }} className="text-sm text-gray-500 hover:underline">Cancel</button>
+              <button onClick={() => { setEditingChild(false); setChildName(currentUser?.user_metadata?.child_name || ''); setChildForm({ child_age_band: profile?.child_age_band || '', target_language: profile?.target_language || '', speech_level: profile?.speech_level || '', reply_pattern: profile?.reply_pattern || '', daily_time_commitment: profile?.daily_time_commitment || '' }); }} className="text-sm text-gray-500 hover:underline">Cancel</button>
               <button onClick={handleSaveChild} disabled={savingChild} className="text-sm font-medium text-white bg-[hsl(var(--sprouttie-green))] px-3 py-1 rounded-lg disabled:opacity-50">{savingChild ? 'Saving…' : 'Save'}</button>
             </div>
           )}
@@ -408,6 +415,7 @@ const Profile = () => {
         {!editingChild ? (
           <dl className="space-y-3">
             {[
+              ['Name', currentUser?.user_metadata?.child_name || 'Not set', '🌱'],
               ['Age Band', AGE_LABELS[profile?.child_age_band] || 'Not set', '👶'],
               ['Target Language(s)', (profile?.target_language || '').split(',').filter(Boolean).map(l => LANGUAGE_LABELS[l] || l).join(', ') || 'Not set', '🌏'],
               ['Speech Level', SPEECH_LABELS[profile?.speech_level] || 'Not set', '🗣️'],
@@ -425,6 +433,18 @@ const Profile = () => {
           </dl>
         ) : (
           <div className="space-y-4">
+            {/* Name */}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Child's name</label>
+              <input
+                type="text"
+                value={childName}
+                onChange={(e) => setChildName(e.target.value)}
+                placeholder="What do you call them?"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-[hsl(var(--sprouttie-green))]"
+              />
+              <p className="mt-1 text-xs text-gray-500">Used on their week and their word history.</p>
+            </div>
             {/* Age Band */}
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Age Band</label>

@@ -173,7 +173,7 @@ export default function Plans() {
       <div className="max-w-5xl mx-auto">
 
         {/* Header */}
-        <motion.div variants={fade} initial="hidden" animate="visible" className="text-center mb-10">
+        <motion.div variants={fade} initial={false} animate="visible" className="text-center mb-10">
           <span className="text-xs font-semibold tracking-widest uppercase text-[hsl(var(--sprouttie-coral-dark))] bg-[hsl(var(--sprouttie-coral-light)/0.5)] px-3.5 py-1.5 rounded-full border border-[hsl(var(--sprouttie-coral-light))]">
             Pricing
           </span>
@@ -188,7 +188,7 @@ export default function Plans() {
         </motion.div>
 
         {/* Billing toggle */}
-        <motion.div variants={fade} initial="hidden" animate="visible" custom={1} className="flex items-center justify-center gap-3 mb-10">
+        <motion.div variants={fade} initial={false} animate="visible" custom={1} className="flex items-center justify-center gap-3 mb-10">
           <button
             onClick={() => setBillingCycle('monthly')}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
@@ -225,7 +225,7 @@ export default function Plans() {
               <motion.div
                 key={plan.planKey}
                 variants={fade}
-                initial="hidden"
+                initial={false}
                 animate="visible"
                 custom={i + 2}
                 className={`relative rounded-2xl p-7 flex flex-col transition-all duration-300 ${
@@ -297,7 +297,7 @@ export default function Plans() {
 
         {/* Manage billing link for paid users */}
         {currentUser && isPaidPlan(userPlan) && (
-          <motion.div variants={fade} initial="hidden" animate="visible" custom={6} className="mt-8 text-center">
+          <motion.div variants={fade} initial={false} animate="visible" custom={6} className="mt-8 text-center">
             <button
               onClick={handleManageSubscription}
               disabled={portalLoading}
@@ -309,7 +309,7 @@ export default function Plans() {
         )}
 
         {currentUser && (
-          <motion.div variants={fade} initial="hidden" animate="visible" custom={7} className="mt-4 text-center">
+          <motion.div variants={fade} initial={false} animate="visible" custom={7} className="mt-4 text-center">
             <button onClick={() => navigate('/profile')} className="text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--sprouttie-ink))]">
               ← Back to Profile
             </button>

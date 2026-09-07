@@ -38,7 +38,7 @@ class ErrorBoundary extends React.Component {
             Something went wrong
           </h3>
           <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-            This page couldn't load properly. Try refreshing — if it keeps happening, let us know.
+            This page couldn't load properly. Try refreshing. If it keeps happening, let us know.
           </p>
           <button
             onClick={this.handleRetry}

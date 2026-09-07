@@ -20,7 +20,7 @@ const SnapshotScreen = ({ childName, ageBand, stage, onNext }) => {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-[hsl(var(--sprouttie-ink))]">{childName}'s Week</h2>
+        <h2 className="text-2xl font-bold text-[hsl(var(--sprouttie-ink))]">{childName ? `${childName}'s week` : 'This week'}</h2>
         {ageBand && (
           <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
             {ageBand} months

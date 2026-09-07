@@ -371,8 +371,8 @@ const generatePreview = () => {
               doc.text(en, cx, centerY, { align: 'center', baseline: 'middle' });
             } else {
               // Chinese card: three centered lines — English / Chinese / Pinyin
-              const line1 = `English: ${en || '—'}`;
-              const line3 = `Pinyin: ${py || '—'}`;
+              const line1 = en ? `English: ${en}` : '';
+              const line3 = py ? `Pinyin: ${py}` : '';
               const lineGap = 14; // mm between lines
 
               doc.setFontSize(13);
@@ -380,8 +380,8 @@ const generatePreview = () => {
               doc.text(line1, cx, centerY - lineGap, { align: 'center', baseline: 'middle' });
 
               doc.setFontSize(22);
-              setAutoFont(doc, cn || '—', 'normal');
-              doc.text(cn || '—', cx, centerY, { align: 'center', baseline: 'middle' });
+              setAutoFont(doc, cn || '', 'normal');
+              doc.text(cn || '', cx, centerY, { align: 'center', baseline: 'middle' });
 
               doc.setFontSize(13);
               setAutoFont(doc, line3, 'normal');
@@ -566,6 +566,11 @@ const generatePreview = () => {
         {/* Control Buttons - Mobile Responsive */}
         <div className="space-y-3">
           {/* Primary Actions Row */}
+          {selectedFlashcards.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Select the cards you want, then generate a preview.
+            </p>
+          )}
           <div className="flex flex-col sm:flex-row gap-2">
             <button
               onClick={generatePreview}
@@ -602,24 +607,29 @@ const generatePreview = () => {
               <span>Add back pages</span>
             </label>
 
-            <div className="inline-flex rounded-lg overflow-hidden border border-border">
+            <div className="inline-flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Card text</span>
+              <div className="inline-flex rounded-lg overflow-hidden border border-border">
               <button
                 type="button"
                 onClick={() => setTextColor('red')}
                 className={`px-3 py-2 text-sm font-medium transition-colors ${textColor==='red' ? 'bg-red-600 text-white' : 'bg-background text-foreground hover:bg-secondary'}`}
               >
-                🔴 Red
+                Red
               </button>
               <button
                 type="button"
                 onClick={() => setTextColor('black')}
                 className={`px-3 py-2 text-sm font-medium transition-colors ${textColor==='black' ? 'bg-foreground text-background' : 'bg-background text-foreground hover:bg-secondary'}`}
               >
-                ⚫ Black
+                Black
               </button>
+              </div>
             </div>
 
-            <div className="inline-flex rounded-lg overflow-hidden border border-border">
+            <div className="inline-flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Previewing</span>
+              <div className="inline-flex rounded-lg overflow-hidden border border-border">
               <button
                 type="button"
                 onClick={() => setPreviewSide('front')}
@@ -636,6 +646,7 @@ const generatePreview = () => {
               >
                 Back
               </button>
+              </div>
             </div>
           </div>
         </div>
@@ -728,13 +739,13 @@ const generatePreview = () => {
                       ) : (
                         <>
                           <div className="text-xs sm:text-sm text-muted-foreground">
-                            English: {fc.english || '—'}
+                            English: {fc.english || ''}
                           </div>
                           <div className="text-base sm:text-xl font-semibold text-foreground my-0.5">
-                            {fc.word || '—'}
+                            {fc.word || ''}
                           </div>
                           <div className="text-xs sm:text-sm text-muted-foreground">
-                            Pinyin: {fc.pinyin || '—'}
+                            Pinyin: {fc.pinyin || ''}
                           </div>
                         </>
                       )}
@@ -757,7 +768,7 @@ const generatePreview = () => {
       <ul className="list-disc list-inside ml-2 space-y-0.5">
         <li>Words printed in {textColor === 'red' ? 'bright red' : 'black'}, A4 landscape, 2 per page</li>
         <li>Short words display at 250pt; longer words auto-scale</li>
-        <li>8mm margins — may be tight for some printers</li>
+        <li>8mm margins, which may be tight for some printers</li>
         <li>Total pages: {previewPages.length}</li>
       </ul>
     </div>

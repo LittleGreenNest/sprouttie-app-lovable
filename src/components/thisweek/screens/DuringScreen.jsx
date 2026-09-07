@@ -67,7 +67,7 @@ const QuickLogSheet = ({ type, onSubmit, onClose, books = [] }) => {
           type="text"
           value={context}
           onChange={(e) => setContext(e.target.value)}
-          placeholder="Context (optional) — e.g. during lunch"
+          placeholder="Context (optional), e.g. during lunch"
           className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--sprouttie-green)/0.5)]"
         />
       )}
@@ -115,7 +115,7 @@ const DuringScreen = ({ logs, addLog, deleteLog, onNext, onBack }) => {
   return (
     <div className="space-y-5">
       <p className="text-sm text-[hsl(var(--muted-foreground))] italic text-center">
-        A gentle record of what you notice — not a test.
+        Record down what you observed.
       </p>
 
       {/* Quick log buttons */}
@@ -149,11 +149,16 @@ const DuringScreen = ({ logs, addLog, deleteLog, onNext, onBack }) => {
               <div className="space-y-2">
                 {entries.map(entry => (
                   <div key={entry.id} className="flex items-center justify-between bg-[hsl(var(--muted)/0.2)] p-3 rounded-lg group">
-                    <div className="flex items-center gap-2 flex-1">
-                      <span className="font-medium text-[hsl(var(--sprouttie-ink))] text-sm">{entry.content}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${BADGE_STYLES[entry.log_type]}`}>
-                        {BADGE_LABELS[entry.log_type]}
-                      </span>
+                    <div className="flex flex-col gap-1 flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-[hsl(var(--sprouttie-ink))] text-sm">{entry.content}</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${BADGE_STYLES[entry.log_type]}`}>
+                          {BADGE_LABELS[entry.log_type]}
+                        </span>
+                      </div>
+                      {entry.context && (
+                        <span className="text-xs text-[hsl(var(--muted-foreground))] italic">{entry.context}</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-[hsl(var(--muted-foreground))]">{timeAgo(entry.created_at)}</span>
@@ -171,7 +176,7 @@ const DuringScreen = ({ logs, addLog, deleteLog, onNext, onBack }) => {
           ))}
         </div>
       ) : (
-        <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">No entries yet this week. Tap a button above to start!</p>
+        <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">Nothing noted yet this week. Tap a button above when you notice something.</p>
       )}
 
       {/* Navigation */}

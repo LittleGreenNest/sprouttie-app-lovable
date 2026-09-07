@@ -86,7 +86,7 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
       const { suggestions = [], theme = null, theme_rationale = null } = response.data || {};
 
       if (!suggestions.length) {
-        throw new Error("Sprouttie couldn't generate suggestions just yet — try again in a moment.");
+        throw new Error("Sprouttie couldn't generate suggestions just yet. Try again in a moment.");
       }
 
       setPlan(buildPlanFromAutopilot(suggestions, theme, theme_rationale, sets));

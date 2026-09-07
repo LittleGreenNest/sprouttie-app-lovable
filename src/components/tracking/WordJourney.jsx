@@ -94,7 +94,7 @@ const WordCard = ({ word, index }) => {
                   <p className="text-xs font-medium text-slate-800">
                     {word.firstFlashed
                       ? new Date(word.firstFlashed).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                      : '—'}
+                      : ''}
                   </p>
                 </div>
                 <div className="bg-slate-50 rounded-lg p-2.5">
@@ -105,7 +105,7 @@ const WordCard = ({ word, index }) => {
                   <p className="text-xs font-medium text-slate-800">
                     {word.lastFlashed
                       ? new Date(word.lastFlashed).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                      : '—'}
+                      : ''}
                   </p>
                 </div>
                 <div className="bg-slate-50 rounded-lg p-2.5">
