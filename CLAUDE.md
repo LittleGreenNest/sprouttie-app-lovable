@@ -242,17 +242,17 @@ with unmerged work. Confirm the branch before editing anything.
 | `rescue/drive-checkout-2026-09-05` | `281c995` | the Drive-side duplicate of the rescue. Superseded by `merge/drive-rescue`; nothing to salvage |
 | `wip/segments-pinyin` | `58d4c84` | flashcard segments, sentence splitting, pinyin |
 
-### The live database is ahead of `main`
+### Migrations: recovered, and the database is ahead of `main`
 
-Two migrations are applied to the live Supabase project but are **not in this branch's
-`supabase/migrations/`**, which stops at `20260823000000`:
+Both migrations are now present on this branch, recovered from `docs/desk-prompt`:
 
 - `20260829000000` insight photos, `log_type` constraint
-- `20260903000000` `service_role` grants on all 14 tables — applied and verified
+- `20260903000000` `service_role` grants on all 14 tables, applied and verified
 
-They live on `docs/desk-prompt`. The database being ahead of the deployed app is the safe
-direction, but it means the next deploy is the first time the app meets a schema it has never
-run against. Recover both files onto `main` rather than re-authoring them.
+Both are **already applied to the live Supabase project**. The database being ahead of the
+deployed app is the safe direction, but the next deploy is the first time the app meets a
+schema it has never run against. Check the gate items touching insight photos and log types
+specifically.
 
 ### Not on this branch
 

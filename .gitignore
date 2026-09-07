@@ -31,3 +31,7 @@ dist-ssr
 # SSH keys
 eval*
 .env.sheets
+
+# Local Express scratch copy: its own git repo, holds live Stripe/Supabase
+# secrets in server/.env. Never part of this repo.
+server/
