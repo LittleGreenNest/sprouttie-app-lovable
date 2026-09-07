@@ -35,3 +35,6 @@ eval*
 # Local Express scratch copy: its own git repo, holds live Stripe/Supabase
 # secrets in server/.env. Never part of this repo.
 server/
+screenshots/
+*.bak
+.claude/scheduled_tasks.lock

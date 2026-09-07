@@ -22,6 +22,7 @@ Migrated from Lovable to Claude Code — no Lovable dependencies remain.
 | `src/context/AuthContext.jsx` | Auth state, profile management, plan flags |
 | `src/context/FlashcardContext.jsx` | Flashcard state management |
 | `src/integrations/supabase/client.ts` | Supabase client (reads from `VITE_SUPABASE_*` env vars) |
+| `src/utils/cardId.js` | `cardIdFrom()` — normalises `daily_tracking.flashcard_id`. See Data conventions |
 | `src/integrations/supabase/types.ts` | Generated DB types |
 | `src/utils/wordLabel.js` | Reads a card's two halves and matches a search across both plus pinyin. See Word labels |
 | `src/components/WordLabel.jsx` | Renders a card as `蜗牛 snail` rather than the front alone |
@@ -85,7 +86,9 @@ Migrated from Lovable to Claude Code — no Lovable dependencies remain.
 | Table | Purpose |
 |---|---|
 | `profiles` | User profile — `id`, `email`, `plan`, `subscription_status`, `onboarding_completed` |
-| *(others inferred from components)* | Flashcards, session logs, spoken words, word journey |
+| `flashcards` | `id`, `front`, `back`, `folder`, `card_language`, `set_number`, `user_id` |
+| `daily_tracking` | One row per card per round per day. `flashcard_id` is NOT a bare card id — see Data conventions |
+| `spoken_words` | `word`, `word_stage` (`new` \| `growing` \| `owned`), `stage_updated_at` |
 
 Plan values: `free`, `print`, `pro`. `pdf` is a legacy value still present on old rows;
 `Plans.jsx` maps it through `const alias = { pdf: 'print', print: 'print', ... }`. Read plans

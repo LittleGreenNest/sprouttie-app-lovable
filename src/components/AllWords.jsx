@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { useFlashcards } from '../context/FlashcardContext';
+import { cardIdFrom } from '../utils/cardId';
 import { getFlashcardStatsByCategory } from '../utils/supabaseApi';
 import { LayoutGrid, List, ChevronDown, ChevronUp, Download, Upload, FileSpreadsheet, AlignJustify, Grid3X3 } from 'lucide-react';
 import SearchFilterBar from './all-words/SearchFilterBar';
@@ -105,11 +106,13 @@ const AllWords = () => {
       if (trackingError) throw trackingError;
 
       // Create a set of ever-flashed flashcard IDs and map of first flashed dates
-      const flashedIds = new Set(tracking?.map(t => t.flashcard_id) || []);
+      const flashedIds = new Set((tracking || []).map(t => cardIdFrom(t.flashcard_id)).filter(Boolean));
       const firstFlashedDates = {};
       tracking?.forEach(t => {
-        if (!firstFlashedDates[t.flashcard_id]) {
-          firstFlashedDates[t.flashcard_id] = t.flashed_at;
+        const cardId = cardIdFrom(t.flashcard_id);
+        if (!cardId) return;
+        if (!firstFlashedDates[cardId]) {
+          firstFlashedDates[cardId] = t.flashed_at;
         }
       });
       setFlashedEver(flashedIds);

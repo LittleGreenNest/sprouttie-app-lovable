@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import { useFlashcards } from '../context/FlashcardContext';
+import { cardIdFrom } from '../utils/cardId';
 import jsPDF from 'jspdf';
 import { toast } from 'react-toastify';
 
@@ -48,9 +49,11 @@ const BingoCardGenerator = () => {
       // Store the flashed flashcard IDs with their most recent date
       const flashedMap = new Map();
       (tracking || []).forEach(t => {
-        const existingDate = flashedMap.get(t.flashcard_id);
+        const cardId = cardIdFrom(t.flashcard_id);
+        if (!cardId) return;
+        const existingDate = flashedMap.get(cardId);
         if (!existingDate || t.date > existingDate) {
-          flashedMap.set(t.flashcard_id, t.date);
+          flashedMap.set(cardId, t.date);
         }
       });
 

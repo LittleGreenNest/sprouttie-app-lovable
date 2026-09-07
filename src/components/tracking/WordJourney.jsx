@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
 import { useFlashcards } from '../../context/FlashcardContext';
+import { cardIdFrom } from '../../utils/cardId';
 import { Search, ChevronDown, ChevronUp, Sparkles, Calendar, Hash, TrendingUp, FolderOpen, List } from 'lucide-react';
 
 const MASTERY_THRESHOLDS = { familiar: 5, confident: 15, mastered: 30 };
@@ -189,12 +190,13 @@ const WordJourney = () => {
     // Build a map: flashcard_id -> aggregated stats
     const map = {};
     trackingData.forEach(({ flashcard_id, date, flashed_at }) => {
-      if (!flashcard_id || flashcard_id.startsWith('set-') || flashcard_id === 'shared-note') return;
-      if (!map[flashcard_id]) {
-        map[flashcard_id] = { dates: [], flashedAts: [] };
+      const cardId = cardIdFrom(flashcard_id);
+      if (!cardId || cardId.startsWith('set-') || cardId === 'shared-note') return;
+      if (!map[cardId]) {
+        map[cardId] = { dates: [], flashedAts: [] };
       }
-      map[flashcard_id].dates.push(date);
-      if (flashed_at) map[flashcard_id].flashedAts.push(flashed_at);
+      map[cardId].dates.push(date);
+      if (flashed_at) map[cardId].flashedAts.push(flashed_at);
     });
 
     // Build set lookup
