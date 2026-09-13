@@ -1,5 +1,5 @@
 // components/PrintFlashcards.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useFlashcards } from '../context/FlashcardContext';
 import { jsPDF } from 'jspdf';
 import { usePlanAccess, UpgradePrompt } from '../hooks/usePlanAccess';
