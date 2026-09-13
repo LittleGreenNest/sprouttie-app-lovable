@@ -5,6 +5,7 @@ import { supabase } from '../../integrations/supabase/client';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
 import WaitlistForm from '../WaitlistForm';
+import { hasPaymentIssue } from '../../utils/billing';
 
 const PLANS = [
   {
@@ -47,6 +48,7 @@ export default function Plans() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [userPlan, setUserPlan] = useState(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [showWaitlist, setShowWaitlist] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -66,10 +68,17 @@ export default function Plans() {
       .select('plan, subscription_status')
       .eq('id', currentUser.id)
       .single();
-    if (!error && data) setUserPlan(data.plan);
+    if (!error && data) {
+      setUserPlan(data.plan);
+      setSubscriptionStatus(data.subscription_status);
+    }
   }, [currentUser]);
 
   useEffect(() => { fetchUserPlan(); }, [fetchUserPlan]);
+
+  // A failed payment moves the plan to free while Stripe keeps retrying the
+  // subscription, so the fix is the billing portal, never a second checkout.
+  const paymentIssue = hasPaymentIssue(subscriptionStatus);
 
   useEffect(() => {
     if (showWaitlist) {
@@ -140,8 +149,8 @@ export default function Plans() {
 
     if (planKey === 'print') {
       if (!currentUser) { navigate('/login'); return; }
-      if (isPaidPlan(userPlan)) {
-        // Already on a paid plan — send to portal to manage
+      if (isPaidPlan(userPlan) || paymentIssue) {
+        // Already paying, or a payment failed: both are handled in the portal
         handleManageSubscription();
         return;
       }
@@ -159,6 +168,7 @@ export default function Plans() {
   const getButtonLabel = (plan) => {
     if (loading && plan.planKey !== 'pro') return 'Processing…';
     if (portalLoading) return 'Opening portal…';
+    if (plan.planKey === 'print' && currentUser && paymentIssue) return 'Update payment';
     if (currentUser && isCurrentPlan(userPlan, plan.planKey)) return 'Current Plan';
     if (plan.planKey === 'free' && currentUser && isPaidPlan(userPlan)) return 'Downgrade';
     if (plan.planKey === 'print' && currentUser && isPaidPlan(userPlan) && !isCurrentPlan(userPlan, 'print')) return 'Switch Plan';
@@ -186,6 +196,12 @@ export default function Plans() {
               : "Start free, upgrade when you're ready."}
           </p>
         </motion.div>
+
+        {currentUser && paymentIssue && (
+          <div role="status" className="max-w-md mx-auto -mt-4 mb-8 text-center text-sm text-[#8A6B1A] bg-[#FEF6E4] border border-[#F0C040] rounded-xl px-4 py-3">
+            Your last Print Plan payment didn't go through. Update your card and it switches back on.
+          </div>
+        )}
 
         {/* Billing toggle */}
         <motion.div variants={fade} initial={false} animate="visible" custom={1} className="flex items-center justify-center gap-3 mb-10">
@@ -296,7 +312,7 @@ export default function Plans() {
         </div>
 
         {/* Manage billing link for paid users */}
-        {currentUser && isPaidPlan(userPlan) && (
+        {currentUser && (isPaidPlan(userPlan) || paymentIssue) && (
           <motion.div variants={fade} initial={false} animate="visible" custom={6} className="mt-8 text-center">
             <button
               onClick={handleManageSubscription}

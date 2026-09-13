@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from 'npm:stripe@18.5.0';
+import { patchForSubscription } from './entitlement.ts';
 
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL') ?? '';
 const ANON_KEY          = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
@@ -83,6 +84,28 @@ async function updateBySubscriptionId(subscriptionId: string, patch: Record<stri
   }
 }
 
+/** The subscription as Stripe holds it now. Events can arrive out of order, so a
+ *  late past_due event must not switch off a plan whose payment has since gone
+ *  through. Falls back to the event payload if Stripe cannot be reached. */
+async function currentSubscription(fromEvent: Stripe.Subscription): Promise<Stripe.Subscription> {
+  const key = Deno.env.get('STRIPE_SECRET_KEY');
+  if (!key) return fromEvent;
+  try {
+    const res = await fetch(
+      `https://api.stripe.com/v1/subscriptions/${encodeURIComponent(fromEvent.id)}`,
+      { headers: { 'Authorization': `Bearer ${key}` } },
+    );
+    if (!res.ok) {
+      console.warn('[webhook] Stripe lookup', res.status, 'using event payload');
+      return fromEvent;
+    }
+    return await res.json() as Stripe.Subscription;
+  } catch (e) {
+    console.warn('[webhook] Stripe lookup failed, using event payload:', e);
+    return fromEvent;
+  }
+}
+
 serve(async (req) => {
   const sigHeader = req.headers.get('Stripe-Signature');
   const body = await req.text();
@@ -132,9 +155,11 @@ serve(async (req) => {
       console.log('[webhook] Updated', userId, '→', planKey);
 
     } else if (event.type === 'customer.subscription.updated') {
-      const sub = event.data.object as Stripe.Subscription;
-      await updateBySubscriptionId(sub.id, { subscription_status: sub.status });
-      console.log('[webhook] subscription.updated', sub.id, sub.status);
+      const sub = await currentSubscription(event.data.object as Stripe.Subscription);
+      const priceIds = (sub.items?.data ?? []).map((item) => item.price?.id).filter(Boolean) as string[];
+      const patch = patchForSubscription(sub.status, priceIds);
+      await updateBySubscriptionId(sub.id, patch);
+      console.log('[webhook] subscription.updated', sub.id, sub.status, 'plan:', patch.plan ?? '(unchanged)');
 
     } else if (event.type === 'customer.subscription.deleted') {
       const sub = event.data.object as Stripe.Subscription;

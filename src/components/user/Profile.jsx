@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'react-toastify';
+import { hasPaymentIssue } from '../../utils/billing';
 
 const LANGUAGE_LABELS = {
   english: 'English', mandarin: 'Mandarin', cantonese: 'Cantonese',
@@ -224,7 +225,22 @@ const Profile = () => {
       <div className="mt-6 border rounded-lg p-6 bg-white shadow-sm">
         <h3 className="text-lg font-medium text-gray-900 mb-3">Subscription Plan</h3>
         
-        {plan === 'free' ? (
+        {plan === 'free' && hasPaymentIssue(status) ? (
+          <div>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+              Payment didn't go through
+            </span>
+            <p className="mt-2 text-sm text-gray-600">
+              Print Plan is paused because your last payment failed. Update your card and it switches back on. All your cards are still here.
+            </p>
+            <button
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              onClick={handleManageBilling}
+            >
+              Update payment
+            </button>
+          </div>
+        ) : plan === 'free' ? (
           <div>
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
               Free Plan
