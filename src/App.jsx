@@ -40,7 +40,6 @@ const SpokenWords = lazyWithRetry(() => import('./components/SpokenWords'));
 const Plans = lazyWithRetry(() => import('./components/subscription/Plans'));
 const PrintFlashcards = lazyWithRetry(() => import('./components/PrintFlashcards'));
 const FlashedHistory = lazyWithRetry(() => import('./components/FlashedHistory'));
-const FlashingTrackerMockup = lazyWithRetry(() => import('./components/tracking/FlashingTrackerMockup'));
 const GardenGuide = lazyWithRetry(() => import('./components/dashboard/GardenGuide'));
 const Install = lazyWithRetry(() => import('./pages/Install'));
 const Terms = lazyWithRetry(() => import('./pages/Terms'));
@@ -128,7 +127,6 @@ const AppContent = () => {
             <Route path="/all-words" element={<Navigate to="/cards" replace />} />
             <Route path="/spoken-words" element={<Navigate to="/words-said" replace />} />
             <Route path="/manage-flashcards" element={<Navigate to="/cards" replace />} />
-            <Route path="/tracker-mockup" element={<FlashingTrackerMockup />} />
             <Route path="/garden-guide" element={<GardenGuide />} />
             
             <Route path="/pronunciation" element={<PronunciationPortal />} />

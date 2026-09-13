@@ -32,7 +32,7 @@ const PLANS = [
     priceMonthly: 'SGD 7',
     priceYearly: 'SGD 59',
     description: 'Premium for growing families',
-    features: ['Everything in Print Plan', 'Multi-child profiles', 'Voice training for parents', 'Unlimited AI story generation', 'Priority support'],
+    features: ['Everything in Print Plan', 'Multi-child profiles', 'Voice training for parents', 'Priority support'],
     planKey: 'pro',
     buttonText: 'Join Waitlist',
   },

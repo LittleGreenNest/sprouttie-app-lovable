@@ -348,7 +348,12 @@ const BookRecommendations = () => {
               <Book className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-foreground">Book Recommendations</h2>
+              <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                Book Recommendations
+                <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 align-middle">
+                  Beta
+                </span>
+              </h2>
               <p className="text-sm text-muted-foreground">
                 Based on {flashedWords.length} flashcard words and {spokenWords.length} spoken words
                 {profile?.child_age_band && (
