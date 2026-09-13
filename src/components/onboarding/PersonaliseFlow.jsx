@@ -47,6 +47,16 @@ const SCREENS = [
     ],
   },
 
+  // 4 — Child's name (saved to auth metadata; profiles has no child_name column)
+  {
+    type: 'name',
+    key: 'child_name',
+    title: 'What do you call your child?',
+    subtitle: "We'll use it on their week and their word history.",
+    placeholder: 'Their name or nickname',
+    cta: 'Next',
+  },
+
   // 4a — Age
   {
     type: 'quiz',
@@ -238,6 +248,17 @@ const PersonaliseFlow = ({ onComplete }) => {
         .eq('id', currentUser.id);
 
       if (error) throw error;
+
+      // The name lives on auth metadata, the same field Profile writes and
+      // useThisWeek reads first. A failure here should not block onboarding.
+      const childName = (answers.child_name || '').trim();
+      if (childName) {
+        const { error: nameErr } = await supabase.auth.updateUser({
+          data: { child_name: childName },
+        });
+        if (nameErr) console.error('Failed to save child name:', nameErr);
+      }
+
       await refreshProfile(currentUser);
       setShowPlan(true);
     } catch (err) {
@@ -417,6 +438,45 @@ const PersonaliseFlow = ({ onComplete }) => {
     </div>
   );
 
+  const renderName = () => {
+    const value = answers[current.key] || '';
+    const canContinue = value.trim().length > 0;
+    return (
+      <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
+        <h2 className="text-xl font-display font-bold text-[hsl(var(--foreground))] mb-1 text-center">
+          {title}
+        </h2>
+        <p className="text-sm text-[hsl(var(--muted-foreground))] mb-6 text-center">
+          {current.subtitle}
+        </p>
+        <input
+          type="text"
+          autoFocus
+          value={value}
+          maxLength={40}
+          onChange={(e) => setAnswers({ ...answers, [current.key]: e.target.value })}
+          onKeyDown={(e) => { if (e.key === 'Enter' && canContinue) goNext(); }}
+          placeholder={current.placeholder}
+          className="w-full px-5 py-4 rounded-xl border-2 border-[hsl(var(--border))] bg-[hsl(var(--card))] text-base text-[hsl(var(--foreground))] focus:outline-none focus:border-[hsl(var(--sprouttie-green))]"
+        />
+        <motion.button
+          animate={{ opacity: canContinue ? 1 : 0.4 }}
+          onClick={goNext}
+          disabled={!canContinue}
+          className="w-full mt-5 py-3.5 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold transition-all disabled:opacity-40 text-base"
+        >
+          {current.cta}
+        </motion.button>
+        <button
+          onClick={() => { setAnswers({ ...answers, [current.key]: '' }); goNext(); }}
+          className="mt-3 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] self-center"
+        >
+          Skip for now
+        </button>
+      </div>
+    );
+  };
+
   const renderQuizOrMulti = () => (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
       <h2 className="text-xl font-display font-bold text-[hsl(var(--foreground))] mb-1 text-center">
@@ -435,6 +495,7 @@ const PersonaliseFlow = ({ onComplete }) => {
       case 'intro': return renderIntro();
       case 'close': return renderClose();
       case 'system': return renderSystem();
+      case 'name': return renderName();
       case 'quiz':
       case 'multi-no-save':
       default:
@@ -443,15 +504,15 @@ const PersonaliseFlow = ({ onComplete }) => {
   };
 
   // ── Progress bar — group child context steps ──────────────────────
-  // Collapse quiz steps (indices 3-7) into one dot
+  // Collapse the child steps (name + quiz, indices 3-8) into one dot
   const progressSections = [
     { label: 'Hook', indices: [0] },
     { label: 'Pain', indices: [1] },
     { label: 'Outcome', indices: [2] },
-    { label: 'Your child', indices: [3, 4, 5, 6, 7] },
-    { label: 'Meet', indices: [8] },
-    { label: 'System', indices: [9] },
-    { label: 'Go', indices: [10] },
+    { label: 'Your child', indices: [3, 4, 5, 6, 7, 8] },
+    { label: 'Meet', indices: [9] },
+    { label: 'System', indices: [10] },
+    { label: 'Go', indices: [11] },
   ];
 
   const getProgressFraction = (section) => {

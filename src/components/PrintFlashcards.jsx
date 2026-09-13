@@ -261,16 +261,62 @@ const generatePreview = () => {
     return { ...flashcard, categoryName: category ? category.name : 'Unknown', fontSize };
   }).filter(Boolean);
 
-  setPreviewFlashcards(flashcardsToPreview);
+  const paginate = (cards) => {
+    // 2 cards per page
+    const pages = [];
+    for (let i = 0; i < cards.length; i += 2) {
+      const page = [cards[i]];
+      if (i + 1 < cards.length) page.push(cards[i + 1]);
+      pages.push(page);
+    }
+    return pages;
+  };
 
-  // Paginate (2 cards per page)
-  const pages = [];
-  for (let i = 0; i < flashcardsToPreview.length; i += 2) {
-    const page = [flashcardsToPreview[i]];
-    if (i + 1 < flashcardsToPreview.length) page.push(flashcardsToPreview[i + 1]);
-    pages.push(page);
+  setPreviewFlashcards(flashcardsToPreview);
+  setPreviewPages(paginate(flashcardsToPreview));
+
+  // Most Chinese cards were saved before pinyin was stored, so the back page
+  // printed an empty "Pinyin:" line. Look up what is missing with the same
+  // translate-word function the planner uses. Print-only: nothing is written
+  // back to the card. A failed lookup leaves the line off, never blocks.
+  fillMissingPinyin(flashcardsToPreview).then((filled) => {
+    if (!filled) return;
+    setPreviewFlashcards(filled);
+    setPreviewPages(paginate(filled));
+  });
+};
+
+const pinyinCacheRef = useRef({});
+
+const fillMissingPinyin = async (cards) => {
+  const cache = pinyinCacheRef.current;
+  const needs = [...new Set(
+    cards
+      .filter(c => !(c.pinyin || '').trim() && /[㐀-鿿]/.test(c.word || '') && !(c.word in cache))
+      .map(c => c.word)
+  )];
+
+  const CHUNK = 5;
+  for (let i = 0; i < needs.length; i += CHUNK) {
+    await Promise.all(needs.slice(i, i + CHUNK).map(async (w) => {
+      try {
+        const { data, error } = await supabase.functions.invoke('translate-word', { body: { word: w } });
+        if (error) throw error;
+        cache[w] = (data?.pinyin || '').trim();
+      } catch (err) {
+        console.warn('translate-word failed for', w, err);
+        cache[w] = '';
+      }
+    }));
   }
-  setPreviewPages(pages);
+
+  let changed = false;
+  const filled = cards.map(c => {
+    if ((c.pinyin || '').trim() || !cache[c.word]) return c;
+    changed = true;
+    return { ...c, pinyin: cache[c.word] };
+  });
+  return changed ? filled : null;
 };
 
 
@@ -738,15 +784,19 @@ const generatePreview = () => {
                         </div>
                       ) : (
                         <>
-                          <div className="text-xs sm:text-sm text-muted-foreground">
-                            English: {fc.english || ''}
-                          </div>
+                          {fc.english && (
+                            <div className="text-xs sm:text-sm text-muted-foreground">
+                              English: {fc.english}
+                            </div>
+                          )}
                           <div className="text-base sm:text-xl font-semibold text-foreground my-0.5">
                             {fc.word || ''}
                           </div>
-                          <div className="text-xs sm:text-sm text-muted-foreground">
-                            Pinyin: {fc.pinyin || ''}
-                          </div>
+                          {fc.pinyin && (
+                            <div className="text-xs sm:text-sm text-muted-foreground">
+                              Pinyin: {fc.pinyin}
+                            </div>
+                          )}
                         </>
                       )}
                     </div>
