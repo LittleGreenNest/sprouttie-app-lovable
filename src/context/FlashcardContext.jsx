@@ -165,16 +165,26 @@ export const FlashcardProvider = ({ children }) => {
           name: folder
         }));
 
-      // Merge with default categories if needed (deduplicated)
-      const mergedCategories = derivedCategories.length > 0 
-        ? derivedCategories 
-        : (localCategories ? JSON.parse(localCategories) : defaultCategories);
-      
-      // Deduplicate by id to prevent duplicate key warnings
+      // Always offer the defaults and any locally added categories, not only
+      // folders that already hold a card. Cards store the folder by name, so
+      // every category is keyed by name; the defaults' cat1..cat5 ids and old
+      // localStorage ids would otherwise never match a folder.
+      let savedCategories = [];
+      try {
+        savedCategories = localCategories ? JSON.parse(localCategories) : [];
+      } catch {
+        savedCategories = [];
+      }
+      const mergedCategories = [...defaultCategories, ...savedCategories, ...derivedCategories]
+        .filter(cat => cat?.name && cat.name !== 'default')
+        .map(cat => ({ id: cat.name, name: cat.name }));
+
+      // Deduplicate by name, case-insensitive, to prevent duplicate key warnings
       const seen = new Set();
       const uniqueCategories = mergedCategories.filter(cat => {
-        if (seen.has(cat.id)) return false;
-        seen.add(cat.id);
+        const key = cat.name.trim().toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
         return true;
       });
 

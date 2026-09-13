@@ -4,6 +4,7 @@ import { ChevronRight } from 'lucide-react';
 import { useFlashcards } from '../context/FlashcardContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { cardIdFrom } from '@/utils/cardId';
 import ThisWeekFlow from './thisweek/ThisWeekFlow';
 import ReviewPrompt from './review/ReviewPrompt';
 import { toast } from 'react-toastify';
@@ -135,7 +136,7 @@ const Dashboard = () => {
   const flashedPerSet = sets.map(set => {
     const setCards = flashcards.filter(c => c.set_number === set.id);
     const flashedCards = setCards.filter(c => {
-      return trackingData.some(t => t.flashcard_id === c.id && t.status === 'flashed');
+      return trackingData.some(t => cardIdFrom(t.flashcard_id) === c.id && t.status === 'flashed');
     });
     return { total: setCards.length, flashed: flashedCards.length };
   });
@@ -526,7 +527,7 @@ function getDueSetText(sets, flashcards, trackingData, todayStr) {
   if (sets.length === 0) return 'Add your first flashcard set to begin';
 
   const todayTracking = trackingData.filter(t => t.date === todayStr && t.status === 'flashed');
-  const flashedToday = new Set(todayTracking.map(t => t.flashcard_id));
+  const flashedToday = new Set(todayTracking.map(t => cardIdFrom(t.flashcard_id)));
 
   // Find sets with unflashed cards today
   const dueSets = sets.filter(set => {
@@ -540,11 +541,12 @@ function getDueSetText(sets, flashcards, trackingData, todayStr) {
     return sum + flashcards.filter(c => c.set_number === set.id && !flashedToday.has(c.id)).length;
   }, 0);
 
+  const dueWords = `${totalDueWords} word${totalDueWords === 1 ? '' : 's'} due today`;
   if (dueSets.length <= 2) {
     const names = dueSets.map(s => s.name).join(', ');
-    return `${names} · ${totalDueWords} words due today`;
+    return `${names} · ${dueWords}`;
   }
-  return `${dueSets.length} sets · ${totalDueWords} words due today`;
+  return `${dueSets.length} sets · ${dueWords}`;
 }
 
 function countRoundsFromTracking(todayTracking) {
