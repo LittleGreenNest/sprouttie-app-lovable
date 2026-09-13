@@ -4,24 +4,7 @@ import { useFlashcards } from '../context/FlashcardContext';
 import { jsPDF } from 'jspdf';
 import { usePlanAccess, UpgradePrompt } from '../hooks/usePlanAccess';
 import { supabase } from '@/integrations/supabase/client';
-
-// CJK range + Latin Extended/combining marks (covers ā á ǎ à, etc.)
-const needsNotoCJK = (s='') => /[一-鿿]/.test(s);
-const needsLatinDiacritics = (s='') => /[Ā-ͯ]/.test(s);
-
-// CJK + Latin-diacritics auto font switch
-const setAutoFont = (doc, s, weight = 'normal') => {
-  if (needsNotoCJK(s) && doc.getFontList()?.['NotoSansSC-Regular']) {
-    // Always use normal for Noto SC; no bold variant registered
-    doc.setFont('NotoSansSC-Regular', 'normal');
-  } else if (needsLatinDiacritics(s) && doc.getFontList()?.['NotoSans-Regular']) {
-    // Always use normal for Noto Latin; tone marks render correctly
-    doc.setFont('NotoSans-Regular', 'normal');
-  } else {
-    // ASCII: Helvetica can use the requested weight
-    doc.setFont('helvetica', weight);
-  }
-};
+import { setAutoFont, writeFlashcardPages } from '@/utils/flashcardPdf';
 
 function ab2b64(buf) {
   let binary = '';
@@ -348,100 +331,9 @@ const fillMissingPinyin = async (cards) => {
         doc.addFont('NotoSans-Regular.ttf', 'NotoSans-Regular', 'normal');
       }
 
-      doc.setFontSize(250);
-
-      const pageWidth = doc.internal.pageSize.getWidth();    // A4 landscape width (297mm)
-      const pageHeight = doc.internal.pageSize.getHeight();  // A4 landscape height (210mm)
-
-      // Use 8mm margins as requested
-      const marginSize = 8; // 8mm on each side
-      const maxWidth = pageWidth - (marginSize * 2);
-
-      // Create flashcards for front side (2 per page)
-      previewPages.forEach((page, pageIndex) => {
-        // Create a new page for every page after the first
-        if (pageIndex > 0) {
-          doc.addPage();
-        }
-
-        // Process each flashcard on the page (1 or 2)
-        page.forEach((flashcard, cardIndex) => {
-          // Calculate position based on which card on the page (top or bottom)
-          // Ensure each word is exactly in the vertical center of its half
-          // Updated: Use precise vertical center points
-          const yPosition = cardIndex === 0
-            ? pageHeight / 4     // Exact center of top half
-            : (pageHeight * 3) / 4;  // Exact center of bottom half
-
-          // Set text properties
-          doc.setTextColor(textColor === 'red' ? 255 : 0, 0, 0);
-
-          // Get the word and render it
-          const text = (flashcard.word ?? '').toString();
-          setAutoFont(doc, text, 'bold');
-          doc.setFontSize(flashcard.fontSize);
-          doc.text(text, pageWidth / 2, yPosition, { align: 'center', baseline: 'middle' });
-
-
-          // Add a dividing line between cards (except for single-card pages)
-          if (cardIndex === 0 && page.length > 1) {
-            doc.setDrawColor(0);
-            doc.setLineWidth(0.1);
-            doc.line(0, pageHeight / 2, pageWidth, pageHeight / 2);
-          }
-        });
-      });
-
-      // Save the PDF
-      // === BACK PAGES (only if includeBack) ===
-      if (includeBack) {
-        previewPages.forEach((page) => {
-          doc.addPage(); // back side for this corresponding front page
-
-          page.forEach((flashcard, cardIndex) => {
-            // Vertical center of this card's half
-            const halfH = pageHeight / 2;
-            const centerY = cardIndex === 0 ? halfH / 2 : halfH + halfH / 2;
-            const cx = pageWidth / 2;
-
-            const cn = (flashcard.word ?? '').toString().trim();
-            const en = (flashcard.english ?? '').toString().trim();
-            const py = (flashcard.pinyin ?? '').toString().trim();
-
-            doc.setTextColor(0, 0, 0);
-
-            if (en && !/[㐀-鿿]/.test(cn)) {
-              // English-only card: English word centered
-              doc.setFontSize(24);
-              setAutoFont(doc, en, 'normal');
-              doc.text(en, cx, centerY, { align: 'center', baseline: 'middle' });
-            } else {
-              // Chinese card: three centered lines — English / Chinese / Pinyin
-              const line1 = en ? `English: ${en}` : '';
-              const line3 = py ? `Pinyin: ${py}` : '';
-              const lineGap = 14; // mm between lines
-
-              doc.setFontSize(13);
-              setAutoFont(doc, line1, 'normal');
-              doc.text(line1, cx, centerY - lineGap, { align: 'center', baseline: 'middle' });
-
-              doc.setFontSize(22);
-              setAutoFont(doc, cn || '', 'normal');
-              doc.text(cn || '', cx, centerY, { align: 'center', baseline: 'middle' });
-
-              doc.setFontSize(13);
-              setAutoFont(doc, line3, 'normal');
-              doc.text(line3, cx, centerY + lineGap, { align: 'center', baseline: 'middle' });
-            }
-
-            if (cardIndex === 0 && page.length > 1) {
-              doc.setDrawColor(0);
-              doc.setLineWidth(0.1);
-              doc.line(0, pageHeight / 2, pageWidth, pageHeight / 2);
-            }
-          });
-        });
-      }
+      // Front only: one page per sheet. Front + matching backs: each front is
+      // followed by its own back, ready for duplex "Flip on short edge".
+      writeFlashcardPages(doc, previewPages, { includeBack, textColor });
 
       doc.save('sprouttie-flashcards.pdf');
 
@@ -609,6 +501,38 @@ const fillMissingPinyin = async (cards) => {
           )}
         </div>
 
+        {/* Print sides */}
+        <fieldset className="mb-4">
+          <legend className="block text-sm font-medium text-foreground mb-2">Print sides</legend>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-6">
+            <label className="inline-flex items-center gap-2 text-sm text-foreground cursor-pointer">
+              <input
+                type="radio"
+                name="print-sides"
+                className="accent-primary"
+                checked={!includeBack}
+                onChange={() => { setIncludeBack(false); setPreviewSide('front'); }}
+              />
+              <span>Front only</span>
+            </label>
+            <label className="inline-flex items-center gap-2 text-sm text-foreground cursor-pointer">
+              <input
+                type="radio"
+                name="print-sides"
+                className="accent-primary"
+                checked={includeBack}
+                onChange={() => setIncludeBack(true)}
+              />
+              <span>Front + matching backs</span>
+            </label>
+          </div>
+          {includeBack && (
+            <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
+              In the print window, turn on double-sided and choose "Flip on short edge".
+            </p>
+          )}
+        </fieldset>
+
         {/* Control Buttons - Mobile Responsive */}
         <div className="space-y-3">
           {/* Primary Actions Row */}
@@ -642,16 +566,6 @@ const fillMissingPinyin = async (cards) => {
             >
               Clear Selections
             </button>
-
-            <label className="inline-flex items-center gap-2 text-sm text-foreground">
-              <input
-                type="checkbox"
-                className="rounded border-border accent-primary"
-                checked={includeBack}
-                onChange={(e) => setIncludeBack(e.target.checked)}
-              />
-              <span>Add back pages</span>
-            </label>
 
             <div className="inline-flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Card text</span>
@@ -819,7 +733,8 @@ const fillMissingPinyin = async (cards) => {
         <li>Words printed in {textColor === 'red' ? 'bright red' : 'black'}, A4 landscape, 2 per page</li>
         <li>Short words display at 250pt; longer words auto-scale</li>
         <li>8mm margins, which may be tight for some printers</li>
-        <li>Total pages: {previewPages.length}</li>
+        {includeBack && <li>Each back prints directly behind its own front</li>}
+        <li>Total pages: {previewPages.length * (includeBack ? 2 : 1)}</li>
       </ul>
     </div>
   </div>
