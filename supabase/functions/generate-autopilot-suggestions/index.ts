@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { parseStatedInterests, withStatedInterestsFirst, type CategorySignal } from "./interests.ts";
 
 // Rolling alias, not a pinned version — Google retired gemini-2.5-flash from
 // the v1beta API ahead of its announced shutdown date and every call started
@@ -209,9 +210,10 @@ function computeSetAnalysis(
 
 // ─── Preprocessing functions ───
 
+// Observed categories only. Parent-stated interests are ranked separately, ahead
+// of these, via withStatedInterestsFirst.
 function computeInterestCategories(
   words: string[],
-  profileInterests?: string | null,
 ): { topCategories: string[]; countsByCategory: Record<string, number>; coldStart: boolean } {
   const counts: Record<string, number> = {};
   for (const cat of Object.keys(INTEREST_CATEGORY_MAP)) counts[cat] = 0;
@@ -229,9 +231,6 @@ function computeInterestCategories(
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
   if (total === 0) {
-    if (profileInterests?.trim()) {
-      return { topCategories: [profileInterests.trim()], countsByCategory: counts, coldStart: false };
-    }
     return { topCategories: [], countsByCategory: counts, coldStart: true };
   }
 
@@ -324,6 +323,8 @@ serve(async (req) => {
     if (userError || !user) throw new Error("Unauthorized");
 
     const uid = user.id;
+    // Onboarding stores the child's name on auth metadata; there is no column.
+    const childName = String(user.user_metadata?.child_name || "").trim() || null;
 
     // ─── STEP 1: Gather context ───
     const fourWeeksAgo = new Date();
@@ -489,7 +490,6 @@ serve(async (req) => {
 
     const { topCategories, countsByCategory, coldStart: spokenWordsColdStart } = computeInterestCategories(
       spokenWordsList,
-      profile.child_interests,
     );
     const complexityLevel = computeComplexityLevel(spokenWordsList);
     const { summary: langDistribution, underrepresented: mandarinUnderrepresented } =
@@ -523,9 +523,10 @@ serve(async (req) => {
       ),
     ].slice(0, 5) as string[];
 
-    // Cascade: spoken_words keywords → flashcard folders → past suggestion categories → profile interests
-    type CategorySignal = { label: string; source: string };
-    const effectiveCategories: CategorySignal[] =
+    // What the parent told us leads. Observed data backs it up, picked by the
+    // cascade spoken_words keywords → flashcard folders → past suggestion categories.
+    const statedInterests = parseStatedInterests(profile.child_interests);
+    const observedCategories: CategorySignal[] =
       topCategories.length > 0
         ? topCategories.map(cat => ({
             label: `${cat} (${countsByCategory[cat]} spoken word${countsByCategory[cat] === 1 ? "" : "s"})`,
@@ -541,9 +542,9 @@ serve(async (req) => {
                 label: `${cat} (from prior suggestions)`,
                 source: "past_suggestions",
               }))
-            : profile.child_interests?.trim()
-              ? [{ label: profile.child_interests.trim(), source: "profile_interests" }]
-              : [];
+            : [];
+
+    const effectiveCategories = withStatedInterestsFirst(statedInterests, observedCategories);
 
     const coldStart = effectiveCategories.length === 0;
 
@@ -555,14 +556,14 @@ serve(async (req) => {
     const systemPrompt = `You are a specialist in early childhood language development and bilingual acquisition. Your job is to suggest vocabulary words for a weekly flashcard plan that is personalised to THIS specific child — not a generic toddler.
 
 Your suggestions must:
-1. Be grounded in the child's demonstrated interests derived from their spoken word history
+1. Lead with the interests the parent has told us about. They are listed first under "Dominant interest categories", marked "(the parent told us)". Use the spoken word history to decide which of those interests to build on and at what level. Only when the parent has stated no interests, ground the week in the spoken word history alone
 2. Extend what the child already knows through one of three tiers:
    - "reinforce": adjacent vocabulary within a known category (e.g. child knows "excavator" → suggest "excavator arm")
    - "bridge": connecting a known concept to a new domain (e.g. "steering wheel" → "direction" → "left/right")
    - "stretch": one level above current complexity without being inaccessible
 3. Never regress to generic age-band defaults (food, household items, colours) unless spoken word history explicitly shows this as a dominant interest
 4. Reflect the child's language balance — prioritise the underrepresented target language where appropriate
-5. Include a rationale per word that references THIS child's actual observed data
+5. Include a rationale per word that references THIS child's actual data. Write it to the parent, in the second person. When the word comes from an interest the parent stated, say so plainly first, e.g. "Trains, because you told us Kai loves them." Use the child's name if it is given, otherwise "your child". Never refer to the child as he, she, him or her. Do not use em dashes
 
 You must NOT:
 - Default to mealtime or household themes without evidence from spoken word history
@@ -590,6 +591,7 @@ Return JSON only. No preamble. No markdown. Schema:
 
     // ─── STEP 4: User prompt ───
     const userMessage = `CHILD PROFILE:
+- Child's name: ${childName || "not given (say \"your child\")"}
 - Age band: ${profile.child_age_band || "unknown"} (${months ?? "?"} months)
 - Target languages: ${profile.target_language || "not specified"}
 - Speech level: ${profile.speech_level || "unknown"}
@@ -647,13 +649,13 @@ Graduation threshold: word is owned by child OR has been flashed ≥${GRADUATION
 ` : ""}TASK:
 Suggest ONE weekly theme and ${targetWordCount} words.
 
-The theme MUST emerge from the dominant interest categories above.${setAware ? ` Where possible, assign each word to a set (via set_number) where it fits thematically and there are open slots. Prioritise filling sets that have graduating words first.` : ""} If cold-start, pick a theme appropriate for the age band and any profile interests listed.
+The theme MUST emerge from the dominant interest categories above. When the parent has stated interests, the theme should come from one of those.${setAware ? ` Where possible, assign each word to a set (via set_number) where it fits thematically and there are open slots. Prioritise filling sets that have graduating words first.` : ""} If cold-start, pick a theme appropriate for the age band and any profile interests listed.
 
 For each word provide:
 - word (with Mandarin character + pinyin if Mandarin, or bilingual pair if applicable)
 - set_number (integer: which set this word fits into, or null if no specific set applies)
 - pos (part of speech)
-- reason (1–2 sentences referencing this child's specific observed data — cite a spoken word, log entry, or stated interest)
+- reason (1 to 2 sentences to the parent. If the word comes from a stated interest, cite that first; otherwise cite a spoken word or log entry. Use the child's name or "your child", never he/she/him/her. No em dashes.)
 - activity_tip (one real-world moment the parent can use to introduce this word naturally)
 - tier: "reinforce" | "bridge" | "stretch"
 
