@@ -180,14 +180,21 @@ const DuringScreen = ({ logs, addLog, deleteLog, onNext, onBack }) => {
       )}
 
       {/* Navigation */}
-      <div className="flex gap-3 pt-2">
-        <button onClick={onBack} className="flex-1 border-2 border-[hsl(var(--border))] text-[hsl(var(--sprouttie-ink))] font-semibold py-3 rounded-xl">
-          ← Back
-        </button>
-        <button onClick={onNext} className="flex-1 bg-[hsl(var(--sprouttie-green))] text-white font-bold py-3 rounded-xl shadow-md">
-          See Reflection →
-        </button>
-      </div>
+      {/* Only when hosted in a step-by-step flow. The This week sheet has its own close. */}
+      {(onBack || onNext) && (
+        <div className="flex gap-3 pt-2">
+          {onBack && (
+            <button onClick={onBack} className="flex-1 border-2 border-[hsl(var(--border))] text-[hsl(var(--sprouttie-ink))] font-semibold py-3 rounded-xl">
+              ← Back
+            </button>
+          )}
+          {onNext && (
+            <button onClick={onNext} className="flex-1 bg-[hsl(var(--sprouttie-green))] text-white font-bold py-3 rounded-xl shadow-md">
+              See Reflection →
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Quick-log bottom sheets */}
       <AnimatePresence>

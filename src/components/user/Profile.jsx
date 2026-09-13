@@ -246,7 +246,7 @@ const Profile = () => {
               Free Plan
             </span>
             <p className="mt-2 text-sm text-gray-600">
-              You're currently on the Free plan. Upgrade to access more features like printable PDF flashcards and unlimited AI stories.
+              You're currently on the Free plan. Upgrade for unlimited flashcards and printable PDF flashcards.
             </p>
             <button 
               className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"

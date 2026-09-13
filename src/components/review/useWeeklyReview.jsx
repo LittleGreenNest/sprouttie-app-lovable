@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
-import { getCurrentWeekStart } from '../thisweek/useThisWeek';
+import { localWeekStart as getCurrentWeekStart } from '@/utils/week';
 
 /**
- * The weekly review: one question, "did he say any of these?", asked about the
+ * The weekly review: one question, "did your child say any of these?", asked about the
  * words that were actually flashed in the last seven days.
  *
  * This is the loop's feedback signal. Until now the app collected words but

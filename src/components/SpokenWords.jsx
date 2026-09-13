@@ -815,7 +815,7 @@ const SpokenWords = () => {
           <div className="text-center py-12 text-muted-foreground text-sm space-y-1">
             <p className="text-2xl">🌱</p>
             <p>No words added yet.</p>
-            <p>Start by adding the first word or phrase you've heard him say.</p>
+            <p>Start by adding the first word or phrase you've heard your child say.</p>
           </div>
         ) : (
           <div className="space-y-5">

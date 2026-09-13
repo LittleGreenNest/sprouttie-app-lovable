@@ -13,7 +13,7 @@ const TABS = [
 
 const MORE_ITEMS = [
   { id: 'scan-flashcards', label: 'Scan Words', icon: ScanText },
-  { id: 'word-planner', label: 'Word Planner', icon: CalendarRange },
+  { id: 'this-week', label: 'This week', icon: CalendarRange },
   { id: 'flashed-history', label: 'History', icon: Clock },
   { id: 'book-recommendations', label: 'Books', icon: BookOpen },
 ];

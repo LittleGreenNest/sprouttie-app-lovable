@@ -48,7 +48,7 @@ const Privacy = lazyWithRetry(() => import('./pages/Privacy'));
 const ComingSoonPage = lazyWithRetry(() => import('./components/ui/ComingSoonPage'));
 const PronunciationPortal = lazyWithRetry(() => import('./components/pronunciation/PronunciationPortal'));
 const WeeklyWordPlanner = lazyWithRetry(() => import('./components/planner/WeeklyWordPlanner'));
-const WeeklyReview = lazyWithRetry(() => import('./components/review/WeeklyReview'));
+const ThisWeekPage = lazyWithRetry(() => import('./pages/ThisWeekPage'));
 const BookRecommendations = lazyWithRetry(() => import('./components/storybooks/BookRecommendations'));
 const WordJourney = lazyWithRetry(() => import('./components/tracking/WordJourney'));
 const PhotoScanner = lazyWithRetry(() => import('./components/import/PhotoScanner'));
@@ -131,7 +131,9 @@ const AppContent = () => {
             
             <Route path="/pronunciation" element={<PronunciationPortal />} />
             <Route path="/word-planner" element={<WeeklyWordPlanner />} />
-            <Route path="/weekly-review" element={<WeeklyReview />} />
+            <Route path="/this-week" element={<ThisWeekPage />} />
+            {/* The weekly review now lives inside This week; keep old links working. */}
+            <Route path="/weekly-review" element={<Navigate to="/this-week?review=1" replace />} />
 
             <Route path="/book-recommendations" element={<BookRecommendations />} />
             <Route path="/word-journey" element={<WordJourney />} />

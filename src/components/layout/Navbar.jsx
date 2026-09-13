@@ -79,13 +79,13 @@ const Navbar = () => {
                       Your Profile
                     </Link>
                     <Link
-                      to="/word-planner"
+                      to="/this-week"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       role="menuitem"
                       tabIndex="-1"
                       onClick={() => setIsProfileDropdownOpen(false)}
                     >
-                      Word Planner
+                      This week
                     </Link>
                     <Link
                       to="/scan-flashcards"
@@ -204,11 +204,11 @@ const Navbar = () => {
                 Your Profile
               </Link>
               <Link
-                to="/word-planner"
+                to="/this-week"
                 className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Word Planner
+                This week
               </Link>
               <Link
                 to="/scan-flashcards"

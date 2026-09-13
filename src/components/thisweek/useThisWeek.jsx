@@ -1,16 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
+import { localWeekStart } from '@/utils/week';
 import { buildWeeklyPlan, planHeadline, SET_SIZE } from './suggestionEngine';
 
-// Get Monday of the current week
-export const getCurrentWeekStart = () => {
-  const d = new Date();
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(d.setDate(diff));
-  return monday.toISOString().split('T')[0];
-};
+// Monday of the current week, in local time. See utils/week.js for why this no
+// longer goes through toISOString().
+export const getCurrentWeekStart = () => localWeekStart();
 
 /**
  * child_age_band is written by onboarding as a range in YEARS: "0-1", "1-2",

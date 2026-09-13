@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { useFlashcards } from '../context/FlashcardContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { cardIdFrom } from '@/utils/cardId';
-import ThisWeekFlow from './thisweek/ThisWeekFlow';
-import ReviewPrompt from './review/ReviewPrompt';
+import WeekCard from './thisweek/WeekCard';
 import { toast } from 'react-toastify';
 
 // ─── Tip data (pulled from existing TipsCarousel) ───
@@ -24,15 +23,11 @@ const Dashboard = () => {
   const { currentUser, profile } = useAuth() || {};
   const navigate = useNavigate();
 
-  const [showThisWeek, setShowThisWeek] = useState(false);
   const [trackingData, setTrackingData] = useState([]);
   const [spokenWords, setSpokenWords] = useState([]);
-  const [plannedWordCount, setPlannedWordCount] = useState(0);
-  const [savedBookCount, setSavedBookCount] = useState(0);
   const [tipIndex, setTipIndex] = useState(0);
   const [weeklyBooks, setWeeklyBooks] = useState([]);
   const [weeklyActivities, setWeeklyActivities] = useState([]);
-  const [pendingSuggestions, setPendingSuggestions] = useState([]);
 
   // Rotate tip daily based on day-of-year
   useEffect(() => {
@@ -52,19 +47,13 @@ const Dashboard = () => {
     const thirtyAgoStr = thirtyAgo.toISOString().split('T')[0];
 
     const fetchAll = async () => {
-      const [trackingRes, spokenRes, plansRes, booksRes, sessionsRes, suggestionsRes] = await Promise.all([
+      const [trackingRes, spokenRes, sessionsRes] = await Promise.all([
         supabase.from('daily_tracking').select('*').eq('user_id', uid).gte('date', thirtyAgoStr).order('date', { ascending: false }),
         supabase.from('spoken_words').select('*').eq('user_id', uid),
-        supabase.from('word_plans').select('id').eq('user_id', uid).gte('planned_week_start', getWeekStart()),
-        supabase.from('recommended_books').select('id').eq('user_id', uid),
         supabase.from('daily_flashing_sessions').select('books_read, activities, session_date').eq('user_id', uid).gte('session_date', getWeekStart()),
-        supabase.from('weekly_suggestions').select('*').eq('user_id', uid).eq('week_start', getWeekStart()).eq('status', 'pending_review'),
       ]);
       setTrackingData(trackingRes.data || []);
       setSpokenWords(spokenRes.data || []);
-      setPlannedWordCount((plansRes.data || []).length);
-      setSavedBookCount((booksRes.data || []).length);
-      setPendingSuggestions(suggestionsRes.data || []);
 
       // Aggregate weekly books & activities
       const sessions = sessionsRes.data || [];
@@ -85,28 +74,13 @@ const Dashboard = () => {
     fetchAll();
   }, [currentUser?.id]);
 
-  // Refresh suggestions after simulate or dismiss
-  const refreshSuggestions = useCallback(async () => {
-    if (!currentUser?.id) return;
-    const { data } = await supabase.from('weekly_suggestions').select('*')
-      .eq('user_id', currentUser.id).eq('week_start', getWeekStart()).eq('status', 'pending_review');
-    setPendingSuggestions(data || []);
-  }, [currentUser?.id]);
-
-  // Dismiss all pending suggestions
-  const dismissSuggestions = async () => {
-    if (!currentUser?.id || pendingSuggestions.length === 0) return;
-    const ids = pendingSuggestions.map(s => s.id);
-    await supabase.from('weekly_suggestions').update({ status: 'dismissed' }).in('id', ids);
-    setPendingSuggestions([]);
-    navigate('/word-planner');
-  };
-
   // ─── Derived data ───
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
   const firstName = currentUser?.user_metadata?.display_name?.split(' ')[0] || currentUser?.user_metadata?.full_name?.split(' ')[0] || currentUser?.user_metadata?.name?.split(' ')[0] || 'Friend';
-  const childName = firstName !== 'Friend' ? `${firstName}'s child` : 'Your child';
+  // The child's own name from onboarding. This used to be built from the
+  // account holder's first name, which labelled the words "Rena's child's".
+  const childName = currentUser?.user_metadata?.child_name?.trim() || 'Your child';
 
   // Today's rounds from tracking data
   const todayTracking = trackingData.filter(t => t.date === todayStr);
@@ -153,9 +127,6 @@ const Dashboard = () => {
 
   return (
     <div className="pb-28">
-      {/* This Week Flow modal */}
-      <ThisWeekFlow show={showThisWeek} onClose={() => setShowThisWeek(false)} />
-
       {/* 2. Greeting + Date */}
       <div className="pt-2 pb-4">
         <h1 className="text-xl font-medium text-[hsl(var(--sprouttie-ink))] m-0">
@@ -166,8 +137,8 @@ const Dashboard = () => {
         </p>
       </div>
 
-      {/* Weekly review nudge — only shows when there is something to review */}
-      <ReviewPrompt />
+      {/* This week: plan it, do it, notice it. One card, three states. */}
+      <WeekCard variant="home" />
 
       {/* 3. TODAY'S FOCUS CARD */}
       <div className="mx-4 mb-3" style={{ background: '#2D6A4F', borderRadius: 16, padding: '16px 18px' }}>
@@ -251,72 +222,6 @@ const Dashboard = () => {
           <StatTile bg="#F0FDF4" number={spokenOwned} label="owned" numColor="#065F46" />
         </div>
       </button>
-
-      {/* 5. THIS WEEK CARD */}
-      <div
-        className="mx-4 mb-3"
-        style={{ background: pendingSuggestions.length > 0 ? '#EDF7EE' : 'white', border: '0.5px solid #E5E7EB', borderRadius: 16, padding: '16px 18px' }}
-      >
-        {pendingSuggestions.length > 0 ? (
-          <>
-            {/* Auto-pilot "week is ready" state */}
-            <p style={{ fontSize: 15, fontWeight: 600, color: '#1F2937', margin: 0 }}>
-              🌱 Your week is ready
-            </p>
-            <p style={{ fontSize: 12, color: '#6B7280', marginTop: 4, lineHeight: 1.4 }}>
-              Sprouttie picked {pendingSuggestions.length} words across{' '}
-              {[...new Set(pendingSuggestions.map(s => s.category).filter(Boolean))].join(' and ') || 'mixed categories'}.
-              {' '}Takes 30 seconds to review.
-            </p>
-
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={() => navigate('/word-planner')}
-                className="flex-1 active:scale-[0.98] transition-transform"
-                style={{
-                  background: '#52B788', border: 'none', borderRadius: 10,
-                  padding: '10px 14px', fontSize: 13, fontWeight: 500, color: 'white', cursor: 'pointer'
-                }}
-              >
-                Review & Accept
-              </button>
-              <button
-                onClick={dismissSuggestions}
-                className="flex-1 active:scale-[0.98] transition-transform"
-                style={{
-                  background: 'transparent', border: '1px solid #D1D5DB', borderRadius: 10,
-                  padding: '10px 14px', fontSize: 13, fontWeight: 500, color: '#374151', cursor: 'pointer'
-                }}
-              >
-                Plan manually
-              </button>
-            </div>
-
-            <p style={{ fontSize: 10, color: '#9CA3AF', marginTop: 8, textAlign: 'center' }}>
-              Auto-generated based on {childName}'s profile and history
-            </p>
-          </>
-        ) : (
-          <>
-            {/* Default state */}
-            <div className="flex items-center justify-between">
-              <span style={{ fontSize: 13, fontWeight: 500, color: '#1F2937' }}>This Week</span>
-              <button
-                onClick={() => setShowThisWeek(true)}
-                style={{ fontSize: 12, fontWeight: 500, color: '#2D6A4F', background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                Plan →
-              </button>
-            </div>
-
-            <div className="flex gap-2 mt-3">
-              <FocusTile emoji="🗣" label="Words" subtext={plannedWordCount > 0 ? `${plannedWordCount} planned` : 'Plan now'} onClick={() => setShowThisWeek(true)} />
-              <FocusTile emoji="📚" label="Books" subtext={savedBookCount > 0 ? `${savedBookCount} saved` : 'Add books'} onClick={() => setShowThisWeek(true)} />
-              <FocusTile emoji="🤝" label="Prompts" subtext="3 tips" onClick={() => setShowThisWeek(true)} />
-            </div>
-          </>
-        )}
-      </div>
 
       {/* 6. FLASHCARD SETS CARD */}
       <button
@@ -486,21 +391,6 @@ const StatTile = ({ bg, number, label, numColor }) => (
     <div style={{ fontSize: 22, fontWeight: 500, color: numColor }}>{number}</div>
     <div style={{ fontSize: 11, fontWeight: 400, color: '#6B7280' }}>{label}</div>
   </div>
-);
-
-const FocusTile = ({ emoji, label, subtext, onClick }) => (
-  <button
-    onClick={onClick}
-    className="flex-1 text-center active:scale-[0.98] transition-transform"
-    style={{
-      border: '0.5px solid #E5E7EB', borderRadius: 10, padding: '10px 8px',
-      background: 'white', cursor: 'pointer'
-    }}
-  >
-    <div style={{ fontSize: 14, marginBottom: 3 }}>{emoji}</div>
-    <div style={{ fontSize: 11, fontWeight: 500, color: '#374151' }}>{label}</div>
-    <div style={{ fontSize: 10, color: '#9CA3AF' }}>{subtext}</div>
-  </button>
 );
 
 // ─── Helper functions ───
