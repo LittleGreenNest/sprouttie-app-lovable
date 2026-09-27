@@ -64,7 +64,7 @@ const Support = () => {
                   <div>
                     <h3 className="font-medium text-gray-800">How do I cancel my subscription?</h3>
                     <p className="text-gray-600 text-sm mt-1">
-                      Go to your Profile page and click "Manage Subscription" to update or cancel your plan.
+                      Go to your Profile page and click "Manage Billing" to update or cancel your plan.
                     </p>
                   </div>
                 </div>

@@ -25,7 +25,6 @@ const PLANS = [
     features: ['Everything in Free', 'Unlimited flashcards', 'Printable PDF flashcards', 'Multiple PDF export formats'],
     planKey: 'print',
     buttonText: 'Subscribe',
-    badge: 'Most Popular',
     highlight: true,
   },
   {
@@ -227,7 +226,7 @@ export default function Plans() {
             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
               billingCycle === 'yearly' ? 'bg-white/20' : 'bg-[hsl(var(--sprouttie-coral-light))] text-[hsl(var(--sprouttie-coral-dark))]'
             }`}>
-              Save 17%
+              Save 19%
             </span>
           </button>
         </motion.div>
