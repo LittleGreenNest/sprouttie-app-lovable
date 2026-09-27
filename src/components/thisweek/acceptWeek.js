@@ -53,15 +53,16 @@ export async function acceptWeek({ userId, weekStart, suggestions }) {
   const words = [];
   const seen = new Set();
   suggestions.forEach((s) => {
-    const { front, pinyin } = splitSuggestedWord(s.word);
+    const { front, pinyin, english } = splitSuggestedWord(s.word);
     const key = norm(front);
     if (!front || seen.has(key)) return;
     seen.add(key);
-    words.push({ s, front, pinyin, key });
+    words.push({ s, front, pinyin, english, key });
   });
 
   const missing = words.filter((w) => !byFront.has(w.key));
-  const translations = missing.length ? await translate(missing.map((w) => w.front)) : {};
+  const needLookup = missing.filter((w) => !w.english || !w.pinyin);
+  const translations = needLookup.length ? await translate(needLookup.map((w) => w.front)) : {};
   const today = toLocalDateString(new Date());
 
   if (missing.length) {
@@ -71,7 +72,7 @@ export async function acceptWeek({ userId, weekStart, suggestions }) {
         missing.map((w) => ({
           user_id: userId,
           front: w.front,
-          back: translations[w.front]?.english || '',
+          back: w.english || translations[w.front]?.english || '',
           pinyin: w.pinyin || translations[w.front]?.pinyin || null,
           folder: w.s.category || w.s.theme || 'default',
           card_type: 'word',

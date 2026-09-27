@@ -114,7 +114,7 @@ const PlanState = ({ variant, week, navigate }) => {
     >
       <ul className="divide-y divide-[#E4D6BF] m-0 p-0 list-none">
         {pending.map((s) => {
-          const { front, pinyin } = splitSuggestedWord(s.word);
+          const { front, pinyin, english } = splitSuggestedWord(s.word);
           const alts = week.alternatives[s.id];
           const open = openSwap === s.id;
           return (
@@ -124,6 +124,7 @@ const PlanState = ({ variant, week, navigate }) => {
                   <p className="text-[15px] text-[#263136] leading-tight m-0">
                     {front}
                     {pinyin && <span className="ml-2 text-[12px] text-[#66737A]">{pinyin}</span>}
+                    {english && <span className="ml-2 text-[12px] text-[#66737A]">· {english}</span>}
                   </p>
                   {s.reason && (
                     <p className="text-[12px] text-[#66737A] leading-snug mt-0.5 mb-0 line-clamp-2">{s.reason}</p>
