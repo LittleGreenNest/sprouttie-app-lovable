@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
-import { localWeekStart } from '@/utils/week';
+import { localWeekStart, toLocalDateString } from '@/utils/week';
 import { buildWeeklyPlan, planHeadline, SET_SIZE } from './suggestionEngine';
 
 // Monday of the current week, in local time. See utils/week.js for why this no
@@ -151,7 +151,7 @@ export const useThisWeek = () => {
     setLoading(true);
     try {
       // 30 days back covers the engine's 14-day ramp window with room to spare.
-      const trackingFrom = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+      const trackingFrom = toLocalDateString(new Date(Date.now() - 30 * 86400000));
 
       const [logsRes, cardsRes, spokenRes, trackingRes] = await Promise.all([
         supabase.from('weekly_logs').select('*').eq('user_id', currentUser.id).eq('week_start', weekStart).order('created_at', { ascending: false }),

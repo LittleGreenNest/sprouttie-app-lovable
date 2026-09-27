@@ -6,6 +6,7 @@ import {
   TrendingUp, BarChart3, BookOpen,
   Download, Sparkles, Zap
 } from 'lucide-react';
+import { toLocalDateString } from '@/utils/week';
 
 // Helper to get month options
 const getMonthOptions = () => {
@@ -49,8 +50,8 @@ const FlashedHistory = () => {
       const endDate = new Date(year, month, 0); // Last day of month
       
       // Fetch all tracking data for the month (handle >1000 rows with pagination)
-      const startDateStr = startDate.toISOString().split('T')[0];
-      const endDateStr = endDate.toISOString().split('T')[0];
+      const startDateStr = toLocalDateString(startDate);
+      const endDateStr = toLocalDateString(endDate);
       let allTrackingRows = [];
       let from = 0;
       const PAGE_SIZE = 1000;

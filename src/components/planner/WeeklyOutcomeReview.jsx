@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toLocalDateString } from '@/utils/week';
 
 /**
  * Surfaces accepted suggestions from prior weeks where the parent
@@ -26,7 +27,7 @@ const WeeklyOutcomeReview = ({ currentWeekStart }) => {
 
     const sixWeeksAgo = new Date(currentWeekStart);
     sixWeeksAgo.setDate(sixWeeksAgo.getDate() - 42);
-    const sixWeeksAgoStr = sixWeeksAgo.toISOString().split('T')[0];
+    const sixWeeksAgoStr = toLocalDateString(sixWeeksAgo);
 
     const { data } = await supabase
       .from('weekly_suggestions')

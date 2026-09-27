@@ -6,6 +6,7 @@ import { useFlashcards } from '../context/FlashcardContext';
 import { cardIdFrom } from '../utils/cardId';
 import jsPDF from 'jspdf';
 import { toast } from 'react-toastify';
+import { toLocalDateString } from '@/utils/week';
 
 const BingoCardGenerator = () => {
   const { currentUser } = useAuth();
@@ -42,7 +43,7 @@ const BingoCardGenerator = () => {
         .select('flashcard_id, date')
         .eq('user_id', currentUser.id)
         .eq('status', 'flashed')
-        .gte('date', oneMonthAgo.toISOString().split('T')[0]);
+        .gte('date', toLocalDateString(oneMonthAgo));
 
       if (error) throw error;
 
@@ -145,7 +146,7 @@ const BingoCardGenerator = () => {
         cutoffDate.setMonth(now.getMonth() - 1);
       }
 
-      const cutoffString = cutoffDate.toISOString().split('T')[0];
+      const cutoffString = toLocalDateString(cutoffDate);
       
       filtered = filtered.filter(card => {
         const lastFlashedDate = flashedInTimeRange.get(card.id);

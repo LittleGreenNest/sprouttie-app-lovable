@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cardIdFrom } from '@/utils/cardId';
 import WeekCard from './thisweek/WeekCard';
 import { toast } from 'react-toastify';
+import { toLocalDateString } from '@/utils/week';
 
 // ─── Tip data (pulled from existing TipsCarousel) ───
 const TIPS = [
@@ -39,12 +40,12 @@ const Dashboard = () => {
   useEffect(() => {
     if (!currentUser?.id) return;
     const uid = currentUser.id;
-    const today = new Date().toISOString().split('T')[0];
+    const today = toLocalDateString(new Date());
 
     // Tracking data (last 30 days)
     const thirtyAgo = new Date();
     thirtyAgo.setDate(thirtyAgo.getDate() - 30);
-    const thirtyAgoStr = thirtyAgo.toISOString().split('T')[0];
+    const thirtyAgoStr = toLocalDateString(thirtyAgo);
 
     const fetchAll = async () => {
       const [trackingRes, spokenRes, sessionsRes] = await Promise.all([
@@ -76,7 +77,7 @@ const Dashboard = () => {
 
   // ─── Derived data ───
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = toLocalDateString(today);
   const firstName = currentUser?.user_metadata?.display_name?.split(' ')[0] || currentUser?.user_metadata?.full_name?.split(' ')[0] || currentUser?.user_metadata?.name?.split(' ')[0] || 'Friend';
   // The child's own name from onboarding. This used to be built from the
   // account holder's first name, which labelled the words "Rena's child's".

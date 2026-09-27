@@ -3,6 +3,8 @@
  * and rolling replacement. This is the brain of Sprouttie's activation protocol.
  */
 
+import { toLocalDateString } from './week';
+
 // Core constants
 export const MAX_WORDS_PER_SET = 5;
 export const MAX_SETS_DEFAULT = 3;
@@ -107,5 +109,5 @@ export const getWeekStart = (date = new Date()) => {
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   d.setDate(diff);
-  return d.toISOString().split('T')[0];
+  return toLocalDateString(d);
 };

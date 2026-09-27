@@ -5,6 +5,7 @@ import { useFlashcards } from '@/context/FlashcardContext';
 import { cardIdFrom } from '@/utils/cardId';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toLocalDateString } from '@/utils/week';
 
 const CalendarGridView = () => {
   const { currentUser } = useAuth();
@@ -40,10 +41,10 @@ const CalendarGridView = () => {
   const loadWeekData = async () => {
     setLoading(true);
     try {
-      const startDate = weekStart.toISOString().split('T')[0];
+      const startDate = toLocalDateString(weekStart);
       const endDate = new Date(weekStart);
       endDate.setDate(endDate.getDate() + 6);
-      const endDateStr = endDate.toISOString().split('T')[0];
+      const endDateStr = toLocalDateString(endDate);
 
       // Fetch daily_tracking records for the week
       const { data, error } = await supabase
@@ -62,7 +63,7 @@ const CalendarGridView = () => {
       
       // Initialize all days
       weekDays.forEach(day => {
-        const dateStr = day.toISOString().split('T')[0];
+        const dateStr = toLocalDateString(day);
         transformed[dateStr] = {};
         sets.forEach(set => {
           transformed[dateStr][set.id] = [false, false, false];
@@ -213,7 +214,7 @@ const CalendarGridView = () => {
     let total = 0;
     let completed = 0;
     weekDays.forEach(day => {
-      const dateStr = day.toISOString().split('T')[0];
+      const dateStr = toLocalDateString(day);
       const rounds = trackingData[dateStr]?.[setId] || [false, false, false];
       total += 3;
       completed += rounds.filter(Boolean).length;
@@ -314,7 +315,7 @@ const CalendarGridView = () => {
                       </div>
                     </td>
                     {weekDays.map((day, dayIdx) => {
-                      const dateStr = day.toISOString().split('T')[0];
+                      const dateStr = toLocalDateString(day);
                       const rounds = trackingData[dateStr]?.[set.id] || [false, false, false];
                       
                       return (
@@ -376,7 +377,7 @@ const CalendarGridView = () => {
             sets.forEach(set => {
               if ((set.flashcardIds || []).length > 0) {
                 weekDays.forEach(day => {
-                  const dateStr = day.toISOString().split('T')[0];
+                  const dateStr = toLocalDateString(day);
                   const rounds = trackingData[dateStr]?.[set.id] || [false, false, false];
                   totalPossible += 3;
                   totalChecked += rounds.filter(Boolean).length;

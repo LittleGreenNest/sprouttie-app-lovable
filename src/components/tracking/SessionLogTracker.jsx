@@ -11,6 +11,7 @@ import SetTimeline from './SetTimeline';
 import DailyInsight from './DailyInsight';
 import InterestsCard from './InterestsCard';
 import { AnimatePresence, motion } from 'framer-motion';
+import { toLocalDateString } from '@/utils/week';
 
 const SET_COLORS = [
   { dot: '#7B61FF', label: 'purple' },
@@ -75,7 +76,7 @@ const SessionLogTracker = () => {
   const [bookInput, setBookInput] = useState('');
   const [activities, setActivities] = useState([]); // [{ id: string, note?: string }]
 
-  const dateString = useMemo(() => selectedDate.toISOString().split('T')[0], [selectedDate]);
+  const dateString = useMemo(() => toLocalDateString(selectedDate), [selectedDate]);
 
   const completedSessions = useMemo(() => {
     return Object.values(roundTracking).filter(v => v).length;
@@ -181,7 +182,7 @@ const SessionLogTracker = () => {
       const diff = today.getDate() - day + (day === 0 ? -6 : 1);
       const weekStart = new Date(today);
       weekStart.setDate(diff);
-      const weekStartStr = weekStart.toISOString().split('T')[0];
+      const weekStartStr = toLocalDateString(weekStart);
       const { data, error } = await supabase
         .from('word_plans')
         .select('*')
@@ -497,7 +498,7 @@ const SessionLogTracker = () => {
       try {
         await supabase
           .from('flashcards')
-          .update({ date_retired: new Date().toISOString().split('T')[0], card_status: 'retired' })
+          .update({ date_retired: toLocalDateString(new Date()), card_status: 'retired' })
           .eq('id', wordId)
           .eq('user_id', currentUser.id);
       } catch (err) {

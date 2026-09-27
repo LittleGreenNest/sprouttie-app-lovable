@@ -3,12 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { useFlashcards } from '../context/FlashcardContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, AlertCircle } from 'lucide-react';
+import { toLocalDateString } from '@/utils/week';
 
 const DailyTracker = () => {
   const { sets, categories, flashcards, getFlashcardsForSet, saveTrackingData, getTrackingData, addFlashcard, deleteFlashcard, updateSetFlashcards } = useFlashcards();
   
   // Current date formatted as YYYY-MM-DD
-  const today = new Date().toISOString().split('T')[0];
+  const today = toLocalDateString(new Date());
   
   // State for today's tracking
   const [selectedSets, setSelectedSets] = useState([]);
