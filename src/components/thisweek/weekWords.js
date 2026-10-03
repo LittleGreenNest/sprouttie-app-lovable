@@ -4,18 +4,38 @@ export const hasCJK = (s) => CJK.test(s || '');
 
 const CJK_RUN = /[㐀-䶿一-鿿][㐀-䶿一-鿿\s]*/;
 const PARENS = /^(.+?)\s*[(（]([^)）]+)[)）]$/;
+const SLASH = /^(.+?)\s*[/／]\s*(.+)$/;
 
 /**
  * Splits a suggested word into what goes on the card. The engine's prompt does
- * not fix an order, and it has written both "火车 (huǒ chē)" and
- * "leaf (树叶 shù yè)". Whichever it sends, the characters go on the front,
- * pinyin and English in their own fields, or the printed card carries all
- * three on one face.
+ * not fix an order, and it has written "火车 (huǒ chē)", "leaf (树叶 shù yè)"
+ * and "火车 (huǒ chē) / Train". Whichever it sends, the characters go on the
+ * front, pinyin and English in their own fields, or the printed card carries
+ * all three on one face.
  */
 export const splitSuggestedWord = (raw) => {
-  const text = String(raw || '').trim();
+  const full = String(raw || '').trim();
+  if (!hasCJK(full)) return { front: full, pinyin: '', english: '' };
+
+  // "火车 (huǒ chē) / Train": the English sits on the far side of a slash.
+  // Split there first, then read the Chinese side as before.
+  const slash = full.match(SLASH);
+  if (slash && hasCJK(slash[1]) !== hasCJK(slash[2])) {
+    const [zh, en] = hasCJK(slash[1]) ? [slash[1], slash[2]] : [slash[2], slash[1]];
+    const rest = splitSuggestedWord(zh);
+    return { ...rest, english: rest.english || en.trim() };
+  }
+
+  const text = full;
   const match = text.match(PARENS);
-  if (!match || !hasCJK(text)) return { front: text, pinyin: '', english: '' };
+  if (!match) {
+    // "火车 huǒ chē": characters, then pinyin, no bracket.
+    const chars = (text.match(CJK_RUN) || [''])[0].replace(/\s+/g, '');
+    const after = text.replace(CJK_RUN, ' ').replace(/\s+/g, ' ').trim();
+    return chars && after && !hasCJK(after) && text.startsWith(chars[0])
+      ? { front: chars, pinyin: after, english: '' }
+      : { front: text, pinyin: '', english: '' };
+  }
 
   const outside = match[1].trim();
   const inside = match[2].trim();

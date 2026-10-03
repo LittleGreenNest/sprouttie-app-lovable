@@ -49,7 +49,14 @@ export async function acceptWeek({ userId, weekStart, suggestions }) {
     .limit(2000);
   if (cardsError) throw cardsError;
 
-  const byFront = new Map((cards || []).map((c) => [norm(c.front), c]));
+  // Older cards can still carry a packed front ("火车 (huǒ chē) / Train").
+  // Match on the characters as well, so the week reuses them, not a duplicate.
+  const byFront = new Map();
+  (cards || []).forEach((c) => {
+    const bare = norm(splitSuggestedWord(c.front).front);
+    if (bare && !byFront.has(bare)) byFront.set(bare, c);
+  });
+  (cards || []).forEach((c) => byFront.set(norm(c.front), c));
   const words = [];
   const seen = new Set();
   suggestions.forEach((s) => {
