@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
+import { useFlashcards } from '../../context/FlashcardContext';
+import { DAYS_TO_FINISH } from '@/utils/cardDays';
+import { useCardDays } from '../tracking/useCardDays';
 import { useWeeklyReview } from '../review/useWeeklyReview';
 import { useWeekState } from './useWeekState';
 import { splitSuggestedWord } from './weekWords';
@@ -63,11 +66,34 @@ const withFullStop = (s) => {
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
+const norm = (s) => String(s || '').trim().toLowerCase();
+
+/** The parent's cards by their characters, so a suggested word can be matched to one. */
+const useCardsByFront = () => {
+  const { flashcards } = useFlashcards() || {};
+  return React.useMemo(() => {
+    const map = new Map();
+    (flashcards || []).forEach((c) => {
+      const key = norm(splitSuggestedWord(c.front).front);
+      if (key && (!map.has(key) || c.set_number)) map.set(key, c);
+    });
+    return map;
+  }, [flashcards]);
+};
+
+const acceptedMessage = ({ placed = [], queued = 0 }) => {
+  const joined = placed.map((p) => `${plural(p.count, 'word')} joined Set ${p.setNumber}`).join(', ');
+  const waiting = queued ? `${plural(queued, 'word')} ${queued === 1 ? 'is' : 'are'} waiting for a free slot.` : '';
+  if (!joined && !waiting) return 'These words are already in your sets.';
+  return [joined && `${joined}.`, waiting].filter(Boolean).join(' ');
+};
+
 /* ─── Plan: this week's words, not yet accepted ─── */
 
 const PlanState = ({ variant, week, navigate }) => {
   const [openSwap, setOpenSwap] = useState(null);
   const { pending, generating, accepting, error } = week;
+  const cardsByFront = useCardsByFront();
 
   if (generating) {
     return (
@@ -98,11 +124,7 @@ const PlanState = ({ variant, week, navigate }) => {
   const handleAccept = async () => {
     const res = await week.accept();
     if (!res.ok) return;
-    toast.success(
-      res.setNumber
-        ? `Added ${plural(res.placed, 'word')} to Set ${res.setNumber}. They're on your Log page now.`
-        : "These words are already in your sets."
-    );
+    toast.success(acceptedMessage(res));
   };
 
   return (
@@ -117,6 +139,14 @@ const PlanState = ({ variant, week, navigate }) => {
           const { front, pinyin, english } = splitSuggestedWord(s.word);
           const alts = week.alternatives[s.id];
           const open = openSwap === s.id;
+          const known = cardsByFront.get(norm(front));
+          const knownLabel = !known
+            ? null
+            : known.set_number
+            ? `Already in Set ${known.set_number}`
+            : known.card_status === 'retired' || known.date_retired
+            ? 'Flashed before'
+            : 'Already in your cards';
           return (
             <li key={s.id} className="py-2">
               <div className="flex items-center gap-3">
@@ -126,6 +156,11 @@ const PlanState = ({ variant, week, navigate }) => {
                     {pinyin && <span className="ml-2 text-[12px] text-[#66737A]">{pinyin}</span>}
                     {english && <span className="ml-2 text-[12px] text-[#66737A]">· {english}</span>}
                   </p>
+                  {knownLabel && (
+                    <span className="inline-block mt-1 rounded-full bg-[#FBF1CF] text-[#263136] px-2 py-px text-[11px] font-semibold">
+                      {knownLabel}
+                    </span>
+                  )}
                   {s.reason && (
                     <p className="text-[12px] text-[#66737A] leading-snug mt-0.5 mb-0 line-clamp-2">{s.reason}</p>
                   )}
@@ -187,6 +222,16 @@ const DoingState = ({ variant, week, navigate }) => {
   const { accepted, practisedDays, reviewed } = week;
   const theme = accepted.find((s) => s.theme)?.theme;
   const tips = accepted.filter((s) => s.activity_tip);
+  const { flashcards } = useFlashcards() || {};
+  const cardsByFront = useCardsByFront();
+  const { days } = useCardDays(flashcards);
+  const dayNote = (word) => {
+    const card = cardsByFront.get(norm(splitSuggestedWord(word).front));
+    if (!card) return null;
+    if (!card.set_number) return card.card_status === 'queued' ? 'waiting' : null;
+    const n = days.get(card.id) || 0;
+    return n >= DAYS_TO_FINISH ? 'done' : `day ${n} of ${DAYS_TO_FINISH}`;
+  };
   const tip = tips.length ? tips[new Date().getDay() % tips.length] : null;
 
   return (
@@ -205,6 +250,7 @@ const DoingState = ({ variant, week, navigate }) => {
         {accepted.map((s) => (
           <span key={s.id} className="text-[14px] px-2.5 py-0.5 rounded-full bg-[#F4EDE1] text-[#263136]">
             {splitSuggestedWord(s.word).front}
+            {dayNote(s.word) && <span className="ml-1.5 text-[11px] text-[#66737A]">{dayNote(s.word)}</span>}
           </span>
         ))}
       </div>

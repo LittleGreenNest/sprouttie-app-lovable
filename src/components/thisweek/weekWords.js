@@ -55,15 +55,38 @@ export const splitSuggestedWord = (raw) => {
   return { front: chars, pinyin: afterChars, english: otherPart };
 };
 
-/** Set 1 to 5 holding the fewest cards. The lowest number wins a tie. */
-export const emptiestSetNumber = (cards = []) => {
+/** A set holds this many cards. */
+export const SET_SIZE = 5;
+
+/**
+ * Where newly accepted cards go. They fill open slots only, the fullest set
+ * first so a part-built set completes before a new one starts, and nothing
+ * already in a set is moved. Cards with no slot wait in a queue.
+ *
+ * `cards` is every card the parent has; `ids` are the cards to place, in order.
+ */
+export const planPlacement = (cards = [], ids = []) => {
+  const placing = new Set(ids);
   const counts = [0, 0, 0, 0, 0];
   cards.forEach((c) => {
+    if (placing.has(c.id)) return;
     if (c.set_number >= 1 && c.set_number <= 5) counts[c.set_number - 1] += 1;
   });
-  let best = 0;
-  counts.forEach((n, i) => {
-    if (n < counts[best]) best = i;
+  const order = [0, 1, 2, 3, 4]
+    .filter((i) => counts[i] < SET_SIZE)
+    .sort((a, b) => counts[b] - counts[a] || a - b);
+
+  const placements = [];
+  const queued = [];
+  let at = 0;
+  ids.forEach((id) => {
+    while (at < order.length && counts[order[at]] >= SET_SIZE) at += 1;
+    if (at >= order.length) {
+      queued.push(id);
+      return;
+    }
+    counts[order[at]] += 1;
+    placements.push({ id, setNumber: order[at] + 1 });
   });
-  return best + 1;
+  return { placements, queued };
 };
