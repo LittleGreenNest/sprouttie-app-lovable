@@ -31,6 +31,6 @@ export const daysFlashed = (trackingRows = [], cards = []) => {
 
 export const dayLabel = (count) => {
   if (count >= DAYS_TO_FINISH) return 'Done';
-  if (!count) return 'New';
+  if (!count) return 'Not flashed yet';
   return `Day ${count} of ${DAYS_TO_FINISH}`;
 };
