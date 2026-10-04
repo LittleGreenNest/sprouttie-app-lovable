@@ -376,7 +376,7 @@ serve(async (req) => {
         .gte("week_start", fourWeeksAgoStr),
       supabase
         .from("weekly_logs")
-        .select("log_type, content, context, created_at")
+        .select("log_type, content, context, photo_path, week_start, created_at")
         .eq("user_id", uid)
         .gte("week_start", twoWeeksAgoStr)
         .order("created_at", { ascending: false })
@@ -469,7 +469,17 @@ serve(async (req) => {
 
     const saidLogs = weeklyLogs.filter((l: any) => l.log_type === "said").map((l: any) => l.content);
     const attemptedLogs = weeklyLogs.filter((l: any) => l.log_type === "attempted").map((l: any) => l.content);
-    const readLogs = weeklyLogs.filter((l: any) => l.log_type === "read").map((l: any) => l.content);
+    const clip = (v: unknown, n: number) => String(v || "").replace(/\s+/g, " ").trim().slice(0, n);
+    const readLogs = weeklyLogs
+      .filter((l: any) => l.log_type === "read")
+      .map((l: any) => (l.context ? `${l.content} (${clip(l.context, 80)})` : l.content));
+    // Daily notes from the Log page. On these rows week_start holds the note's
+    // own date. A photo is not read here, only what the parent wrote beside it.
+    const dailyNotes = weeklyLogs
+      .filter((l: any) => l.log_type === "daily_insight" && (l.content || l.context))
+      .map((l: any) =>
+        `${l.week_start}: ${clip([l.content, l.context].filter(Boolean).join(". "), 220)}${l.photo_path ? " [with a photo]" : ""}`
+      );
     const sessionNotes = sessions.map((s: any) => s.notes).filter(Boolean);
 
     const months = ageBandToMonths(profile.child_age_band);
@@ -629,6 +639,7 @@ PARENT OBSERVATIONS (last 2 weeks):
 - Attempted/imitated: ${attemptedLogs.slice(0, 15).join("; ") || "none logged"}
 - Books/contexts noted: ${readLogs.slice(0, 10).join("; ") || "none logged"}
 - Session notes: ${sessionNotes.slice(0, 10).join(" | ") || "none"}
+- Daily notes the parent wrote (date: note): ${dailyNotes.slice(0, 12).join(" | ") || "none logged"}
 
 EXCLUSION SET — do NOT suggest these or close variants:
 ${exclusionDisplay.join(", ") || "(none)"}
@@ -651,32 +662,43 @@ Suggest ONE weekly theme and ${targetWordCount} words.
 
 The theme MUST emerge from the dominant interest categories above. When the parent has stated interests, the theme should come from one of those.${setAware ? ` Where possible, assign each word to a set (via set_number) where it fits thematically and there are open slots. Prioritise filling sets that have graduating words first.` : ""} If cold-start, pick a theme appropriate for the age band and any profile interests listed.
 
+The parent's daily notes and books from the last two weeks are the freshest evidence of what the child is into right now. Where a note or book fits the theme, draw at least one word from it. Never invent a note, a book or something the child said.
+
 For each word provide:
 - word (with Mandarin character + pinyin if Mandarin, or bilingual pair if applicable)
 - set_number (integer: which set this word fits into, or null if no specific set applies)
 - pos (part of speech)
-- reason (1 to 2 sentences to the parent. If the word comes from a stated interest, cite that first; otherwise cite a spoken word or log entry. Use the child's name or "your child", never he/she/him/her. No em dashes.)
+- reason (1 to 2 sentences to the parent, saying where the word came from. If it comes from a daily note or a book the parent logged, begin with "You noted" and name the note in a few words. If it comes from a word the child said or tried, begin with "Your child said". Otherwise cite the stated interest it comes from, or the pattern in the child's words. Use the child's name or "your child", never he/she/him/her. No em dashes.)
 - activity_tip (one real-world moment the parent can use to introduce this word naturally)
 - tier: "reinforce" | "bridge" | "stretch"
 
 Return JSON only. No preamble. No markdown. Random seed for variety: ${Math.floor(Math.random() * 100000)}`;
 
-    const aiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: "user", parts: [{ text: userMessage }] }],
-          generation_config: {
-            response_mime_type: "application/json",
-            temperature: 0.9,
-            thinking_config: { thinking_level: "low" },
-          },
-        }),
-      }
-    );
+    // Gemini answers 503 when it is busy, usually for seconds. One attempt left
+    // the parent with "Couldn't pick words", so try three times before giving up.
+    const RETRY_WAITS_MS = [1500, 4000];
+    let aiResponse!: Response;
+    for (let attempt = 0; ; attempt += 1) {
+      aiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: systemPrompt }] },
+            contents: [{ role: "user", parts: [{ text: userMessage }] }],
+            generation_config: {
+              response_mime_type: "application/json",
+              temperature: 0.9,
+              thinking_config: { thinking_level: "low" },
+            },
+          }),
+        }
+      );
+      if (aiResponse.ok || ![500, 502, 503, 504].includes(aiResponse.status) || attempt >= RETRY_WAITS_MS.length) break;
+      console.warn("Gemini busy, retrying:", aiResponse.status, await aiResponse.text());
+      await new Promise((resolve) => setTimeout(resolve, RETRY_WAITS_MS[attempt]));
+    }
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();

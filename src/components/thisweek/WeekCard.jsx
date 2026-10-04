@@ -81,6 +81,13 @@ const useCardsByFront = () => {
   }, [flashcards]);
 };
 
+/** The picker opens a reason this way when the word came from something the parent logged. */
+const sourceLabel = (reason) => {
+  if (/^you noted/i.test(reason || '')) return 'From your notes';
+  if (/^your child said/i.test(reason || '')) return 'From words said';
+  return null;
+};
+
 const acceptedMessage = ({ placed = [], queued = 0 }) => {
   const joined = placed.map((p) => `${plural(p.count, 'word')} joined Set ${p.setNumber}`).join(', ');
   const waiting = queued ? `${plural(queued, 'word')} ${queued === 1 ? 'is' : 'are'} waiting for a free slot.` : '';
@@ -156,6 +163,11 @@ const PlanState = ({ variant, week, navigate }) => {
                     {pinyin && <span className="ml-2 text-[12px] text-[#66737A]">{pinyin}</span>}
                     {english && <span className="ml-2 text-[12px] text-[#66737A]">· {english}</span>}
                   </p>
+                  {sourceLabel(s.reason) && (
+                    <span className="inline-block mt-1 mr-1 rounded-full bg-[#ECF3F0] text-[#296549] px-2 py-px text-[11px] font-semibold">
+                      {sourceLabel(s.reason)}
+                    </span>
+                  )}
                   {knownLabel && (
                     <span className="inline-block mt-1 rounded-full bg-[#FBF1CF] text-[#263136] px-2 py-px text-[11px] font-semibold">
                       {knownLabel}
