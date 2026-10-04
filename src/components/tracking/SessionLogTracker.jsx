@@ -12,6 +12,8 @@ import DailyInsight from './DailyInsight';
 import InterestsCard from './InterestsCard';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toLocalDateString } from '@/utils/week';
+import { DAYS_TO_FINISH, dayLabel } from '@/utils/cardDays';
+import { useCardDays } from './useCardDays';
 
 const SET_COLORS = [
   { dot: '#7B61FF', label: 'purple' },
@@ -77,6 +79,7 @@ const SessionLogTracker = () => {
   const [activities, setActivities] = useState([]); // [{ id: string, note?: string }]
 
   const dateString = useMemo(() => toLocalDateString(selectedDate), [selectedDate]);
+  const { days: cardDays, reload: reloadCardDays } = useCardDays(flashcards);
 
   const completedSessions = useMemo(() => {
     return Object.values(roundTracking).filter(v => v).length;
@@ -241,6 +244,7 @@ const SessionLogTracker = () => {
       setRoundTracking(prev => ({ ...prev, [key]: isCurrentlyChecked }));
     } finally {
       setToggling(false);
+      reloadCardDays();
     }
   };
 
@@ -592,6 +596,10 @@ const SessionLogTracker = () => {
         )}
       </div>
 
+      <p className="mx-4 mt-4 mb-0" style={{ fontSize: '12px', color: '#6B7280' }}>
+        At least 2 rounds a day is recommended. One still counts.
+      </p>
+
       {/* Section 2: Sets Tracker Card */}
       <div className="mx-4 mt-4" style={{
         background: '#fff', borderRadius: '12px',
@@ -780,11 +788,13 @@ const SessionLogTracker = () => {
                                       {tagLabel}
                                     </span>
                                   )}
-                                  {(word.date_introduced || word.created_at) && (
-                                    <span style={{ fontSize: '11px', color: '#9CA3AF' }}>
-                                      {new Date(word.date_introduced || word.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                                    </span>
-                                  )}
+                                  <span style={{
+                                    fontSize: '10px', fontWeight: 500, borderRadius: '10px', padding: '2px 6px',
+                                    background: (cardDays.get(word.id) || 0) >= DAYS_TO_FINISH ? '#D1FAE5' : '#F3F4F6',
+                                    color: (cardDays.get(word.id) || 0) >= DAYS_TO_FINISH ? '#065F46' : '#6B7280'
+                                  }}>
+                                    {dayLabel(cardDays.get(word.id) || 0)}
+                                  </span>
                                   {idx < words.length - 1 && <span style={{ color: '#D1D5DB', margin: '0 2px' }}>·</span>}
                                 </div>
                               );
