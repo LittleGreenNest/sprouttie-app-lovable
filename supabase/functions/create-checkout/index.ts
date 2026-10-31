@@ -50,12 +50,16 @@ serve(async (req) => {
     }
 
     const user = userData.user;
+    if (!user.email_confirmed_at) throw new Error('Please verify your email before subscribing.');
     if (!user.email) {
       throw new Error('User email not available');
     }
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { priceId, planKey } = await req.json();
+    const { priceId } = await req.json();
+    const allowedPrices = new Set(['price_1TV5x9EVoum0YBjstZUa3WSq', 'price_1TV5yoEVoum0YBjseEsQMVBY']);
+    if (!allowedPrices.has(priceId)) return new Response(JSON.stringify({ error: 'Invalid Print Plan price' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const planKey = 'print';
 
     if (!priceId || !planKey) {
       throw new Error('Price ID and plan key are required');
@@ -66,7 +70,8 @@ serve(async (req) => {
     });
 
     // Check for existing Stripe customer
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customers = await stripe.customers.list({ email: user.email, limit: 100 });
+    customers.data = customers.data.filter(customer => customer.metadata?.supabase_user_id === user.id);
     let customerId: string;
 
     if (customers.data.length > 0) {
@@ -85,7 +90,7 @@ serve(async (req) => {
     }
 
     // Create checkout session
-    const origin = req.headers.get('origin') || 'http://localhost:3000';
+    const origin = 'https://sprouttie.online';
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       line_items: [
@@ -95,6 +100,7 @@ serve(async (req) => {
         },
       ],
       mode: 'subscription',
+      subscription_data: { metadata: { user_id: user.id } },
       success_url: `${origin}/upgrade-success?plan=${planKey}`,
       cancel_url: `${origin}/plans?canceled=true`,
       metadata: {

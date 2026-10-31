@@ -144,7 +144,8 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
             .update({ set_number: card.set_number, card_status: 'active', date_introduced: card.date_introduced })
             .eq('id', existing.id);
         } else {
-          await insertFlashcards(card);
+          const { error: cardError } = await insertFlashcards(card);
+          if (cardError) throw cardError;
         }
       }
 
@@ -170,7 +171,8 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
         .eq('user_id', currentUser.id)
         .eq('planned_week_start', weekStart);
 
-      await supabase.from('word_plans').insert(wordPlans);
+      const { error: plansError } = await supabase.from('word_plans').insert(wordPlans);
+      if (plansError) throw plansError;
 
       toast.success('Your week is ready!');
       onStartWeek?.();

@@ -268,3 +268,15 @@ the raw value. Do not assume `cardIdFrom()` is importable here until that branch
 - Supabase schema or live data
 - Any working auth flow
 - Pricing, plan structure, or Stripe products
+
+## Launch hardening authorised 31 October 2026
+
+The owner explicitly authorised deployment, the 50-card Free limit (three free PDF prints remain), billing security changes, complete account deletion, privacy corrections, shorter onboarding, operational verification and then acquisition measurement. This supersedes the older “Do not touch” restrictions for that bounded work.
+
+### Pronunciation decision: deferred
+
+Do not populate an audio catalogue or build automated tone assessment now. The production pronunciation table was empty when checked on 31 October 2026. Keep unavailable languages and recordings clearly unavailable; never sell an upgrade to an empty library or return simulated grading. Only local self-recording and playback are offered. The owner must explicitly reopen pronunciation work.
+
+### Launch status
+
+See `LAUNCH-STATUS.md` for verification evidence, deployment status and unresolved external dependencies. Never mark a check complete from source code alone.

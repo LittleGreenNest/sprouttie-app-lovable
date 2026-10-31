@@ -1,4 +1,5 @@
 // App.js - Main Application File with Lazy Loading for Performance
+import PrivacyChoices from './components/PrivacyChoices';
 import React, { Suspense, useEffect } from 'react';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import { lazyWithRetry } from './utils/lazyWithRetry';
@@ -230,6 +231,7 @@ function App() {
           </ErrorBoundary>
           
           
+          <PrivacyChoices />
           {/* Toast Container for notifications */}
           <ToastContainer 
             position="top-center" 

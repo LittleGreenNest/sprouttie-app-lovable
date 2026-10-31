@@ -17,9 +17,9 @@ Deno.test('recovered payment switches Print Plan back on, monthly and yearly', (
   assertEquals(patchForSubscription('trialing', [YEARLY]), { plan: 'print', subscription_status: 'trialing' });
 });
 
-Deno.test('active subscription on an unknown price leaves plan untouched', () => {
-  assertEquals(patchForSubscription('active', [LEGACY]), { subscription_status: 'active' });
-  assertEquals(patchForSubscription('active', []), { subscription_status: 'active' });
+Deno.test('unknown prices do not grant paid access', () => {
+  assertEquals(patchForSubscription('active', [LEGACY]), { plan: 'free', subscription_status: 'active' });
+  assertEquals(patchForSubscription('active', []), { plan: 'free', subscription_status: 'active' });
 });
 
 Deno.test('ended subscriptions go to free and drop the subscription link', () => {
