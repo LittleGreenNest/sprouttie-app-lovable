@@ -7,7 +7,7 @@
 - Complete launch blockers before starting acquisition measurement.
 
 ## Verification still in progress
-- Database guard and billing privileges: migration confirmation has expired twice. Not applied yet.
+- Database card and billing guards: applied in production as 20261031071623_add_launch_card_and_billing_guards. Free 51st-card rejection, paid capacity, normal profile edits and rejected public billing changes passed transaction tests. Two concurrent sessions at 49 cards ended at exactly 50. Disposable fixtures removed.
 - Billing backend: price allowlist and server-verified entitlements deployed; end-to-end paid checkout needs validation.
 - Deletion: billing cancellation, media cleanup, session revocation and fail-visible cleanup deployed; destructive end-to-end check must use a disposable account.
 - Backups: organisation is on Free. Managed daily backups are not included. No backup or restore drill has yet been verified.
@@ -28,4 +28,11 @@
 - 12 Node regression tests pass, including checkout price tampering, verified email/customer linkage, payment entitlements, deletion failure ordering, login timeout and card capacity.
 - Local browser check confirms Google Analytics and Meta scripts are absent before optional consent and remain absent after Essential only.
 - Public health endpoint confirms the database is reachable; unsigned webhook and unauthenticated deletion requests are rejected.
-- Backend functions deployed: stripe-webhook, create-checkout, customer-portal, delete-account and health. Database billing restrictions are still pending; do not describe payment security as complete.
+- Backend functions deployed: stripe-webhook, create-checkout, customer-portal, delete-account and health. Database billing restrictions are deployed and transaction-tested. Full paid checkout and cancellation remain integration checks.
+
+## Publication
+
+- PR #2 merged as 20ee49926e49a226672984d6cbe9bafeb93a024f. Cloudflare deployment succeeded.
+- Live sprouttie.online/plans verified after refresh: 50 cards, three PDF prints, yellow primary buttons, Pro features explicitly planned.
+- Public desktop pricing and login checked. Responsive viewport control did not change the actual browser width, so phone verification remains open. Authenticated first-use journey remains to be observed.
+- Optional analytics consent tested locally. Distribution measurement remains deferred until launch blockers are closed.

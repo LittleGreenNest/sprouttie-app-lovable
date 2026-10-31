@@ -20,9 +20,13 @@ DO $$ DECLARE denied boolean := false; BEGIN
 END $$;
 UPDATE public.profiles SET child_interests='buses' WHERE id=current_setting('sprouttie.test_uid')::uuid;
 RESET ROLE;
-DO $$ BEGIN
- IF has_function_privilege('anon','public.stripe_update_profile(uuid,text,text,text,text)','EXECUTE') OR has_function_privilege('authenticated','public.stripe_update_profile(uuid,text,text,text,text)','EXECUTE') THEN RAISE EXCEPTION 'FAIL: billing RPC is callable'; END IF;
+SET LOCAL ROLE anon;
+DO $$ DECLARE denied boolean:=false; BEGIN
+ BEGIN PERFORM public.stripe_update_profile(current_setting('sprouttie.test_uid')::uuid,'pro','active',NULL,NULL);
+ EXCEPTION WHEN insufficient_privilege THEN denied:=true; END;
+ IF NOT denied THEN RAISE EXCEPTION 'FAIL: anonymous caller changed paid access'; END IF;
 END $$;
+RESET ROLE;
 UPDATE public.profiles SET plan='print' WHERE id=current_setting('sprouttie.test_uid')::uuid;
 SET LOCAL ROLE authenticated;
 INSERT INTO public.flashcards(user_id,front,back) VALUES(current_setting('sprouttie.test_uid')::uuid,'Paid 51st','test');
