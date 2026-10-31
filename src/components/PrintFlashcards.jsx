@@ -551,7 +551,7 @@ const fillMissingPinyin = async (cards) => {
             </button>
             <button
               onClick={generatePDF}
-              className="flex-1 py-3 px-4 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl font-semibold hover:opacity-90 transition-all shadow-md disabled:opacity-50 disabled:shadow-none"
+              className="btn-primary flex-1 py-3 px-4 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl font-semibold hover:opacity-90 transition-all shadow-md disabled:opacity-50 disabled:shadow-none"
               disabled={previewFlashcards.length === 0}
             >
               Download PDF

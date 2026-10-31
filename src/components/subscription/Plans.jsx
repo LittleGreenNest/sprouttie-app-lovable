@@ -1,3 +1,4 @@
+import { FREE_CARD_LIMIT } from '@/utils/planLimits';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -13,7 +14,7 @@ const PLANS = [
     priceMonthly: 'Free',
     priceYearly: 'Free',
     description: 'Get started with the basics',
-    features: ['Up to 100 flashcards', 'Flash history', 'Organise flashcard folders', 'Session logging', '3 PDF prints/month'],
+    features: [`Up to ${FREE_CARD_LIMIT} flashcards`, 'Flash history', 'Organise flashcard folders', 'Session logging', '3 PDF prints/month'],
     planKey: 'free',
     buttonText: 'Get Started',
   },
@@ -31,8 +32,8 @@ const PLANS = [
     name: 'Pro Sprout',
     priceMonthly: 'SGD 7',
     priceYearly: 'SGD 59',
-    description: 'Premium for growing families',
-    features: ['Everything in Print Plan', 'Multi-child profiles', 'Voice training for parents', 'Priority support'],
+    description: 'Coming later. Join the waitlist.',
+    features: ['Planned: multi-child profiles', 'Planned: voice training for parents', 'Planned: priority support'],
     planKey: 'pro',
     buttonText: 'Join Waitlist',
   },
@@ -291,7 +292,7 @@ export default function Plans() {
                 <button
                   onClick={() => onPlanClick(plan.planKey)}
                   disabled={current || loading || portalLoading}
-                  className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-250 ${
+                  className={`btn-primary w-full py-3 rounded-xl font-semibold text-sm transition-all duration-250 ${
                     current
                       ? plan.highlight
                         ? 'bg-white/10 text-white/50 cursor-not-allowed'

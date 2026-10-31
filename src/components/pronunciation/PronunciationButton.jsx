@@ -10,6 +10,7 @@ const PronunciationButton = ({
   userPlan = 'free',
   size = 'sm',
   showLabel = false,
+  available = true,
   isAiGenerated = false 
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -40,11 +41,7 @@ const PronunciationButton = ({
   const hasAccess = languageAccess[effectivePlan]?.includes(language) || false;
 
   const handlePlay = async () => {
-    if (!hasAccess) {
-      setIsLocked(true);
-      return;
-    }
-
+    if (!available) return;
     setIsPlaying(true);
     
     try {
@@ -58,6 +55,12 @@ const PronunciationButton = ({
 
       if (error || !data?.audio_url) {
         toast.info('No audio available for this word yet. Audio files are being added!');
+        setIsPlaying(false);
+        return;
+      }
+
+      if (!hasAccess) {
+        toast.info('This Mandarin recording is included in Print Plan.');
         setIsPlaying(false);
         return;
       }
@@ -93,7 +96,7 @@ const PronunciationButton = ({
       <div className="relative">
         <button
           onClick={handlePlay}
-          disabled={isPlaying}
+          disabled={isPlaying || !available}
           className={`${sizeClasses[size]} rounded-full flex items-center justify-center transition-all ${
             !hasAccess 
               ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
@@ -101,7 +104,8 @@ const PronunciationButton = ({
               ? 'bg-emerald-100 text-emerald-600 scale-110'
               : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:scale-105'
           }`}
-          title={!hasAccess ? 'Upgrade to unlock' : `Play ${languageLabels[language]} pronunciation`}
+          aria-label={!available ? `${languageLabels[language]} audio is not available yet` : !hasAccess ? `${languageLabels[language]} listening requires Print Plan` : `Play ${languageLabels[language]} pronunciation`}
+          title={!available ? 'No audio yet' : !hasAccess ? 'Check audio availability' : `Play ${languageLabels[language]} pronunciation`}
         >
           {!hasAccess ? (
             <Lock className={`w-${iconSizes[size]/4} h-${iconSizes[size]/4}`} />
@@ -111,7 +115,7 @@ const PronunciationButton = ({
             <Volume2 size={iconSizes[size]} />
           )}
         </button>
-        {hasAccess && (
+        {hasAccess && available && (
           <div 
             className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full flex items-center justify-center bg-white border border-slate-200"
             title={isAiGenerated ? 'AI-generated audio' : 'Human-recorded audio'}

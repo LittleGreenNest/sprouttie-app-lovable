@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { markPasswordRecovery } from "@/utils/recoveryLink";
+import { withTimeout, CONNECTION_MESSAGE } from "@/utils/requestTimeout";
 
 const AuthContext = createContext(null);
 
@@ -89,7 +90,7 @@ export const AuthProvider = ({ children }) => {
 
       setProfileLoading(true);
       try {
-        const ensured = await ensureProfileExists(user);
+        const ensured = await withTimeout(ensureProfileExists(user));
         if (ensured) {
           setProfile(ensured);
           return ensured;
@@ -153,7 +154,7 @@ export const AuthProvider = ({ children }) => {
         const {
           data: { session },
           error: sessionErr,
-        } = await supabase.auth.getSession();
+        } = await withTimeout(supabase.auth.getSession());
 
         if (sessionErr) throw sessionErr;
 
@@ -163,7 +164,7 @@ export const AuthProvider = ({ children }) => {
         setCurrentUser(user);
 
         if (user) {
-          await loadProfile(user);
+          await withTimeout(loadProfile(user));
         }
       } catch (err) {
         console.error("Auth init error:", err);
@@ -191,7 +192,11 @@ export const AuthProvider = ({ children }) => {
 
       // Defer profile fetch with setTimeout to avoid deadlock
       if (user) {
-        setTimeout(() => loadProfile(user), 0);
+        setTimeout(() => {
+          if (mounted) withTimeout(loadProfile(user)).catch((err) => {
+            if (mounted) setError(err?.message || CONNECTION_MESSAGE);
+          });
+        }, 0);
       } else {
         setProfile(null);
       }
@@ -279,21 +284,25 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError("");
 
-      const { data, error: loginErr } = await supabase.auth.signInWithPassword({
+      const { data, error: loginErr } = await withTimeout(supabase.auth.signInWithPassword({
         email,
         password,
-      });
+      }));
       if (loginErr) throw loginErr;
 
       const user = data?.user ?? null;
       if (user) {
-        await ensureProfileExists(user);
-        await refreshProfile(user);
+        // Authentication has succeeded. Profile loading must not hold the
+        // sign-in form in a pending state. refreshProfile owns its error state.
+        setCurrentUser(user);
+        void refreshProfile(user);
       }
 
       return data;
     } catch (err) {
-      const msg = err?.message || "Failed to log in";
+      const msg = /fetch|network|abort|timed? ?out/i.test(err?.message || "")
+        ? CONNECTION_MESSAGE
+        : (err?.message || "Failed to log in");
       setError(msg);
       throw new Error(msg);
     } finally {

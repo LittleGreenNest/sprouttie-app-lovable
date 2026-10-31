@@ -1,3 +1,4 @@
+import { insertFlashcards } from '@/utils/flashcardWrites';
  import React, { useState, useRef } from 'react';
  import { motion, AnimatePresence } from 'framer-motion';
  import { Upload, X, FileSpreadsheet, Check, AlertCircle, Download } from 'lucide-react';
@@ -158,9 +159,7 @@
        const chunkSize = 100;
        for (let i = 0; i < flashcardsToInsert.length; i += chunkSize) {
          const chunk = flashcardsToInsert.slice(i, i + chunkSize);
-         const { error: insertError } = await supabase
-           .from('flashcards')
-           .insert(chunk);
+         const { error: insertError } = await insertFlashcards(chunk);
  
          if (insertError) {
            console.error('Insert error:', insertError);
@@ -288,7 +287,7 @@
                </ul>
                <button
                  onClick={handleClose}
-                 className="mt-4 w-full px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-medium"
+                 className="btn-primary mt-4 w-full px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-medium"
                >
                  Done
                </button>
@@ -380,7 +379,7 @@
                    <button
                      onClick={handleImport}
                      disabled={importing}
-                     className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-colors font-medium flex items-center justify-center gap-2"
+                     className="btn-primary flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-colors font-medium flex items-center justify-center gap-2"
                    >
                      {importing ? (
                        <>

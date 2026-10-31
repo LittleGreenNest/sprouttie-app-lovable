@@ -363,7 +363,7 @@ const WordJourney = () => {
           <p className="text-sm mb-4">Every word you flash will appear here, building into a map of your child's growing vocabulary.</p>
           <button
             onClick={() => navigate('/daily-tracking')}
-            className="inline-block px-4 py-2 bg-sprouttie-green text-white text-sm font-medium rounded-lg"
+            className="btn-primary inline-block px-4 py-2 bg-sprouttie-green text-white text-sm font-medium rounded-lg"
           >
             Start your first session →
           </button>

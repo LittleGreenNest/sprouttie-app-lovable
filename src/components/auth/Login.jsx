@@ -32,7 +32,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-5 py-12 font-body">
+    <div className="min-h-screen flex items-center justify-center bg-[#FCF9F3] px-5 py-12 font-body">
       <div className="w-full max-w-md">
 
         {/* Logo */}
@@ -54,7 +54,7 @@ const Login = () => {
         <motion.div variants={fade} initial="hidden" animate="visible" custom={1} className="glass rounded-2xl p-7 shadow-[var(--shadow-lg)]">
 
           {error && (
-            <div className="mb-4 rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-700">
+            <div role="alert" className="mb-4 rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-700">
               {error}
             </div>
           )}
@@ -100,7 +100,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-[hsl(var(--sprouttie-green))] hover:bg-[hsl(var(--sprouttie-green-dark))] text-white font-semibold text-sm transition-all duration-250 shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-lg)] hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
+              className="btn-primary w-full py-3 rounded-xl bg-[hsl(var(--sprouttie-green))] hover:bg-[hsl(var(--sprouttie-green-dark))] text-white font-semibold text-sm transition-all duration-250 shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-lg)] hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading ? 'Signing in…' : 'Sign in'}
             </button>

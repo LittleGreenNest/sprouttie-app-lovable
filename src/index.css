@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Shared primary action treatment. Identity and progress stay green. */
+.btn-primary {
+  background-color: #F0C040 !important;
+  background-image: none !important;
+  color: #1A1A1A !important;
+}
+.btn-primary:hover:not(:disabled) { background-color: #E5B22E !important; }
+.btn-primary:disabled { cursor: not-allowed; }
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid #296549 !important;
+  outline-offset: 3px;
+}
+
+/* Keep form labels readable on cream and white surfaces. */
+:root { --muted-foreground: 200 9% 39%; }
+
 /* Accessibility - Screen reader only class */
 @layer utilities {
   .sr-only {
@@ -107,7 +123,7 @@
     
     /* UI State Colors */
     --muted: 150 12% 93%;
-    --muted-foreground: var(--sprouttie-warm-gray);
+    --muted-foreground: 200 9% 39%;
     --border: 150 12% 86%;
     --input: 150 12% 86%;
     --ring: var(--sprouttie-green);

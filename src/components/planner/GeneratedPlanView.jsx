@@ -1,3 +1,4 @@
+import { insertFlashcards } from '@/utils/flashcardWrites';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -143,7 +144,7 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
             .update({ set_number: card.set_number, card_status: 'active', date_introduced: card.date_introduced })
             .eq('id', existing.id);
         } else {
-          await supabase.from('flashcards').insert(card);
+          await insertFlashcards(card);
         }
       }
 
@@ -252,7 +253,7 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
           <p className="text-[hsl(var(--destructive))] mb-4">{error}</p>
           <button
             onClick={() => generatePlan()}
-            className="px-6 py-3 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl font-medium hover:opacity-90 transition-opacity"
+            className="btn-primary px-6 py-3 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl font-medium hover:opacity-90 transition-opacity"
           >
             Try Again
           </button>
@@ -403,7 +404,7 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
                   />
                   <button
                     onClick={() => handleAddCustomWord(setIndex)}
-                    className="px-3 py-1.5 bg-[hsl(var(--sprouttie-green))] text-white rounded-lg text-sm"
+                    className="btn-primary px-3 py-1.5 bg-[hsl(var(--sprouttie-green))] text-white rounded-lg text-sm"
                   >
                     Add
                   </button>
@@ -432,7 +433,7 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
         <button
           onClick={handleStartWeek}
           disabled={saving || !validation.valid}
-          className="w-full py-3.5 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold text-base shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+          className="btn-primary w-full py-3.5 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold text-base shadow-md hover:shadow-lg transition-all disabled:opacity-50"
         >
           {saving ? (
             <span className="flex items-center justify-center gap-2">

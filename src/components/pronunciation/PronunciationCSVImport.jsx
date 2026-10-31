@@ -195,7 +195,7 @@ const PronunciationCSVImport = () => {
         <div className="flex gap-2">
           <button
             onClick={downloadTemplate}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl hover:shadow-lg transition-all"
+            className="btn-primary flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl hover:shadow-lg transition-all"
           >
             <Download className="w-4 h-4" />
             Download Template
@@ -203,7 +203,7 @@ const PronunciationCSVImport = () => {
           <button
             onClick={handleAutoGenerate}
             disabled={isGenerating}
-            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl hover:bg-[hsl(var(--sprouttie-green-dark))] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary flex items-center gap-2 px-4 py-2 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl hover:bg-[hsl(var(--sprouttie-green-dark))] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isGenerating ? (
               <>
@@ -267,7 +267,7 @@ const PronunciationCSVImport = () => {
                   <button
                     onClick={handleImport}
                     disabled={uploading}
-                    className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="btn-primary flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {uploading ? (
                       <>

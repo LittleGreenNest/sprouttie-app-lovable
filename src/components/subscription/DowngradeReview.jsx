@@ -1,3 +1,4 @@
+import { FREE_CARD_LIMIT } from '@/utils/planLimits';
 import React from 'react';
 import { AlertCircle, X, ArrowLeft } from 'lucide-react';
 
@@ -7,7 +8,7 @@ const DowngradeReview = ({ currentPlan, onCancel, onConfirm, loading }) => {
     const losses = {
       print: {
         usageLimits: [
-          { text: "Unlimited flashcards", newLimit: "100 flashcards max" },
+          { text: "Unlimited flashcards", newLimit: `${FREE_CARD_LIMIT} flashcards max` },
           { text: "Unlimited PDF exports", newLimit: "3 PDF prints/month" },
         ],
         features: [
@@ -18,7 +19,7 @@ const DowngradeReview = ({ currentPlan, onCancel, onConfirm, loading }) => {
       },
       pro: {
         usageLimits: [
-          { text: "Unlimited flashcards", newLimit: "100 flashcards max" },
+          { text: "Unlimited flashcards", newLimit: `${FREE_CARD_LIMIT} flashcards max` },
           { text: "Unlimited AI story generation", newLimit: "Sample story access only" },
           { text: "Unlimited PDF exports", newLimit: "3 PDF prints/month" },
         ],

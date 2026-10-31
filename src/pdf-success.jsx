@@ -21,7 +21,7 @@ const PDFSuccessPage = () => {
         </div>
         
         <Link to="/flashcards">
-          <button className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+          <button className="btn-primary w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
             Start Exploring
           </button>
         </Link>

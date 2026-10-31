@@ -260,7 +260,7 @@ const DailyTracker = () => {
                       
                       <button
                         onClick={() => incrementCount(set.id)}
-                        className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center"
+                        className="btn-primary w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center"
                       >
                         +
                       </button>
@@ -339,7 +339,7 @@ const DailyTracker = () => {
       <div className="mt-4 flex justify-end">
         <button
           onClick={saveData}
-          className="bg-sprouttie-green-dark hover:bg-sprouttie-green text-white font-medium py-2 px-6 rounded-lg transition-colors"
+          className="btn-primary bg-sprouttie-green-dark hover:bg-sprouttie-green text-white font-medium py-2 px-6 rounded-lg transition-colors"
         >
           Save Today's Records
         </button>

@@ -5,7 +5,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../../context/AuthContext';
 import { useFlashcards } from '../../context/FlashcardContext';
 import PronunciationButton from './PronunciationButton';
-import PronunciationCSVImport from './PronunciationCSVImport';
 
 const PronunciationPortal = () => {
   const { currentUser, plan: rawUserPlan } = useAuth(); // Use plan from AuthContext
@@ -27,8 +26,7 @@ const PronunciationPortal = () => {
   const languages = [
     { code: 'en', label: 'English', emoji: '🇬🇧' },
     { code: 'zh', label: '华语', emoji: '🇨🇳' },
-    { code: 'yue', label: '粤语', emoji: '🇭🇰' },
-    { code: 'nan', label: '福建话', emoji: '🏴' }
+
   ];
 
   useEffect(() => {
@@ -111,9 +109,9 @@ const PronunciationPortal = () => {
           className="text-center mb-8"
         >
           <div className="inline-block p-4 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] rounded-3xl mb-4">
-            <h1 className="text-4xl font-bold text-white mb-2">🎧 Practice Studio</h1>
+            <h1 className="text-4xl font-bold text-white mb-2">Pronunciation Portal.</h1>
           </div>
-          <p className="text-lg text-gray-700 font-medium">Master tones in 4 languages • Record • Get AI feedback</p>
+          <p className="text-lg text-gray-700 font-medium">Listen to available audio before you practise together.</p>
         </motion.div>
 
         {/* Search and Filters Card */}
@@ -172,37 +170,18 @@ const PronunciationPortal = () => {
               className="text-sm text-emerald-600 mt-3 flex items-center gap-2"
             >
               <span className="text-emerald-500">✓</span>
-              Showing only words with all 4 languages (English, 华语, 粤语, 福建话)
+              Showing only words with English and Mandarin audio
             </motion.p>
           )}
         </motion.div>
 
-        {/* CSV Import Section */}
-        <PronunciationCSVImport />
 
-        {/* Upgrade Banner for Free Users */}
-        {isPlanUpgradeNeeded && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-r from-[hsl(var(--sprouttie-green))] via-[hsl(var(--sprouttie-coral))] to-[hsl(var(--sprouttie-green-dark))] rounded-3xl p-8 mb-6 shadow-2xl"
-          >
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="text-center md:text-left">
-                <h3 className="text-2xl font-bold text-white mb-2">🌟 Master All 4 Languages</h3>
-                <p className="text-white/95 text-lg">Unlock Mandarin, Cantonese & Hokkien • Get AI tone feedback</p>
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => window.location.href = '/plans'}
-                className="px-8 py-4 bg-white text-[hsl(var(--sprouttie-green-dark))] font-bold rounded-2xl hover:shadow-xl transition-all text-lg"
-              >
-                Upgrade Now
-              </motion.button>
-            </div>
-          </motion.div>
-        )}
+        <p role="note" className="mb-6 rounded-xl bg-[#ECF3F0] p-4 text-sm text-[#296549]">
+          {Object.keys(pronunciations).length === 0
+            ? 'No pronunciation recordings are available yet. You do not need to upgrade for an empty audio library.'
+            : 'Audio availability varies by word. Check for a recording before choosing a plan.'}
+          Cantonese and Hokkien support, and automatic tone feedback, are not available yet.
+        </p>
 
         {/* Word List */}
         {loading ? (
@@ -221,8 +200,8 @@ const PronunciationPortal = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => window.location.href = '/flashcards'}
-              className="px-6 py-3 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white font-semibold rounded-xl hover:shadow-lg transition-all"
+              onClick={() => window.location.href = '/cards'}
+              className="btn-primary px-6 py-3 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white font-semibold rounded-xl hover:shadow-lg transition-all"
             >
               Create Flashcards
             </motion.button>
@@ -236,8 +215,7 @@ const PronunciationPortal = () => {
                 const languagesWithColors = [
                   { code: 'en', label: 'English', emoji: '🇬🇧', color: 'from-blue-500 to-blue-600' },
                   { code: 'zh', label: '华语', emoji: '🇨🇳', color: 'from-red-500 to-red-600' },
-                  { code: 'yue', label: '粤语', emoji: '🇭🇰', color: 'from-yellow-500 to-yellow-600' },
-                  { code: 'nan', label: '福建话', emoji: '🌏', color: 'from-green-500 to-green-600' }
+
                 ];
                 
                 return (
@@ -271,6 +249,7 @@ const PronunciationPortal = () => {
                               size="md"
                               showLabel={false}
                               isAiGenerated={wordPronunciations[lang.code]?.is_ai_generated || false}
+                              available={Boolean(wordPronunciations[lang.code]?.audio_url)}
                             />
                             <span className="text-xs font-medium text-gray-600">{lang.label}</span>
                             {wordPronunciations[lang.code]?.phonetic && (

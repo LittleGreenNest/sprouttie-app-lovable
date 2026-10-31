@@ -29,7 +29,7 @@ const SCREENS = [
       { value: 'no_time', label: "I don't have time to teach consistently", emoji: '⏳' },
       { value: 'forgets', label: 'My child forgets what they learn', emoji: '🧠' },
       { value: 'what_teach', label: "I don't know what to teach", emoji: '🤷' },
-      { value: 'screen_time', label: 'Screen time feels unproductive', emoji: '📱' },
+      { value: 'language_drift', label: 'My child understands our language but replies in English', emoji: '💬' },
     ],
   },
 
@@ -344,7 +344,7 @@ const PersonaliseFlow = ({ onComplete }) => {
         animate={{ opacity: count > 0 ? 1 : 0.4 }}
         onClick={handleMultiNext}
         disabled={count === 0}
-        className="w-full mt-5 py-3.5 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold transition-all disabled:opacity-40 text-base"
+        className="btn-primary w-full mt-5 py-3.5 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold transition-all disabled:opacity-40 text-base"
       >
         Next
       </motion.button>
@@ -376,7 +376,7 @@ const PersonaliseFlow = ({ onComplete }) => {
         whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.97 }}
         onClick={goNext}
-        className="w-full max-w-xs py-3.5 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold text-base shadow-lg"
+        className="btn-primary w-full max-w-xs py-3.5 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold text-base shadow-lg"
       >
         {current.cta}
       </motion.button>
@@ -411,7 +411,7 @@ const PersonaliseFlow = ({ onComplete }) => {
         whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.97 }}
         onClick={goNext}
-        className="w-full py-3.5 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold text-base shadow-lg"
+        className="btn-primary w-full py-3.5 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold text-base shadow-lg"
       >
         {current.cta}
       </motion.button>
@@ -431,7 +431,7 @@ const PersonaliseFlow = ({ onComplete }) => {
         whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.97 }}
         onClick={handleFinish}
-        className="w-full max-w-xs py-3.5 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold text-base shadow-lg"
+        className="btn-primary w-full max-w-xs py-3.5 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold text-base shadow-lg"
       >
         👉 {current.cta}
       </motion.button>
@@ -463,7 +463,7 @@ const PersonaliseFlow = ({ onComplete }) => {
           animate={{ opacity: canContinue ? 1 : 0.4 }}
           onClick={goNext}
           disabled={!canContinue}
-          className="w-full mt-5 py-3.5 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold transition-all disabled:opacity-40 text-base"
+          className="btn-primary w-full mt-5 py-3.5 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-xl font-semibold transition-all disabled:opacity-40 text-base"
         >
           {current.cta}
         </motion.button>
