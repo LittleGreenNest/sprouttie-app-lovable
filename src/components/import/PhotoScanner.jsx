@@ -1,3 +1,4 @@
+import { FREE_CARD_LIMIT } from '@/utils/planLimits';
 import React, { useState, useRef, useCallback } from 'react';
 import { Camera, Upload, X, Check, AlertTriangle, Loader2, RotateCcw, Plus, Globe, ScanText, Eye, FileText, Sparkles } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -266,7 +267,7 @@ const PhotoScanner = () => {
       setStep(STEPS.DONE);
     } catch (err) {
       if (err?.message === 'FREE_LIMIT_REACHED') {
-        toast.error("You've reached the 100-card free limit. Upgrade to add more.");
+        toast.error(`You've reached the ${FREE_CARD_LIMIT}-card free limit. Upgrade to add more.`);
         navigate('/plans');
         return;
       }
@@ -437,7 +438,7 @@ const PhotoScanner = () => {
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[hsl(var(--sprouttie-green))] text-white font-semibold text-sm shadow-sm hover:opacity-90 transition mx-auto"
+              className="btn-primary flex items-center gap-2 px-6 py-3 rounded-xl bg-[hsl(var(--sprouttie-green))] text-white font-semibold text-sm shadow-sm hover:opacity-90 transition mx-auto"
             >
               <Upload className="w-4 h-4" />
               {isPaid ? 'Upload Photos or PDF (up to 10)' : 'Upload Photo or PDF'}
@@ -680,7 +681,7 @@ const PhotoScanner = () => {
                 <button
                   onClick={handleApprove}
                   disabled={adding || totalCardsToAdd === 0}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[hsl(var(--sprouttie-green))] text-white font-semibold text-sm shadow-sm hover:opacity-90 transition disabled:opacity-50"
+                  className="btn-primary flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[hsl(var(--sprouttie-green))] text-white font-semibold text-sm shadow-sm hover:opacity-90 transition disabled:opacity-50"
                 >
                   {adding ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -717,7 +718,7 @@ const PhotoScanner = () => {
             </button>
             <button
               onClick={() => navigate('/cards')}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[hsl(var(--sprouttie-green))] text-white font-semibold text-sm shadow-sm hover:opacity-90 transition"
+              className="btn-primary flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[hsl(var(--sprouttie-green))] text-white font-semibold text-sm shadow-sm hover:opacity-90 transition"
             >
               View Cards
             </button>

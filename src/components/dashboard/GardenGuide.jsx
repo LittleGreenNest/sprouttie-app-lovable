@@ -15,7 +15,7 @@ const GARDEN_STAGES = [
     stage: 0,
     image: gardenStage0,
     title: 'Empty Plot',
-    streakRange: '0 days',
+    practiceRange: '0 days',
     description: 'Plant your first seed today!',
     tip: 'Start your journey by flashing cards consistently.',
   },
@@ -23,7 +23,7 @@ const GARDEN_STAGES = [
     stage: 1,
     image: gardenStage1,
     title: 'Sprouting Seedling',
-    streakRange: '1-3 days',
+    practiceRange: '1-3 days',
     description: 'Your seedling is taking root!',
     tip: 'Keep the momentum going for 3 days to see growth.',
   },
@@ -31,7 +31,7 @@ const GARDEN_STAGES = [
     stage: 2,
     image: gardenStage2,
     title: 'Growing Plant',
-    streakRange: '4-7 days',
+    practiceRange: '4-7 days',
     description: 'Beautiful blooms are emerging!',
     tip: 'One week of consistency unlocks beautiful blooms.',
   },
@@ -39,7 +39,7 @@ const GARDEN_STAGES = [
     stage: 3,
     image: gardenStage3,
     title: 'Flourishing Garden',
-    streakRange: '8-14 days',
+    practiceRange: '8-14 days',
     description: 'Your garden is flourishing!',
     tip: 'Two weeks of dedication creates a flourishing garden.',
   },
@@ -47,15 +47,15 @@ const GARDEN_STAGES = [
     stage: 4,
     image: gardenStage4,
     title: 'Full Bloom',
-    streakRange: '15-21 days',
+    practiceRange: '15-21 days',
     description: 'Gorgeous flowers in full bloom!',
-    tip: 'Three weeks unlocks the most beautiful flowers.',
+    tip: 'Every day practised adds to your garden. Missed days do not reset it.',
   },
   {
     stage: 5,
     image: gardenStage5,
     title: 'Master Garden',
-    streakRange: '22+ days',
+    practiceRange: '22+ days',
     description: 'A magnificent garden bursting with life!',
     tip: 'You are a Master Gardener! Keep nurturing your garden.',
   },
@@ -63,38 +63,36 @@ const GARDEN_STAGES = [
 
 const GardenGuide = () => {
   const navigate = useNavigate();
-  const [currentStreak, setCurrentStreak] = useState(0);
+  const [practiceDays, setPracticeDays] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStreak = async () => {
+    const fetchPracticeDays = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data } = await supabase
-            .from('profiles')
-            .select('current_streak')
-            .eq('id', user.id)
-            .single();
-          if (data?.current_streak) {
-            setCurrentStreak(data.current_streak);
-          }
+            .from('daily_tracking')
+            .select('date, user_local_date')
+            .eq('user_id', user.id)
+            .eq('status', 'flashed');
+          setPracticeDays(new Set((data || []).map(row => row.user_local_date || row.date).filter(Boolean)).size);
         }
       } catch (err) {
-        console.error('Failed to fetch streak:', err);
+        console.error('Failed to fetch practice days:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchStreak();
+    fetchPracticeDays();
   }, []);
 
   const getCurrentStage = () => {
-    if (currentStreak === 0) return 0;
-    if (currentStreak <= 3) return 1;
-    if (currentStreak <= 7) return 2;
-    if (currentStreak <= 14) return 3;
-    if (currentStreak <= 21) return 4;
+    if (practiceDays === 0) return 0;
+    if (practiceDays <= 3) return 1;
+    if (practiceDays <= 7) return 2;
+    if (practiceDays <= 14) return 3;
+    if (practiceDays <= 21) return 4;
     return 5;
   };
 
@@ -121,7 +119,7 @@ const GardenGuide = () => {
           Garden Growth Guide
         </h1>
         <p className="text-gray-600 mt-2">
-          Watch your garden grow as you build your learning streak!
+          Your garden grows with days practised. They do not need to be consecutive.
         </p>
       </motion.div>
 
@@ -146,7 +144,7 @@ const GardenGuide = () => {
               {GARDEN_STAGES[currentStageIndex].title}
             </h2>
             <p className="text-gray-700">
-              {currentStreak} day streak • {GARDEN_STAGES[currentStageIndex].description}
+              {practiceDays} days practised in total · {GARDEN_STAGES[currentStageIndex].description}
             </p>
             {currentStageIndex === 0 && (
               <button
@@ -216,7 +214,7 @@ const GardenGuide = () => {
                   {stage.title}
                 </h3>
                 <p className={`text-sm font-medium mb-2 ${isUnlocked ? 'text-sprouttie-green' : 'text-gray-400'}`}>
-                  {stage.streakRange}
+                  {stage.practiceRange}
                 </p>
                 <p className={`text-sm ${isUnlocked ? 'text-gray-600' : 'text-gray-400'}`}>
                   {stage.description}
@@ -245,7 +243,7 @@ const GardenGuide = () => {
       >
         <button
           onClick={() => navigate('/daily-tracking')}
-          className="px-8 py-3 bg-sprouttie-green text-white font-semibold rounded-full hover:bg-sprouttie-green-dark transition-colors shadow-lg"
+          className="btn-primary px-8 py-3 bg-sprouttie-green text-white font-semibold rounded-full hover:bg-sprouttie-green-dark transition-colors shadow-lg"
         >
           Start Flashing Cards 🌱
         </button>

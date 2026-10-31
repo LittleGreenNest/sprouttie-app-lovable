@@ -26,9 +26,8 @@ export type ProfilePatch = {
 export function patchForSubscription(status: string, priceIds: string[]): ProfilePatch {
   if (PAID.has(status)) {
     const plan = priceIds.map((id) => PRICE_TO_PLAN[id]).find(Boolean);
-    // An unknown price (a legacy USD test price) leaves plan untouched rather
-    // than guessing which plan it should grant.
-    return plan ? { plan, subscription_status: status } : { subscription_status: status };
+    // Unknown or retired prices do not grant current paid entitlements.
+    return { plan: plan || 'free', subscription_status: status };
   }
   if (PAYMENT_FAILED.has(status)) {
     return { plan: 'free', subscription_status: status };

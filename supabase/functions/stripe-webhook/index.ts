@@ -3,7 +3,7 @@ import Stripe from 'npm:stripe@18.5.0';
 import { patchForSubscription } from './entitlement.ts';
 
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL') ?? '';
-const ANON_KEY          = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const WEBHOOK_SECRET    = Deno.env.get('STRIPE_WEBHOOK_SECRET') ?? '';
 
 /** Verify Stripe webhook signature using Web Crypto (no Stripe SDK crypto dep) */
@@ -36,15 +36,15 @@ async function verifyStripeSignature(
 
 /** Call stripe_update_profile RPC (SECURITY DEFINER — bypasses RLS) */
 async function updateProfile(userId: string, plan: string, subscriptionStatus: string, customerId: string | null, subscriptionId: string | null): Promise<void> {
-  if (!SUPABASE_URL || !ANON_KEY) {
-    throw new Error('SUPABASE_URL or SUPABASE_ANON_KEY env var is missing');
+  if (!SUPABASE_URL || !SERVICE_KEY) {
+    throw new Error('SUPABASE_URL or SUPABASE_SERVICE_KEY env var is missing');
   }
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/stripe_update_profile`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'apikey': ANON_KEY,
-      'Authorization': `Bearer ${ANON_KEY}`,
+      'apikey': SERVICE_KEY,
+      'Authorization': `Bearer ${SERVICE_KEY}`,
     },
     body: JSON.stringify({
       p_user_id:               userId,
@@ -62,9 +62,9 @@ async function updateProfile(userId: string, plan: string, subscriptionStatus: s
 
 /** Update subscription_status by stripe_subscription_id via direct REST (anon key + RLS allows service reads) */
 async function updateBySubscriptionId(subscriptionId: string, patch: Record<string, unknown>): Promise<void> {
-  if (!SUPABASE_URL || !ANON_KEY) return;
+  if (!SUPABASE_URL || !SERVICE_KEY) throw new Error('Server credentials unavailable');
   // Use service role key if available, otherwise skip (non-critical path)
-  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ANON_KEY;
+  const key = SERVICE_KEY;
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/profiles?stripe_subscription_id=eq.${encodeURIComponent(subscriptionId)}`,
     {
@@ -136,23 +136,17 @@ serve(async (req) => {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
       const userId  = session.metadata?.user_id;
-      const planKey = session.metadata?.plan_key;
-      console.log('[webhook] userId:', userId, 'planKey:', planKey);
-      console.log('[webhook] SUPABASE_URL set:', !!SUPABASE_URL, 'ANON_KEY set:', !!ANON_KEY);
-
-      if (!userId || !planKey) {
-        console.error('[webhook] Missing metadata — skipping');
-        return json({ received: true, warning: 'missing metadata' }, 200);
-      }
-
-      await updateProfile(
-        userId,
-        planKey,
-        'active',
-        (session.customer as string) ?? null,
-        (session.subscription as string) ?? null,
-      );
-      console.log('[webhook] Updated', userId, '→', planKey);
+      if (!userId || !session.subscription) throw new Error('Missing checkout linkage');
+      const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+      if (!stripeKey) throw new Error('Stripe is unavailable');
+      const response = await fetch(`https://api.stripe.com/v1/subscriptions/${encodeURIComponent(String(session.subscription))}`, {
+        headers: { Authorization: `Bearer ${stripeKey}` },
+      });
+      if (!response.ok) throw new Error('Could not verify the purchased subscription');
+      const sub = await response.json();
+      const prices = (sub.items?.data || []).map((item: any) => item.price?.id);
+      const patch = patchForSubscription(sub.status, prices);
+      await updateProfile(userId, patch.plan || 'free', sub.status, String(session.customer), String(session.subscription));
 
     } else if (event.type === 'customer.subscription.updated') {
       const sub = await currentSubscription(event.data.object as Stripe.Subscription);
@@ -180,7 +174,7 @@ serve(async (req) => {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[webhook] ERROR:', msg);
     // Include detail in body so it appears in Stripe's response panel
-    return json({ error: 'processing failed', detail: msg }, 500);
+    return json({ error: 'processing failed' }, 500);
   }
 });
 

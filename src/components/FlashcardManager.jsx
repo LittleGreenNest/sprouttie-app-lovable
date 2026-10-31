@@ -1,3 +1,4 @@
+import { FREE_CARD_LIMIT } from '@/utils/planLimits';
 // components/FlashcardManager.js
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -28,7 +29,6 @@ const FlashcardManager = () => {
     deleteFlashcard
   } = useFlashcards();
 
-  const FREE_CARD_LIMIT = 100;
   const isAtFreeLimit = plan === 'free' && flashcards.length >= FREE_CARD_LIMIT;
   
   // UI state
@@ -476,7 +476,7 @@ const FlashcardManager = () => {
           </div>
           <button
             onClick={() => navigate('/plans')}
-            className="flex-shrink-0 text-xs font-semibold text-white bg-[hsl(var(--sprouttie-green))] hover:bg-[hsl(var(--sprouttie-green-dark))] px-3 py-1.5 rounded-lg transition-colors"
+            className="btn-primary flex-shrink-0 text-xs font-semibold text-white bg-[hsl(var(--sprouttie-green))] hover:bg-[hsl(var(--sprouttie-green-dark))] px-3 py-1.5 rounded-lg transition-colors"
           >
             Upgrade
           </button>
@@ -617,7 +617,7 @@ const FlashcardManager = () => {
                         />
                         <button 
                           type="submit"
-                          className="bg-[hsl(var(--sprouttie-green))] text-white px-3 py-1 rounded-lg hover:brightness-95 transition-all"
+                          className="btn-primary bg-[hsl(var(--sprouttie-green))] text-white px-3 py-1 rounded-lg hover:brightness-95 transition-all"
                         >
                           Save
                         </button>
@@ -793,7 +793,7 @@ const FlashcardManager = () => {
                   <div className="flex gap-2">
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition"
+                      className="btn-primary px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition"
                     >
                       Add {newCardType === 'phrase' ? 'Phrase' : 'Card'}
                     </button>
@@ -990,7 +990,7 @@ const FlashcardManager = () => {
                   <div className="flex gap-2">
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition"
+                      className="btn-primary px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition"
                     >
                       Add {newCardType === 'phrase' ? 'Phrase' : 'Card'}
                     </button>
@@ -1132,7 +1132,7 @@ const FlashcardManager = () => {
                             <div className="flex gap-2">
                               <button 
                                 type="submit"
-                                className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition"
+                                className="btn-primary px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition"
                               >
                                 Save
                               </button>

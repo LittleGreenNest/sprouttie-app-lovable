@@ -74,7 +74,7 @@ const QuickLogSheet = ({ type, onSubmit, onClose, books = [] }) => {
 
       <button
         onClick={handleSubmit}
-        className="w-full bg-[hsl(var(--sprouttie-green))] text-white font-bold py-3 rounded-xl"
+        className="btn-primary w-full bg-[hsl(var(--sprouttie-green))] text-white font-bold py-3 rounded-xl"
       >
         Save
       </button>
@@ -189,7 +189,7 @@ const DuringScreen = ({ logs, addLog, deleteLog, onNext, onBack }) => {
             </button>
           )}
           {onNext && (
-            <button onClick={onNext} className="flex-1 bg-[hsl(var(--sprouttie-green))] text-white font-bold py-3 rounded-xl shadow-md">
+            <button onClick={onNext} className="btn-primary flex-1 bg-[hsl(var(--sprouttie-green))] text-white font-bold py-3 rounded-xl shadow-md">
               See Reflection →
             </button>
           )}

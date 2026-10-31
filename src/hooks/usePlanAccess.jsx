@@ -1,3 +1,4 @@
+import { FREE_CARD_LIMIT } from '@/utils/planLimits';
 // src/hooks/usePlanAccess.jsx
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +14,7 @@ export const PLANS = {
 // Feature access by plan
 export const PLAN_FEATURES = {
   free: {
-    maxFlashcards: 100,
+    maxFlashcards: FREE_CARD_LIMIT,
     pdfExport: false,
     aiStories: false,
     voiceTraining: false,

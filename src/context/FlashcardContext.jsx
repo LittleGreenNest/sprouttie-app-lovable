@@ -1,3 +1,5 @@
+import { insertFlashcards } from '@/utils/flashcardWrites';
+import { FREE_CARD_LIMIT } from '@/utils/planLimits';
 // context/FlashcardContext.js - Supabase-backed flashcard storage
 import React, { createContext, useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -221,9 +223,7 @@ export const FlashcardProvider = ({ children }) => {
       }));
 
       if (flashcardsToInsert.length > 0) {
-        const { error } = await supabase
-          .from('flashcards')
-          .insert(flashcardsToInsert);
+        const { error } = await insertFlashcards(flashcardsToInsert);
 
         if (error) throw error;
       }
@@ -330,15 +330,13 @@ export const FlashcardProvider = ({ children }) => {
   const addFlashcard = async (word, categoryId, english = '', pinyin = '', cardType = 'word', phraseGroup = null, cardLanguage = 'zh') => {
     const categoryName = categories.find(c => c.id === categoryId)?.name || categoryId;
 
-    if (plan === 'free' && flashcards.length >= 100) {
+    if (plan === 'free' && flashcards.length >= FREE_CARD_LIMIT) {
       throw new Error('FREE_LIMIT_REACHED');
     }
 
     if (currentUser?.id) {
       try {
-        const { data, error } = await supabase
-          .from('flashcards')
-          .insert({
+        const { data, error } = await insertFlashcards({
             user_id: currentUser.id,
             front: word,
             back: english,
@@ -351,9 +349,7 @@ export const FlashcardProvider = ({ children }) => {
             review_count: 0,
             active_day_count: 0,
             card_language: cardLanguage,
-          })
-          .select()
-          .single();
+          }, { single: true });
 
         if (error) throw error;
 

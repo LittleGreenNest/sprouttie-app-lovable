@@ -127,7 +127,7 @@ const StickyNoteButton = ({ onAddNote, familyMember }) => {
                   <button
                     onClick={handleSubmit}
                     disabled={!noteText.trim() && selectedEmojis.length === 0}
-                    className="flex-1 px-4 py-2 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-lg hover:shadow-md transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="btn-primary flex-1 px-4 py-2 bg-gradient-to-r from-[hsl(var(--sprouttie-green))] to-[hsl(var(--sprouttie-green-dark))] text-white rounded-lg hover:shadow-md transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Save Note
                   </button>

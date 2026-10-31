@@ -8,6 +8,7 @@ import { cardIdFrom } from '@/utils/cardId';
 import WeekCard from './thisweek/WeekCard';
 import { toast } from 'react-toastify';
 import { toLocalDateString } from '@/utils/week';
+import { countPracticeDays } from '@/utils/practiceDays';
 
 // ─── Tip data (pulled from existing TipsCarousel) ───
 const TIPS = [
@@ -21,7 +22,7 @@ const SET_COLORS = ['#7B61FF', '#F59E0B', '#3B82F6', '#10B981', '#F43F5E'];
 
 const Dashboard = () => {
   const { flashcards = [], sets = [] } = useFlashcards() || {};
-  const { currentUser, profile } = useAuth() || {};
+  const { currentUser } = useAuth() || {};
   const navigate = useNavigate();
 
   const [trackingData, setTrackingData] = useState([]);
@@ -104,8 +105,7 @@ const Dashboard = () => {
     return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
   }).length;
 
-  // Streak
-  const streak = profile?.current_streak || 0;
+  const practisedDays = countPracticeDays(trackingData);
 
   // Flashed counts per set
   const flashedPerSet = sets.map(set => {
@@ -156,8 +156,8 @@ const Dashboard = () => {
                 onClick={() => navigate('/cards')}
                 className="w-full active:scale-[0.98] transition-transform"
                 style={{
-                  background: '#52B788', border: 'none', borderRadius: 10,
-                  padding: 12, fontSize: 14, fontWeight: 500, color: 'white', cursor: 'pointer'
+                  background: '#F0C040', border: 'none', borderRadius: 10,
+                  padding: 12, fontSize: 14, fontWeight: 600, color: '#1A1A1A', cursor: 'pointer'
                 }}
               >
                 Add Your First Flashcard Set
@@ -178,8 +178,8 @@ const Dashboard = () => {
                 onClick={() => navigate('/daily-tracking')}
                 className="w-full active:scale-[0.98] transition-transform"
                 style={{
-                  background: '#52B788', border: 'none', borderRadius: 10,
-                  padding: 12, fontSize: 14, fontWeight: 500, color: 'white', cursor: 'pointer'
+                  background: '#F0C040', border: 'none', borderRadius: 10,
+                  padding: 12, fontSize: 14, fontWeight: 600, color: '#1A1A1A', cursor: 'pointer'
                 }}
               >
                 Start Flashcard Session
@@ -367,7 +367,7 @@ const Dashboard = () => {
         <div className="flex-1 min-w-0">
           <p style={{ fontSize: 13, fontWeight: 500, color: '#1F2937', margin: 0 }}>Your learning garden</p>
           <p style={{ fontSize: 12, fontWeight: 400, color: '#9CA3AF', margin: 0, marginTop: 1 }}>
-            {streak > 0 ? `${streak} day streak · Keep growing` : 'Plant your first seed today'}
+            {practisedDays > 0 ? `Practised ${practisedDays} of the last 7 days` : 'Your garden is here whenever you are ready.'}
           </p>
         </div>
         <ChevronRight size={12} color="#9CA3AF" className="flex-shrink-0" />

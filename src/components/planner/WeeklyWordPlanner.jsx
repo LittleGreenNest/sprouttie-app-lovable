@@ -1,3 +1,4 @@
+import { insertFlashcards } from '@/utils/flashcardWrites';
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -311,8 +312,7 @@ const WeeklyWordPlanner = () => {
       }
 
       if (newForCards.length > 0) {
-        await supabase.from('flashcards').insert(
-          newForCards.map(s => ({
+        await insertFlashcards(newForCards.map(s => ({
             user_id: currentUser.id,
             front: s.word,
             back: translations[s.word]?.english || '',
@@ -320,8 +320,7 @@ const WeeklyWordPlanner = () => {
             folder: s.category || 'default',
             card_type: 'word',
             card_status: 'waiting',
-          }))
-        );
+          })));
       }
       toast.success(`${pendingSuggestions.length} words added to your backlog 🌱`);
       setPendingSuggestions([]);
@@ -399,7 +398,7 @@ const WeeklyWordPlanner = () => {
         f => f.front?.toLowerCase() === newWord.word.trim().toLowerCase()
       );
       if (!existsInFlashcards) {
-        await supabase.from('flashcards').insert({
+        await insertFlashcards({
           user_id: currentUser.id,
           front: newWord.word.trim(),
           back: newWord.pinyin.trim() || '',
@@ -442,7 +441,7 @@ const WeeklyWordPlanner = () => {
       const english = looked.english || '';
       const pinyin = wp.pinyin || looked.pinyin || null;
 
-      const { error } = await supabase.from('flashcards').insert({
+      const { error } = await insertFlashcards({
         user_id: currentUser.id,
         front: wp.word,
         back: english,
@@ -535,7 +534,7 @@ const WeeklyWordPlanner = () => {
 
       // Only add to flashcards if NOT already there
       if (!existsInFlashcards) {
-        await supabase.from('flashcards').insert({
+        await insertFlashcards({
           user_id: currentUser.id,
           front: suggestion.word,
           back: suggestion.pinyin || '',
@@ -667,7 +666,7 @@ const WeeklyWordPlanner = () => {
                 key={n}
                 onClick={() => generateSuggestions(n)}
                 disabled={generatingSuggestions}
-                className="flex-1 min-w-[90px] py-2.5 px-3 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex flex-col items-center justify-center gap-0.5"
+                className="btn-primary flex-1 min-w-[90px] py-2.5 px-3 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex flex-col items-center justify-center gap-0.5"
               >
                 <span className="flex items-center gap-1"><Sparkles className="w-3 h-3" />{n} set{n > 1 ? 's' : ''}</span>
                 <span className="text-[10px] opacity-80">~{n * 5} words</span>
@@ -903,7 +902,7 @@ const WeeklyWordPlanner = () => {
               <button
                 onClick={handleAcceptAll}
                 disabled={acceptingAll}
-                className="w-full py-2.5 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                className="btn-primary w-full py-2.5 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {acceptingAll ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -1060,7 +1059,7 @@ const WeeklyWordPlanner = () => {
             <div className="flex gap-2">
               <button
                 onClick={handleAddWord}
-                className="flex-1 py-2.5 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
+                className="btn-primary flex-1 py-2.5 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
               >
                 Add Word
               </button>

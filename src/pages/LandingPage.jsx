@@ -192,7 +192,7 @@ const LandingPage = () => {
             <motion.div variants={fade} initial="hidden" animate="visible" custom={3} className="flex flex-col sm:flex-row gap-3">
               <Link
                 to="/signup"
-                className="font-body inline-flex items-center justify-center px-7 py-3.5 rounded-xl text-white font-semibold bg-[hsl(var(--sprouttie-green))] hover:bg-[hsl(var(--sprouttie-green-dark))] transition-all duration-250 shadow-[var(--shadow-lg)] hover:shadow-[var(--shadow-xl)] hover:-translate-y-px"
+                className="btn-primary font-body inline-flex items-center justify-center px-7 py-3.5 rounded-xl text-white font-semibold bg-[hsl(var(--sprouttie-green))] hover:bg-[hsl(var(--sprouttie-green-dark))] transition-all duration-250 shadow-[var(--shadow-lg)] hover:shadow-[var(--shadow-xl)] hover:-translate-y-px"
               >
                 Start Free — No Card Required
               </Link>
@@ -346,7 +346,7 @@ const LandingPage = () => {
           </p>
           <Link
             to="/signup"
-            className="font-body inline-block px-8 py-3.5 rounded-xl text-white font-semibold bg-[hsl(var(--sprouttie-green))] hover:bg-[hsl(var(--sprouttie-green-dark))] transition-all duration-250 shadow-[var(--shadow-lg)] hover:shadow-[var(--shadow-xl)] hover:-translate-y-px"
+            className="btn-primary font-body inline-block px-8 py-3.5 rounded-xl text-white font-semibold bg-[hsl(var(--sprouttie-green))] hover:bg-[hsl(var(--sprouttie-green-dark))] transition-all duration-250 shadow-[var(--shadow-lg)] hover:shadow-[var(--shadow-xl)] hover:-translate-y-px"
           >
             Get Started Free
           </Link>

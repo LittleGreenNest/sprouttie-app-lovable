@@ -98,7 +98,7 @@ const InstallPrompt = () => {
                 {!isIOS && deferredPrompt && (
                   <button
                     onClick={handleInstall}
-                    className="mt-3 flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-colors"
+                    className="btn-primary mt-3 flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-colors"
                   >
                     <Download size={16} />
                     Install App

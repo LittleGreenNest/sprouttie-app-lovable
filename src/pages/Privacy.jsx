@@ -1,164 +1,21 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-
-const Privacy = () => {
-  return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <Link 
-          to="/signup" 
-          className="inline-flex items-center text-green-600 hover:text-green-700 mb-6"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Sign Up
-        </Link>
-        
-        <div className="bg-white rounded-lg shadow-sm p-8">
-          <h1 className="text-3xl font-bold text-green-800 mb-6">Privacy Policy</h1>
-          <p className="text-sm text-gray-500 mb-8">Last updated: December 27, 2024</p>
-          
-          <div className="prose prose-green max-w-none space-y-6">
-            <section>
-              <h2 className="text-xl font-semibold text-gray-800 mb-3">1. Introduction</h2>
-              <p className="text-gray-600">
-                At Sprouttie, we take your privacy seriously. This Privacy Policy explains how we collect, 
-                use, disclose, and safeguard your information when you use our flashcard learning platform. 
-                Please read this policy carefully.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-800 mb-3">2. Information We Collect</h2>
-              
-              <h3 className="text-lg font-medium text-gray-700 mt-4 mb-2">Personal Information</h3>
-              <p className="text-gray-600">When you create an account, we collect:</p>
-              <ul className="list-disc pl-6 text-gray-600 mt-2 space-y-1">
-                <li>Email address</li>
-                <li>Name (optional)</li>
-                <li>Password (encrypted)</li>
-              </ul>
-
-              <h3 className="text-lg font-medium text-gray-700 mt-4 mb-2">Usage Data</h3>
-              <p className="text-gray-600">We automatically collect information about how you use the Service:</p>
-              <ul className="list-disc pl-6 text-gray-600 mt-2 space-y-1">
-                <li>Flashcard progress and learning history</li>
-                <li>Session duration and frequency</li>
-                <li>Features used within the app</li>
-                <li>Device and browser information</li>
-              </ul>
-
-              <h3 className="text-lg font-medium text-gray-700 mt-4 mb-2">Content You Create</h3>
-              <p className="text-gray-600">
-                We store content you create including custom flashcards, notes, spoken word records, 
-                and any other learning materials you add to your account.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-800 mb-3">3. How We Use Your Information</h2>
-              <p className="text-gray-600">We use the collected information to:</p>
-              <ul className="list-disc pl-6 text-gray-600 mt-2 space-y-1">
-                <li>Provide and maintain the Service</li>
-                <li>Track your learning progress and streaks</li>
-                <li>Personalize your learning experience</li>
-                <li>Generate AI-powered word suggestions and recommendations</li>
-                <li>Send important service notifications</li>
-                <li>Improve our Service through analytics</li>
-                <li>Process payments for premium features</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-800 mb-3">4. Data Storage and Security</h2>
-              <p className="text-gray-600">
-                Your data is stored securely using industry-standard encryption and security practices. 
-                We use Supabase for our database infrastructure, which provides:
-              </p>
-              <ul className="list-disc pl-6 text-gray-600 mt-2 space-y-1">
-                <li>Encrypted data transmission (TLS/SSL)</li>
-                <li>Row-level security for data isolation</li>
-                <li>Regular security audits and updates</li>
-                <li>Secure authentication with password hashing</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-800 mb-3">5. Data Sharing</h2>
-              <p className="text-gray-600">
-                We do not sell your personal information. We may share data with:
-              </p>
-              <ul className="list-disc pl-6 text-gray-600 mt-2 space-y-1">
-                <li><strong>Service Providers:</strong> Third-party services that help us operate (payment processing, hosting)</li>
-                <li><strong>Legal Requirements:</strong> When required by law or to protect our rights</li>
-                <li><strong>Business Transfers:</strong> In connection with a merger or acquisition</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-800 mb-3">6. Children's Privacy</h2>
-              <p className="text-gray-600">
-                Sprouttie is designed for parents to use with their children. We do not knowingly collect 
-                personal information directly from children under 13. Parents create and manage accounts, 
-                and any child-related learning data is associated with the parent's account.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-800 mb-3">7. Your Rights</h2>
-              <p className="text-gray-600">You have the right to:</p>
-              <ul className="list-disc pl-6 text-gray-600 mt-2 space-y-1">
-                <li>Access your personal data</li>
-                <li>Correct inaccurate information</li>
-                <li>Delete your account and associated data</li>
-                <li>Export your data</li>
-                <li>Opt out of marketing communications</li>
-              </ul>
-              <p className="text-gray-600 mt-2">
-                To exercise these rights, please contact us at privacy@sprouttie.com.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-800 mb-3">8. Cookies and Tracking</h2>
-              <p className="text-gray-600">
-                We use essential cookies for authentication and session management. We do not use 
-                third-party advertising cookies. You can control cookie settings through your browser.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-800 mb-3">9. Data Retention</h2>
-              <p className="text-gray-600">
-                We retain your data for as long as your account is active. If you delete your account, 
-                we will delete your personal information within 30 days, except where retention is 
-                required for legal purposes.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-800 mb-3">10. Changes to This Policy</h2>
-              <p className="text-gray-600">
-                We may update this Privacy Policy periodically. We will notify you of significant changes 
-                by posting a notice on the Service or sending you an email. Your continued use after 
-                changes indicates acceptance of the updated policy.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-800 mb-3">11. Contact Us</h2>
-              <p className="text-gray-600">
-                If you have questions about this Privacy Policy or our data practices, please contact us at:
-              </p>
-              <p className="text-gray-600 mt-2">
-                <strong>Email:</strong> privacy@sprouttie.com
-              </p>
-            </section>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default Privacy;
+export default function Privacy() {
+  const sections = [
+    ['Who this service is for', 'Sprouttie is a tool for adults supporting family language routines. Children do not create accounts or operate the app. Parents decide what child-related information to add.'],
+    ['Information you provide', 'We process your account email and optional name, authentication information, subscription identifiers and preferences. You may add a child’s nickname, age band, interests, language stage, words, notes, photos and videos. Use a nickname where possible and avoid unnecessary identifying or sensitive details. Passwords are handled by our authentication provider using password hashing. Stripe processes payment details; Sprouttie does not store your full card number.'],
+    ['Why we use it', 'We use account and learning records to run your account, save your family’s records, personalise suggested words and plans, process subscriptions, answer support requests, troubleshoot failures and protect the service. Suggestions are generated automatically and may be inaccurate. They are not developmental assessments or medical advice.'],
+    ['AI processing', 'When you ask for generated words, translations, book suggestions or image/video extraction, relevant inputs are sent to the AI provider used for that feature, including Google Gemini. Depending on the feature, inputs can include interests, age band, words, notes and media you choose to process. Only use media you are entitled to upload. Optional self-recording in the listening tool stays in your browser and is not uploaded by that tool. Automatic pronunciation assessment is unavailable.'],
+    ['Providers and international processing', 'Supabase supplies authentication, database and media storage; Cloudflare supplies hosting and network services; Stripe handles billing; Google supplies AI services; and our email provider delivers service emails. Google Analytics and Meta receive optional measurement data only when you allow the corresponding tracking. These providers may process information outside Singapore. We do not sell family records. We may disclose information where legally required. Contact us for information about applicable provider arrangements and safeguards.'],
+    ['Cookies and privacy choices', 'Essential browser storage supports login, preferences and security. Google Analytics helps measure usage when you allow analytics. Meta Pixel helps measure advertising when you allow advertising tracking. You can decline optional tracking and still use Sprouttie. Use the privacy settings button below to change your choices. Withdrawing optional tracking reloads the app and stops those tools loading on subsequent visits. We do not intentionally send child names, photos, videos or private notes to advertising tools.'],
+    ['Retention and deletion', 'We keep account records while needed to provide the service or meet applicable obligations. Delete Account cancels linked subscriptions and removes associated application records and uploaded photos/videos before deleting the login account. If any step fails, the app reports incomplete deletion and asks you to contact support; some earlier steps may already be complete. Payment providers may retain transaction records for legal and accounting purposes. Provider backups, where available, follow their retention schedules rather than immediate individual-record deletion.'],
+    ['Access, correction and contact', 'You can edit your profile and records in the app. For access, correction, an export, withdrawal of consent or questions about deletion, contact privacy@sprouttie.com. For account help, contact support@sprouttie.com. We may need to verify account ownership before acting on a request. If a feature cannot operate without particular data, we will explain that when responding to a withdrawal request.'],
+    ['Security and updates', 'We use HTTPS, account authentication and access restrictions designed to protect family records. No online system is risk-free. We update this notice when our practices change and will communicate material changes through the service or email.'],
+  ];
+  return <main className="max-w-3xl mx-auto px-5 py-10 text-[#263136] bg-[#FCF9F3]">
+    <Link to="/login" className="text-[#296549] underline">Back to Sprouttie</Link>
+    <h1 className="font-display text-3xl mt-6 mb-2">Privacy policy.</h1><p className="text-sm mb-8">Updated 31 October 2026.</p>
+    {sections.map(([title,body]) => <section key={title} className="mb-7"><h2 className="font-display text-xl mb-2">{title}.</h2><p className="leading-relaxed">{body}</p></section>)}
+    <button className="btn-primary rounded-xl p-3" onClick={() => window.dispatchEvent(new Event('sprouttie:privacy-settings'))}>Change privacy settings</button>
+  </main>;
+}

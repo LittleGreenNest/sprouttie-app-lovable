@@ -121,7 +121,7 @@ const Navbar = () => {
                 </Link>
                 <Link
                   to="/signup"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-sprouttie-green hover:bg-sprouttie-green-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sprouttie-green"
+                  className="btn-primary inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-sprouttie-green hover:bg-sprouttie-green-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sprouttie-green"
                 >
                   Sign up
                 </Link>
@@ -241,7 +241,7 @@ const Navbar = () => {
               </Link>
               <Link
                 to="/signup"
-                className="flex-1 ml-2 text-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-sprouttie-green hover:bg-sprouttie-green-dark"
+                className="btn-primary flex-1 ml-2 text-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-sprouttie-green hover:bg-sprouttie-green-dark"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Sign up

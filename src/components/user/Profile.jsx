@@ -234,7 +234,7 @@ const Profile = () => {
               Print Plan is paused because your last payment failed. Update your card and it switches back on. All your cards are still here.
             </p>
             <button
-              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              className="btn-primary mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
               onClick={handleManageBilling}
             >
               Update payment
@@ -249,7 +249,7 @@ const Profile = () => {
               You're currently on the Free plan. Upgrade for unlimited flashcards and printable PDF flashcards.
             </p>
             <button 
-              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              className="btn-primary mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
               onClick={handleUpgradePlan}
             >
               Upgrade Plan
@@ -267,7 +267,7 @@ const Profile = () => {
             </div>
             <div className="mt-4 space-x-3">
               <button 
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                className="btn-primary inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                 onClick={handleUpgradePlan}
               >
                 Upgrade to Pro
@@ -365,7 +365,7 @@ const Profile = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  className="btn-primary px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                 >
                   Save
                 </button>
@@ -399,7 +399,7 @@ const Profile = () => {
               <div className="bg-white px-4 py-5 sm:px-6">
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  className="btn-primary inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                 >
                   Edit Profile
                 </button>
@@ -423,7 +423,7 @@ const Profile = () => {
           ) : (
             <div className="flex gap-2">
               <button onClick={() => { setEditingChild(false); setChildName(currentUser?.user_metadata?.child_name || ''); setChildForm({ child_age_band: profile?.child_age_band || '', target_language: profile?.target_language || '', speech_level: profile?.speech_level || '', reply_pattern: profile?.reply_pattern || '', daily_time_commitment: profile?.daily_time_commitment || '' }); }} className="text-sm text-gray-500 hover:underline">Cancel</button>
-              <button onClick={handleSaveChild} disabled={savingChild} className="text-sm font-medium text-white bg-[hsl(var(--sprouttie-green))] px-3 py-1 rounded-lg disabled:opacity-50">{savingChild ? 'Saving…' : 'Save'}</button>
+              <button onClick={handleSaveChild} disabled={savingChild} className="btn-primary text-sm font-medium text-white bg-[hsl(var(--sprouttie-green))] px-3 py-1 rounded-lg disabled:opacity-50">{savingChild ? 'Saving…' : 'Save'}</button>
             </div>
           )}
         </div>

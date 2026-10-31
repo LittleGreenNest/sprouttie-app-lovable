@@ -1,3 +1,4 @@
+import { insertFlashcards } from '@/utils/flashcardWrites';
 import { supabase } from '@/integrations/supabase/client';
 import { toLocalDateString } from '@/utils/week';
 import { hasCJK, planPlacement, splitSuggestedWord } from './weekWords';
@@ -93,7 +94,7 @@ export async function acceptWeek({ userId, weekStart, suggestions }) {
         date_introduced: today,
       }));
     const insertCards = (status) =>
-      supabase.from('flashcards').insert(rowsFor(status)).select('id, front, set_number');
+      insertFlashcards(rowsFor(status));
     let { data: inserted, error: insertError } = await insertCards(QUEUED);
     if (isCheckViolation(insertError)) ({ data: inserted, error: insertError } = await insertCards('waiting'));
     if (insertError) throw insertError;

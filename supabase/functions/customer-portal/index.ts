@@ -39,6 +39,7 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError) throw new Error(`Authentication error: ${userError.message}`);
     const user = userData.user;
+    if (!user?.email_confirmed_at) throw new Error('Please verify your email before managing billing.');
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
@@ -46,14 +47,15 @@ serve(async (req) => {
       apiVersion: '2025-08-27.basil',
     });
     
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customers = await stripe.customers.list({ email: user.email, limit: 100 });
+    customers.data = customers.data.filter(customer => customer.metadata?.supabase_user_id === user.id);
     if (customers.data.length === 0) {
       throw new Error("No Stripe customer found for this user");
     }
     const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
 
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const origin = "https://sprouttie.online";
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url: `${origin}/profile`,

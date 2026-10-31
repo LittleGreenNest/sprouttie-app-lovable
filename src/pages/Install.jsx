@@ -64,7 +64,7 @@ const Install = () => {
           </p>
           <Link
             to="/dashboard"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-xl transition-colors"
+            className="btn-primary inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-xl transition-colors"
           >
             Go to Dashboard
           </Link>
@@ -171,7 +171,7 @@ const Install = () => {
               </h2>
               <button
                 onClick={handleInstall}
-                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl transition-colors"
+                className="btn-primary w-full flex items-center justify-center gap-2 px-6 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl transition-colors"
               >
                 <Download className="w-5 h-5" />
                 Install Sprouttie
