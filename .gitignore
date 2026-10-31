@@ -32,6 +32,13 @@ dist-ssr
 eval*
 .env.sheets
 
+# Private backup material must never enter this public repository.
+*recovery-key*
+rclone.conf
+*.tar.gz.age
+backup-output/
+__pycache__/
+
 # Local Express scratch copy: its own git repo, holds live Stripe/Supabase
 # secrets in server/.env. Never part of this repo.
 server/

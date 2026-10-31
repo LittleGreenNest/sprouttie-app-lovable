@@ -280,3 +280,7 @@ Do not populate an audio catalogue or build automated tone assessment now. The p
 ### Launch status
 
 See `LAUNCH-STATUS.md` for verification evidence, deployment status and unresolved external dependencies. Never mark a check complete from source code alone.
+
+### Backup choice: independent Google Drive, 31 October 2026
+
+The owner chose independent encrypted backups in an existing Google Drive account, remaining on Supabase Free. Do not upgrade the plan. Implementation and activation checklist: `docs/BACKUPS.md`. Schedule stays off until credentials, the correct private Drive account, encryption-key recovery and an initial run are verified. Never describe prepared automation as a working backup or replace a restore drill with a successful upload. Backup coverage includes media while stored-media features remain. Changing photo uploads to extract-and-discard is a separate product decision, not implemented by choosing this backup route.

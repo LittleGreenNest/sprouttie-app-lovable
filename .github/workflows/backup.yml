@@ -1,0 +1,46 @@
+name: Encrypted Google Drive backup
+on:
+  schedule:
+    - cron: '23 22 * * *' # 06:23 Singapore time; GitHub scheduling is best effort.
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sprouttie-backup
+  cancel-in-progress: false
+jobs:
+  backup:
+    # Off until secrets, key recovery and the first manual run are verified.
+    if: github.event_name == 'workflow_dispatch' || vars.BACKUPS_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install verified backup tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y age
+          tools_dir="$(mktemp -d)"
+          cd "$tools_dir"
+          curl --fail --silent --show-error --location https://github.com/supabase/cli/releases/download/v2.122.0/supabase_2.122.0_linux_amd64.tar.gz -o supabase.tar.gz
+          echo '59ed066847b98d7461c60e9109d40cab6b9756177ce06ebb05b51338519f5136  supabase.tar.gz' | sha256sum -c -
+          tar -xzf supabase.tar.gz supabase
+          sudo install supabase /usr/local/bin/supabase
+          curl --fail --silent --show-error --location https://github.com/rclone/rclone/releases/download/v1.75.2/rclone-v1.75.2-linux-amd64.zip -o rclone.zip
+          echo '349ac8fba6ff65d6247043f1750cdcb518ec5d500ef91463a10d37c0ccdf3702  rclone.zip' | sha256sum -c -
+          unzip -q rclone.zip
+          sudo install rclone-v1.75.2-linux-amd64/rclone /usr/local/bin/rclone
+          rm -rf "$tools_dir"
+      - name: Export, encrypt and verify
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_STORAGE_KEY: ${{ secrets.BACKUP_STORAGE_KEY }}
+          BACKUP_AGE_RECIPIENT: ${{ secrets.BACKUP_AGE_RECIPIENT }}
+          BACKUP_RCLONE_CONFIG: ${{ secrets.BACKUP_RCLONE_CONFIG }}
+        run: python3 scripts/backups/backup.py
+      # No upload-artifact: this repository is public. Only encrypted files go to Drive.
+      # Failed-run alerts use GitHub notification settings; receipt must be tested.

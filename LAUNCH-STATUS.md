@@ -5,12 +5,14 @@
 - Primary actions: Daisy Yellow with dark ink.
 - Pronunciation catalogue and assessment: deferred. Missing features stay unavailable.
 - Complete launch blockers before starting acquisition measurement.
+- Backup choice: independent encrypted Google Drive backups; remain on Supabase Free. Prepared automation is not yet connected or enabled. Backups are a pilot safeguard, not a reason to require a paid subscription.
 
 ## Verification still in progress
 - Database card and billing guards: applied in production as 20261031071623_add_launch_card_and_billing_guards. Free 51st-card rejection, paid capacity, normal profile edits and rejected public billing changes passed transaction tests. Two concurrent sessions at 49 cards ended at exactly 50. Disposable fixtures removed.
 - Billing backend: price allowlist and server-verified entitlements deployed; end-to-end paid checkout needs validation.
 - Deletion: billing cancellation, media cleanup, session revocation and fail-visible cleanup deployed; destructive end-to-end check must use a disposable account.
 - Backups: organisation is on Free. Managed daily backups are not included. No backup or restore drill has yet been verified.
+- Independent backup implementation: `.github/workflows/backup.yml`, `scripts/backups/backup.py`, and `docs/BACKUPS.md`. Daily encrypted export, all Storage objects, round-trip hash verification and seven-day scoped retention. Eight local tests pass. Missing credentials fail before export. Google authorisation, repository secrets, first live backup and a restore drill remain open. Schedule is off by default.
 - Mail: MX routes to Cloudflare. Owner identified hellolittlegreennest@gmail.com and support@sprouttie.com. Individual alias delivery is not verified.
 - Alerts: no externally delivered alert verified yet.
 - Parent usability study: no participants observed. Never invent completion.
