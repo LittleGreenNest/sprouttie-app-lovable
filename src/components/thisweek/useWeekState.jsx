@@ -7,6 +7,9 @@ import { useFlashcards } from '../../context/FlashcardContext';
 import { REVIEW_LOG_TYPE } from '../review/useWeeklyReview';
 import { acceptWeek } from './acceptWeek';
 
+/** Sets of five words proposed each week. The backend accepts 1 to 5. */
+const NUM_SETS = 2;
+
 /**
  * Which state this week is in, for the one weekly card on Home and /this-week.
  *
@@ -108,7 +111,7 @@ export const useWeekState = ({ forceReview = false } = {}) => {
     setAlternatives({});
     try {
       const { data, error: fnError } = await supabase.functions.invoke('generate-autopilot-suggestions', {
-        body: { weekStart, numSets: 1 },
+        body: { weekStart, numSets: NUM_SETS },
       });
       if (fnError) throw fnError;
       if (data?.error) throw new Error(data.error);

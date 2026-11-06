@@ -229,7 +229,7 @@ const PlanState = ({ variant, week, navigate }) => {
 
 /* ─── Doing: words accepted, the week is running ─── */
 
-const DoingState = ({ variant, week, navigate }) => {
+const DoingState = ({ variant, week, navigate, todayLine }) => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const { accepted, practisedDays, reviewed } = week;
   const theme = accepted.find((s) => s.theme)?.theme;
@@ -250,7 +250,7 @@ const DoingState = ({ variant, week, navigate }) => {
     <Shell
       variant={variant}
       label={theme ? `This week · ${theme}` : 'This week'}
-      title={`Practised ${practisedDays} of the last 7 days.`}
+      title={practisedDays > 0 ? `Practised ${practisedDays} of the last 7 days.` : 'Ready when you are.'}
     >
       <div className="flex gap-1" aria-hidden="true">
         {Array.from({ length: 7 }).map((_, i) => (
@@ -266,6 +266,8 @@ const DoingState = ({ variant, week, navigate }) => {
           </span>
         ))}
       </div>
+
+      {todayLine && <p className="text-[12px] text-[#66737A] m-0">{todayLine}</p>}
 
       <PrimaryButton onClick={() => navigate('/daily-tracking')}>Start today's flash</PrimaryButton>
 
@@ -387,7 +389,7 @@ const NoticeState = ({ variant, childName, onDone, onEmpty }) => {
  * suggestions card, which each asked about the same week without knowing what
  * the others had done.
  */
-const WeekCard = ({ variant = 'home', forceReview = false }) => {
+const WeekCard = ({ variant = 'home', forceReview = false, todayLine = null }) => {
   const navigate = useNavigate();
   const { currentUser } = useAuth() || {};
   const childName = currentUser?.user_metadata?.child_name?.trim() || null;
@@ -416,7 +418,7 @@ const WeekCard = ({ variant = 'home', forceReview = false }) => {
       />
     );
   }
-  if (state === 'doing') return <DoingState variant={variant} week={week} navigate={navigate} />;
+  if (state === 'doing') return <DoingState variant={variant} week={week} navigate={navigate} todayLine={todayLine} />;
   return <PlanState variant={variant} week={week} navigate={navigate} />;
 };
 

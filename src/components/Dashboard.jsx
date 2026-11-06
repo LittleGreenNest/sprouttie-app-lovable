@@ -89,13 +89,6 @@ const Dashboard = () => {
   const todayRoundsDone = countRoundsFromTracking(todayTracking);
   const totalPossibleRounds = sets.filter(s => s.flashcardIds.length > 0).length * 3 || 15;
 
-  // Last session
-  const lastSessionDate = trackingData.find(t => t.status === 'flashed')?.date;
-  const lastSessionText = getLastSessionText(lastSessionDate, todayStr);
-
-  // Due sets
-  const dueSetText = getDueSetText(sets, flashcards, trackingData, todayStr);
-
   // Spoken word counts
   const spokenNew = spokenWords.filter(w => w.word_stage === 'new').length;
   const spokenGrowing = spokenWords.filter(w => w.word_stage === 'growing').length;
@@ -106,6 +99,11 @@ const Dashboard = () => {
   }).length;
 
   const practisedDays = countPracticeDays(trackingData);
+
+  const roundsLine =
+    todayRoundsDone >= totalPossibleRounds && todayRoundsDone > 0
+      ? 'All rounds done today.'
+      : `${todayRoundsDone} of ${totalPossibleRounds} rounds done today.`;
 
   // Flashed counts per set
   const flashedPerSet = sets.map(set => {
@@ -139,55 +137,28 @@ const Dashboard = () => {
       </div>
 
       {/* This week: plan it, do it, notice it. One card, three states. */}
-      <WeekCard variant="home" />
+      <WeekCard variant="home" todayLine={sets.length > 0 ? roundsLine : null} />
 
-      {/* 3. TODAY'S FOCUS CARD */}
-      <div className="mx-4 mb-3" style={{ background: '#2D6A4F', borderRadius: 16, padding: '16px 18px' }}>
-        <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.06em', color: '#95D5B2', textTransform: 'uppercase', marginBottom: 10 }}>
-          TODAY'S FOCUS
-        </p>
-
-        {sets.length === 0 ? (
-          <>
-            <StatusLine dotColor="#95D5B2" text="You're all set up. Add your first flashcard set." />
-            <StatusLine dotColor="#52B788" text="Takes less than 2 minutes to get started" />
-            <div style={{ marginTop: 14 }}>
-              <button
-                onClick={() => navigate('/cards')}
-                className="w-full active:scale-[0.98] transition-transform"
-                style={{
-                  background: '#F0C040', border: 'none', borderRadius: 10,
-                  padding: 12, fontSize: 14, fontWeight: 600, color: '#1A1A1A', cursor: 'pointer'
-                }}
-              >
-                Add Your First Flashcard Set
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <StatusLine dotColor="#95D5B2" text={dueSetText} />
-            <StatusLine dotColor="#95D5B2" text={lastSessionText} />
-            <StatusLine dotColor="#52B788" text={
-              todayRoundsDone >= totalPossibleRounds && todayRoundsDone > 0
-                ? 'All rounds done today ✓'
-                : `${todayRoundsDone} / ${totalPossibleRounds} rounds done today`
-            } />
-            <div style={{ marginTop: 14 }}>
-              <button
-                onClick={() => navigate('/daily-tracking')}
-                className="w-full active:scale-[0.98] transition-transform"
-                style={{
-                  background: '#F0C040', border: 'none', borderRadius: 10,
-                  padding: 12, fontSize: 14, fontWeight: 600, color: '#1A1A1A', cursor: 'pointer'
-                }}
-              >
-                Start Flashcard Session
-              </button>
-            </div>
-          </>
-        )}
-      </div>
+      {/* 3. FIRST-SET PROMPT. Once sets exist, the week card holds the one
+          start button and today's round count. */}
+      {sets.length === 0 && (
+        <div className="mx-4 mb-3" style={{ background: '#2D6A4F', borderRadius: 16, padding: '16px 18px' }}>
+          <StatusLine dotColor="#95D5B2" text="You're all set up. Add your first flashcard set." />
+          <StatusLine dotColor="#52B788" text="Takes less than 2 minutes to get started" />
+          <div style={{ marginTop: 14 }}>
+            <button
+              onClick={() => navigate('/cards')}
+              className="w-full active:scale-[0.98] transition-transform"
+              style={{
+                background: '#F0C040', border: 'none', borderRadius: 10,
+                padding: 12, fontSize: 14, fontWeight: 600, color: '#1A1A1A', cursor: 'pointer'
+              }}
+            >
+              Add Your First Flashcard Set
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 4. CHILD'S WORDS CARD */}
       <button
@@ -405,39 +376,6 @@ function getWeekStart() {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
-}
-
-function getLastSessionText(lastDate, todayStr) {
-  if (!lastDate) return 'No sessions yet. Start today.';
-  if (lastDate === todayStr) return 'Last session: today';
-  const diff = Math.floor((new Date(todayStr) - new Date(lastDate)) / 86400000);
-  return `Last session: ${diff} day${diff !== 1 ? 's' : ''} ago`;
-}
-
-function getDueSetText(sets, flashcards, trackingData, todayStr) {
-  if (sets.length === 0) return 'Add your first flashcard set to begin';
-
-  const todayTracking = trackingData.filter(t => t.date === todayStr && t.status === 'flashed');
-  const flashedToday = new Set(todayTracking.map(t => cardIdFrom(t.flashcard_id)));
-
-  // Find sets with unflashed cards today
-  const dueSets = sets.filter(set => {
-    const setCards = flashcards.filter(c => c.set_number === set.id);
-    return setCards.length > 0 && setCards.some(c => !flashedToday.has(c.id));
-  });
-
-  if (dueSets.length === 0) return 'All sets flashed today ✓';
-
-  const totalDueWords = dueSets.reduce((sum, set) => {
-    return sum + flashcards.filter(c => c.set_number === set.id && !flashedToday.has(c.id)).length;
-  }, 0);
-
-  const dueWords = `${totalDueWords} word${totalDueWords === 1 ? '' : 's'} due today`;
-  if (dueSets.length <= 2) {
-    const names = dueSets.map(s => s.name).join(', ');
-    return `${names} · ${dueWords}`;
-  }
-  return `${dueSets.length} sets · ${dueWords}`;
 }
 
 function countRoundsFromTracking(todayTracking) {
