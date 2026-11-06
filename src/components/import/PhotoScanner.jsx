@@ -1,15 +1,11 @@
 import { FREE_CARD_LIMIT } from '@/utils/planLimits';
 import React, { useState, useRef, useCallback } from 'react';
-import { Camera, Upload, X, Check, AlertTriangle, Loader2, RotateCcw, Plus, Globe, ScanText, Eye, FileText, Sparkles } from 'lucide-react';
-import * as pdfjsLib from 'pdfjs-dist';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+import { Camera, Upload, X, Check, AlertTriangle, Loader2, RotateCcw, Plus, Globe, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useFlashcards } from '@/context/FlashcardContext';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-import { usePlanAccess } from '@/hooks/usePlanAccess';
 
 const STEPS = { UPLOAD: 'upload', SCANNING: 'scanning', REVIEW: 'review', DONE: 'done' };
 
@@ -44,14 +40,12 @@ const resizeImageToBase64 = (file, maxPx = 2048) =>
     img.onerror = reject;
     img.src = objectUrl;
   });
-const MODES = { TEXT: 'text', IDENTIFY: 'identify' };
+/** One photo per scan; this many words or phrases are kept from it. */
+const MAX_WORDS = 30;
 
 const PhotoScanner = () => {
   const navigate = useNavigate();
   const { flashcards, addFlashcard, categories, addCategory, sets, getFlashcardsForSet } = useFlashcards();
-  const { isPlanAtLeast } = usePlanAccess();
-  const isPaid = isPlanAtLeast('print');
-  const maxImages = isPaid ? 10 : 1;
   const fileInputRef = useRef(null);
 
   const [step, setStep] = useState(STEPS.UPLOAD);
@@ -62,7 +56,6 @@ const PhotoScanner = () => {
   const [cardLanguage, setCardLanguage] = useState({});
   const [adding, setAdding] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
-  const [scanMode, setScanMode] = useState(MODES.TEXT);
   const [skipTranslation, setSkipTranslation] = useState(false);
   const [scanningProgress, setScanningProgress] = useState('');
   const [wordCategories, setWordCategories] = useState({}); // { [wordId]: categoryName }
@@ -70,25 +63,13 @@ const PhotoScanner = () => {
 
   const existingWordsSet = new Set(flashcards.map(fc => fc.word || fc.front));
 
-  const pdfPageToBase64 = async (page) => {
-    const scale = 2;
-    const viewport = page.getViewport({ scale });
-    const canvas = document.createElement('canvas');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    const ctx = canvas.getContext('2d');
-    await page.render({ canvasContext: ctx, viewport }).promise;
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-    return dataUrl.split(',')[1]; // return base64 only
-  };
-
   const scanImage = async (base64, mimeType) => {
     const { data, error } = await supabase.functions.invoke('scan-flashcards', {
       body: {
         imageBase64: base64,
         mimeType,
-        mode: scanMode === MODES.IDENTIFY ? 'identify' : 'text',
-        skipTranslation: scanMode === MODES.TEXT ? skipTranslation : false,
+        mode: 'text',
+        skipTranslation,
       },
     });
     if (error) throw error;
@@ -96,65 +77,32 @@ const PhotoScanner = () => {
   };
 
   const processOneFile = async (file) => {
-    const isPdf = file.type === 'application/pdf';
-    let words = [];
-    let message = '';
-
-    if (isPdf) {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      const totalPages = Math.min(pdf.numPages, 10);
-      for (let i = 1; i <= totalPages; i++) {
-        setScanningProgress(`Scanning PDF page ${i} of ${totalPages}...`);
-        const page = await pdf.getPage(i);
-        const base64 = await pdfPageToBase64(page);
-        const data = await scanImage(base64, 'image/jpeg');
-        if (data.message && !message) message = data.message;
-        if (data.words?.length) words.push(...data.words);
-      }
-    } else {
-      // Resize large images before encoding — iPhone photos can be 4–8MB which
-      // strains the edge function body limit. Cap at 1280px, output as JPEG.
-      const base64 = await resizeImageToBase64(file, 2048);
-      const mimeType = file.size < 4 * 1024 * 1024 ? (file.type || 'image/jpeg') : 'image/png';
-      const data = await scanImage(base64, mimeType);
-      if (data.error) throw new Error(data.error);
-      if (data.message) message = data.message;
-      words = data.words || [];
-    }
-    return { words, message };
+    // Resize large images before encoding. iPhone photos can be 4-8MB, which
+    // strains the edge function body limit.
+    const base64 = await resizeImageToBase64(file, 2048);
+    const mimeType = file.size < 4 * 1024 * 1024 ? (file.type || 'image/jpeg') : 'image/png';
+    const data = await scanImage(base64, mimeType);
+    if (data.error) throw new Error(data.error);
+    return { words: data.words || [], message: data.message || '' };
   };
 
   const handleFiles = useCallback(async (files) => {
     if (!files || files.length === 0) return;
 
-    // Enforce limit
-    const fileList = Array.from(files).slice(0, maxImages);
+    const file = files[0];
 
-    // For single image, show preview using data URL (blob URLs can fail in some PWA/browser contexts)
-    const firstFile = fileList[0];
-    const isPdf = firstFile.type === 'application/pdf';
-    if (fileList.length === 1 && !isPdf) {
-      const reader = new FileReader();
-      reader.onload = (e) => setPreviewUrl(e.target.result);
-      reader.readAsDataURL(firstFile);
-    } else {
-      setPreviewUrl(null);
-    }
+    // Show a preview from a data URL (blob URLs can fail in some PWA/browser contexts)
+    const reader = new FileReader();
+    reader.onload = (e) => setPreviewUrl(e.target.result);
+    reader.readAsDataURL(file);
     setStep(STEPS.SCANNING);
     setAiMessage('');
-    setScanningProgress(fileList.length > 1 ? `Scanning image 1 of ${fileList.length}...` : (isPdf ? 'Loading PDF...' : ''));
+    setScanningProgress('');
 
     try {
-      let allWords = [];
-      let message = '';
-
-      for (let f = 0; f < fileList.length; f++) {
-        if (fileList.length > 1) setScanningProgress(`Scanning image ${f + 1} of ${fileList.length}...`);
-        const result = await processOneFile(fileList[f]);
-        if (result.message && !message) message = result.message;
-        allWords.push(...result.words);
-      }
+      const result = await processOneFile(file);
+      const allWords = result.words;
+      const message = result.message;
 
       if (message) setAiMessage(message);
 
@@ -168,7 +116,7 @@ const PhotoScanner = () => {
         return true;
       });
 
-      const words = uniqueWords.map((w, i) => ({
+      const words = uniqueWords.slice(0, MAX_WORDS).map((w, i) => ({
         ...w,
         id: `scan-${i}`,
         isDuplicate: existingWordsSet.has(w.chinese) || existingWordsSet.has(w.english),
@@ -197,7 +145,7 @@ const PhotoScanner = () => {
     } finally {
       setScanningProgress('');
     }
-  }, [existingWordsSet, scanMode, skipTranslation, maxImages]);
+  }, [existingWordsSet, skipTranslation]);
 
   const toggleWord = (id) => {
     setSelectedWords(prev => ({ ...prev, [id]: !prev[id] }));
@@ -341,7 +289,7 @@ const PhotoScanner = () => {
         </div>
         <div>
           <h2 className="text-lg font-bold text-[hsl(var(--sprouttie-ink))]">Scan Words</h2>
-          <p className="text-xs text-slate-500">Snap a photo of flashcards, toys, or anything with Chinese or English words</p>
+          <p className="text-xs text-slate-500">Snap a photo of anything with words on it</p>
         </div>
       </div>
 
@@ -352,58 +300,23 @@ const PhotoScanner = () => {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-4"
         >
-          {/* Mode toggle */}
-          <div className="flex bg-slate-100 rounded-xl p-1">
-            <button
-              onClick={() => setScanMode(MODES.TEXT)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                scanMode === MODES.TEXT
-                  ? 'bg-white text-[hsl(var(--sprouttie-ink))] shadow-sm'
-                  : 'text-slate-500'
-              }`}
-            >
-              <ScanText className="w-4 h-4" />
-              Scan Text
-            </button>
-            <button
-              onClick={() => setScanMode(MODES.IDENTIFY)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                scanMode === MODES.IDENTIFY
-                  ? 'bg-white text-[hsl(var(--sprouttie-ink))] shadow-sm'
-                  : 'text-slate-500'
-              }`}
-            >
-              <Eye className="w-4 h-4" />
-              What's this?
-            </button>
-          </div>
-
-          {scanMode === MODES.TEXT && (
-            <label className="flex items-center gap-2 px-1 text-xs text-slate-600 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={skipTranslation}
-                onChange={(e) => setSkipTranslation(e.target.checked)}
-                className="rounded border-slate-300 text-[hsl(var(--sprouttie-green))] focus:ring-[hsl(var(--sprouttie-green))]"
-              />
-              Keep English words as English (don't translate to Chinese)
-            </label>
-          )}
+          <label className="flex items-center gap-2 px-1 text-xs text-slate-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={skipTranslation}
+              onChange={(e) => setSkipTranslation(e.target.checked)}
+              className="rounded border-slate-300 text-[hsl(var(--sprouttie-green))] focus:ring-[hsl(var(--sprouttie-green))]"
+            />
+            Keep English words as English, so "bus" stays "bus" and is not translated to Chinese
+          </label>
 
           {/* 3-step explainer strip */}
           <div className="flex items-center justify-between gap-2 bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
-            {(scanMode === MODES.TEXT
-              ? [
-                  { emoji: '📸', label: 'Take a photo of anything that has words' },
-                  { emoji: '🔍', label: 'We read the characters' },
-                  { emoji: '✅', label: 'Added to your set instantly' },
-                ]
-              : [
-                  { emoji: '📸', label: 'Snap any object' },
-                  { emoji: '🧠', label: 'AI identifies it' },
-                  { emoji: '✅', label: 'Get the Chinese word' },
-                ]
-            ).map((s, i) => (
+            {[
+              { emoji: '📸', label: 'Take one photo of anything that has words' },
+              { emoji: '🔍', label: 'We read the words' },
+              { emoji: '✅', label: 'You check them, then add' },
+            ].map((s, i) => (
               <React.Fragment key={i}>
                 <div className="flex flex-col items-center text-center flex-1 gap-1.5">
                   <span className="text-2xl">{s.emoji}</span>
@@ -416,23 +329,14 @@ const PhotoScanner = () => {
 
           <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center space-y-4 bg-slate-50/50">
             <div className="w-16 h-16 rounded-full bg-[hsl(var(--sprouttie-green)/0.1)] flex items-center justify-center mx-auto">
-              {scanMode === MODES.IDENTIFY
-                ? <Eye className="w-8 h-8 text-[hsl(var(--sprouttie-green))]" />
-                : <Camera className="w-8 h-8 text-[hsl(var(--sprouttie-green))]" />
-              }
+              <Camera className="w-8 h-8 text-[hsl(var(--sprouttie-green))]" />
             </div>
             <div>
               <p className="font-semibold text-[hsl(var(--sprouttie-ink))]">
-                {scanMode === MODES.IDENTIFY
-                  ? "Snap a photo of any object"
-                  : "Snap anything with Chinese or English words"
-                }
+                Photograph anything with words on it
               </p>
               <p className="text-sm text-slate-500 mt-1">
-                {scanMode === MODES.IDENTIFY
-                  ? "Point at a toy, fruit or animal and we'll tell you the Chinese word"
-                  : "Flashcards, toys, posters, books. We'll detect and translate up to 20 words at once"
-                }
+                A flashcard spread, a poster, a wooden panel, a book page. We read up to 30 words or phrases from one photo.
               </p>
             </div>
 
@@ -441,41 +345,23 @@ const PhotoScanner = () => {
               className="btn-primary flex items-center gap-2 px-6 py-3 rounded-xl bg-[hsl(var(--sprouttie-green))] text-white font-semibold text-sm shadow-sm hover:opacity-90 transition mx-auto"
             >
               <Upload className="w-4 h-4" />
-              {isPaid ? 'Upload Photos or PDF (up to 10)' : 'Upload Photo or PDF'}
+              Upload a photo
             </button>
           </div>
 
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*,application/pdf"
+            accept="image/*"
             className="hidden"
-            multiple={isPaid}
             onChange={e => {
               handleFiles(e.target.files);
               e.target.value = '';
             }}
           />
 
-          {!isPaid && (
-            <button
-              onClick={() => navigate('/plans')}
-              className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl text-left"
-            >
-              <Sparkles className="w-5 h-5 text-amber-500 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-amber-800">Scan up to 10 images at once</p>
-                <p className="text-[11px] text-amber-600">Upgrade to scan multiple photos in one go</p>
-              </div>
-              <span className="text-xs font-semibold text-amber-700">Upgrade →</span>
-            </button>
-          )}
-
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-            {scanMode === MODES.IDENTIFY
-              ? <><strong>Tip:</strong> Get close to the object with good lighting. Works best with single items: toys, fruit, animals, household objects.</>
-              : <><strong>Tip:</strong> Use good lighting and lay items flat. You can also upload a PDF (up to 10 pages). Works with up to 20 items at once.</>
-            }
+            <strong>Tip:</strong> The photo needs words in it. Use good lighting, lay items flat and take one photo at a time.
           </div>
         </motion.div>
       )}
@@ -495,12 +381,10 @@ const PhotoScanner = () => {
           <div className="flex flex-col items-center gap-3 py-8">
             <Loader2 className="w-10 h-10 text-[hsl(var(--sprouttie-green))] animate-spin" />
             <p className="font-semibold text-[hsl(var(--sprouttie-ink))]">
-              {scanMode === MODES.IDENTIFY ? 'Identifying objects...' : 'Scanning for words...'}
+              Scanning for words...
             </p>
             <p className="text-sm text-slate-500">
-              {scanningProgress || (scanMode === MODES.IDENTIFY
-                ? 'Looking at the photo and finding the Chinese words'
-                : (skipTranslation ? 'Detecting Chinese & English words' : 'Detecting Chinese & English words and generating translations'))}
+              {skipTranslation ? 'Detecting Chinese & English words' : 'Detecting Chinese & English words and generating translations'}
             </p>
           </div>
         </motion.div>
