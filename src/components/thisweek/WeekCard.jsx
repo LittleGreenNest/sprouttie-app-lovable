@@ -116,7 +116,7 @@ const PlanState = ({ variant, week, navigate }) => {
         variant={variant}
         label="This week"
         title="Nothing planned yet."
-        sub={error || "Sprouttie picks 5 words from what your child is into."}
+        sub={error || "Sprouttie picks 10 words from what your child is into."}
       >
         <PrimaryButton onClick={week.generate}>Pick this week's words</PrimaryButton>
         <div className="text-center">

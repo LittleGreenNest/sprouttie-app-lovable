@@ -6,6 +6,7 @@ import { parseStatedInterests, withStatedInterestsFirst, type CategorySignal } f
 // the v1beta API ahead of its announced shutdown date and every call started
 // 404ing. Same alias scan-flashcards uses.
 const GEMINI_MODEL = "gemini-flash-latest";
+const GEMINI_FALLBACK_MODEL = "gemini-flash-lite-latest";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -674,30 +675,46 @@ For each word provide:
 
 Return JSON only. No preamble. No markdown. Random seed for variety: ${Math.floor(Math.random() * 100000)}`;
 
-    // Gemini answers 503 when it is busy, usually for seconds. One attempt left
-    // the parent with "Couldn't pick words", so try three times before giving up.
-    const RETRY_WAITS_MS = [1500, 4000];
+    // Gemini answers 503 when it is busy, and sometimes never answers. Each try
+    // is capped at 20 seconds so the function always replies before Supabase
+    // kills it (546), and the last try uses the lighter model, which has its
+    // own capacity.
+    const ATTEMPTS = [
+      { model: GEMINI_MODEL, wait: 1000 },
+      { model: GEMINI_MODEL, wait: 1000 },
+      { model: GEMINI_FALLBACK_MODEL, wait: 0 },
+    ];
     let aiResponse!: Response;
-    for (let attempt = 0; ; attempt += 1) {
-      aiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            system_instruction: { parts: [{ text: systemPrompt }] },
-            contents: [{ role: "user", parts: [{ text: userMessage }] }],
-            generation_config: {
-              response_mime_type: "application/json",
-              temperature: 0.9,
-              thinking_config: { thinking_level: "low" },
-            },
-          }),
-        }
-      );
-      if (aiResponse.ok || ![500, 502, 503, 504].includes(aiResponse.status) || attempt >= RETRY_WAITS_MS.length) break;
-      console.warn("Gemini busy, retrying:", aiResponse.status, await aiResponse.text());
-      await new Promise((resolve) => setTimeout(resolve, RETRY_WAITS_MS[attempt]));
+    for (let attempt = 0; attempt < ATTEMPTS.length; attempt += 1) {
+      const { model, wait } = ATTEMPTS[attempt];
+      const isLast = attempt === ATTEMPTS.length - 1;
+      try {
+        aiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: AbortSignal.timeout(20000),
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: systemPrompt }] },
+              contents: [{ role: "user", parts: [{ text: userMessage }] }],
+              generation_config: {
+                response_mime_type: "application/json",
+                temperature: 0.9,
+                thinking_config: { thinking_level: "low" },
+              },
+            }),
+          }
+        );
+      } catch (e) {
+        console.warn("Gemini call timed out or failed:", model, String(e));
+        if (isLast) throw new Error(`AI call failed: ${String(e)}`);
+        await new Promise((resolve) => setTimeout(resolve, wait));
+        continue;
+      }
+      if (aiResponse.ok || ![500, 502, 503, 504].includes(aiResponse.status) || isLast) break;
+      console.warn("Gemini busy, retrying:", model, aiResponse.status, await aiResponse.text());
+      await new Promise((resolve) => setTimeout(resolve, wait));
     }
 
     if (!aiResponse.ok) {
