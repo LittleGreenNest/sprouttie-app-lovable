@@ -10,6 +10,7 @@ import { useWeeklyReview } from '../review/useWeeklyReview';
 import { useWeekState } from './useWeekState';
 import { splitSuggestedWord } from './weekWords';
 import NoticeLogSheet from './NoticeLogSheet';
+import { printWeekWords } from './printWeekWords';
 
 // Brand palette (sprouttie-brand): cream ground, mint panel, Daisy Yellow CTA
 // with dark ink text, never white on yellow.
@@ -221,6 +222,7 @@ const PlanState = ({ variant, week, navigate }) => {
       </PrimaryButton>
       <div className="flex justify-between">
         <TextLink onClick={week.generate} disabled={accepting}>Different words</TextLink>
+        <TextLink onClick={() => printWeekWords(pending, theme)}>Print these {pending.length}</TextLink>
         <TextLink onClick={() => navigate('/word-planner')}>See full plan</TextLink>
       </div>
     </Shell>
