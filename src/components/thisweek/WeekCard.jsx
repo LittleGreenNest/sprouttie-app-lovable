@@ -301,6 +301,13 @@ const DoingState = ({ variant, week, navigate, todayLine }) => {
 
       <div className="flex justify-between">
         <TextLink onClick={() => setSheetOpen(true)}>Note what you noticed</TextLink>
+        <TextLink
+          onClick={() =>
+            printWeekWords(accepted, theme, `${plural(accepted.length, 'word')} for this week. Tick each one as you say it.`)
+          }
+        >
+          Print these {accepted.length}
+        </TextLink>
         <TextLink onClick={() => navigate('/word-planner')}>See full plan</TextLink>
       </div>
 

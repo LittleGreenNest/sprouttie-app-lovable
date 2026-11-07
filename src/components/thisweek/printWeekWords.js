@@ -8,7 +8,7 @@ const esc = (s) =>
  * needed, since proposed words are not cards yet). Uses a hidden iframe so a
  * popup blocker cannot stop it.
  */
-export function printWeekWords(suggestions, theme) {
+export function printWeekWords(suggestions, theme, subtitle) {
   const rows = (suggestions || [])
     .map((s) => {
       const { front, pinyin, english } = splitSuggestedWord(s.word);
@@ -33,7 +33,7 @@ export function printWeekWords(suggestions, theme) {
   .zh { font-size: 26px; width: 30%; } .py { font-size: 14px; color: #66737A; width: 25%; } .en { font-size: 14px; }
 </style></head><body>
 <h1>${esc(theme || "This week's words")}</h1>
-<p class="sub">${(suggestions || []).length} proposed words from Sprouttie. Tick the ones you want.</p>
+<p class="sub">${esc(subtitle || `${(suggestions || []).length} proposed words from Sprouttie. Tick the ones you want.`)}</p>
 <table>${rows}</table>
 </body></html>`;
 
