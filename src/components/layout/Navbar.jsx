@@ -1,5 +1,5 @@
 // src/components/layout/Navbar.js
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import sprouttielogo from '../../assets/sprouttie-logo.png';
@@ -17,6 +17,27 @@ const Navbar = () => {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const profileMenuRef = useRef(null);
+  const profileButtonRef = useRef(null);
+
+  useEffect(() => {
+    if (!isProfileDropdownOpen) return;
+    const closeOutside = (event) => {
+      if (!profileMenuRef.current?.contains(event.target)) setIsProfileDropdownOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') {
+        setIsProfileDropdownOpen(false);
+        profileButtonRef.current?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isProfileDropdownOpen]);
 
   const handleLogout = async () => {
     try {
@@ -28,7 +49,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white shadow-sm border-b border-slate-100 font-body">
+    <nav className="relative z-40 bg-white shadow-sm border-b border-slate-100 font-body">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
@@ -40,21 +61,23 @@ const Navbar = () => {
             </div>
           </div>
           
-          <div className="hidden sm:ml-6 sm:flex sm:items-center">
+          <div className={currentUser ? "ml-3 flex items-center" : "hidden sm:ml-6 sm:flex sm:items-center"}>
             {/* User profile dropdown - only shown when logged in */}
             {currentUser ? (
-              <div className="ml-3 relative">
+              <div className="relative" ref={profileMenuRef}>
                 <div>
                   <button
                     type="button"
                     className="bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sprouttie-green"
+                    ref={profileButtonRef}
                     id="user-menu-button"
+                    aria-controls={isProfileDropdownOpen ? "user-menu" : undefined}
                     aria-expanded={isProfileDropdownOpen}
                     aria-haspopup="true"
-                    onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                    onClick={() => setIsProfileDropdownOpen(open => !open)}
                   >
                     <span className="sr-only">Open user menu</span>
-                    <div className="h-8 w-8 rounded-full bg-sprouttie-green-light flex items-center justify-center text-sprouttie-green-dark font-medium">
+                    <div className="h-11 w-11 rounded-full bg-sprouttie-green-light flex items-center justify-center text-sprouttie-green-dark font-medium">
                       {avatarInitial}
                     </div>
                   </button>
@@ -64,6 +87,7 @@ const Navbar = () => {
                 {isProfileDropdownOpen && (
                   <div
                     className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
+                    id="user-menu"
                     role="menu"
                     aria-orientation="vertical"
                     aria-labelledby="user-menu-button"
@@ -71,35 +95,15 @@ const Navbar = () => {
                   >
                     <Link
                       to="/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="flex min-h-11 items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100"
                       role="menuitem"
-                      tabIndex="-1"
                       onClick={() => setIsProfileDropdownOpen(false)}
                     >
                       Your Profile
                     </Link>
-                    <Link
-                      to="/this-week"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      role="menuitem"
-                      tabIndex="-1"
-                      onClick={() => setIsProfileDropdownOpen(false)}
-                    >
-                      This week
-                    </Link>
-                    <Link
-                      to="/scan-flashcards"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      role="menuitem"
-                      tabIndex="-1"
-                      onClick={() => setIsProfileDropdownOpen(false)}
-                    >
-                      Scan Cards
-                    </Link>
                     <button
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="flex min-h-11 w-full items-center text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100"
                       role="menuitem"
-                      tabIndex="-1"
                       onClick={() => {
                         handleLogout();
                         setIsProfileDropdownOpen(false);
@@ -178,58 +182,10 @@ const Navbar = () => {
 
       {/* Mobile menu, toggle classes based on menu state */}
       <div
-        className={`${isMobileMenuOpen ? 'block' : 'hidden'} sm:hidden`}
+        className={`${!currentUser && isMobileMenuOpen ? 'block' : 'hidden'} sm:hidden`}
         id="mobile-menu"
       >
-        {/* Mobile menu profile section */}
-        {currentUser ? (
-          <div className="pt-4 pb-3 border-t border-gray-200">
-            <div className="flex items-center px-4">
-              <div className="flex-shrink-0">
-                <div className="h-10 w-10 rounded-full bg-sprouttie-green-light flex items-center justify-center text-sprouttie-green-dark font-medium">
-                  {avatarInitial}
-                </div>
-              </div>
-              <div className="ml-3">
-                <div className="text-base font-medium text-gray-800">{displayName || 'User'}</div>
-                <div className="text-sm font-medium text-gray-500">{currentUser.email}</div>
-              </div>
-            </div>
-            <div className="mt-3 space-y-1">
-              <Link
-                to="/profile"
-                className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Your Profile
-              </Link>
-              <Link
-                to="/this-week"
-                className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                This week
-              </Link>
-              <Link
-                to="/scan-flashcards"
-                className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Scan Cards
-              </Link>
-              <button
-                className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                onClick={() => {
-                  handleLogout();
-                  setIsMobileMenuOpen(false);
-                }}
-              >
-                Sign out
-              </button>
-            </div>
-          </div>
-        ) : (
-          // Login/Signup buttons for mobile
+          {/* Login/Signup buttons for mobile */}
           <div className="pt-4 pb-3 border-t border-gray-200">
             <div className="flex items-center justify-around px-4">
               <Link
@@ -248,7 +204,6 @@ const Navbar = () => {
               </Link>
             </div>
           </div>
-        )}
       </div>
     </nav>
   );
