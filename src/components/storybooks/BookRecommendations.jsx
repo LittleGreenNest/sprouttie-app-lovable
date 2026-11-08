@@ -5,9 +5,33 @@ import { useFlashcards } from '../../context/FlashcardContext';
 import { Book, Sparkles, RefreshCw, ChevronDown, ChevronUp, ExternalLink, Globe, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
+import { splitSuggestedWord } from '../thisweek/weekWords';
+
+// Stop waiting on the recommender after this long, so the button never hangs.
+const REQUEST_TIMEOUT_MS = 45000;
+
+/**
+ * One entry per word. "sun" and "sun (太阳 tài yáng)" are the same word, so a
+ * plain word is dropped when another entry already carries it as its English.
+ */
+const dedupeWords = (words) => {
+  const parsed = [...new Set(words.map((w) => String(w || '').trim()).filter(Boolean))]
+    .map((raw) => ({ raw, ...splitSuggestedWord(raw) }));
+  const covered = new Set(parsed.map((p) => p.english.toLowerCase()).filter(Boolean));
+  const seen = new Set();
+  return parsed
+    .filter((p) => {
+      const key = p.front.toLowerCase();
+      if (!p.english && covered.has(key)) return false;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((p) => p.raw);
+};
 
 // Detect languages from flashcard words and spoken words
-const detectLanguages = (flashcards, spokenWords) => {
+const detectLanguages = (flashcards, spokenWords, profile) => {
   const languages = new Set(['english']);
   const allText = [
     ...flashcards.map(fc => `${fc.front || ''} ${fc.back || ''}`),
@@ -15,12 +39,14 @@ const detectLanguages = (flashcards, spokenWords) => {
   ].join(' ');
 
   const hasCJK = /[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/.test(allText);
-  if (hasCJK) { languages.add('mandarin'); languages.add('chinese'); }
+  if (hasCJK) languages.add('mandarin');
   const hasBopomofo = /[\u3100-\u312f]/.test(allText);
   if (hasBopomofo) languages.add('mandarin');
-  const hasHokkienDiacritics = /[āáǎàāéêèěẽōóǒòōḿńňǹ]/i.test(allText);
+  // Accent marks are not evidence of Hokkien: Mandarin pinyin (niǎo, shù yè)
+  // uses the same ones. Only a folder name or the profile can say so.
   const hasHokkienFolder = flashcards.some(fc => fc.folder && /hokkien|taiwanese|台語|閩南/i.test(fc.folder));
-  if (hasHokkienDiacritics || hasHokkienFolder) languages.add('hokkien');
+  const hokkienProfile = /hokkien|taiwanese|台語|閩南/i.test(String(profile?.target_language || ''));
+  if (hasHokkienFolder || hokkienProfile) languages.add('hokkien');
   const hasJapanese = /[\u3040-\u309f\u30a0-\u30ff]/.test(allText);
   if (hasJapanese) languages.add('japanese');
   const hasKorean = /[\uac00-\ud7af]/.test(allText);
@@ -202,12 +228,31 @@ const BookRecommendations = () => {
     const fetchAll = async () => {
       const [spokenRes, historyRes, feedbackRes] = await Promise.all([
         supabase.from('spoken_words').select('word, word_stage').eq('user_id', currentUser.id),
-        supabase.from('recommended_books').select('title').eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(30),
+        supabase.from('recommended_books').select('title, author, language, age_range, description, cover_color, matching_words, created_at').eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(30),
         supabase.from('book_feedback').select('book_title, feedback').eq('user_id', currentUser.id),
       ]);
 
       if (spokenRes.data) setSpokenWordsData(spokenRes.data);
-      if (historyRes.data) setExcludeTitles(historyRes.data.map(r => r.title));
+      if (historyRes.data) {
+        setExcludeTitles(historyRes.data.map(r => r.title));
+        // Show the last set again instead of an empty page. A set is the rows
+        // saved together, within a minute of the newest one.
+        const rows = historyRes.data;
+        if (rows.length > 0) {
+          const newest = new Date(rows[0].created_at).getTime();
+          const lastSet = rows.filter(r => newest - new Date(r.created_at).getTime() < 60000);
+          setRecommendations(prev => prev.length > 0 ? prev : lastSet.map(r => ({
+            title: r.title,
+            author: r.author,
+            language: r.language,
+            ageRange: r.age_range,
+            description: r.description,
+            coverColor: r.cover_color,
+            matchingWords: r.matching_words || [],
+          })));
+          setLastGenerated(prev => prev || new Date(rows[0].created_at));
+        }
+      }
       if (feedbackRes.data) {
         const map = {};
         feedbackRes.data.forEach(f => { map[f.book_title] = f.feedback; });
@@ -218,9 +263,9 @@ const BookRecommendations = () => {
   }, [currentUser]);
 
   const spokenWords = spokenWordsData.map(sw => sw.word);
-  const flashedWords = [...new Set(flashcards.map(fc => fc.front || fc.word).filter(Boolean))];
-  const allWords = [...new Set([...flashedWords, ...spokenWords])];
-  const detectedLanguages = detectLanguages(flashcards, spokenWords);
+  const flashedWords = dedupeWords(flashcards.map(fc => fc.front || fc.word));
+  const allWords = dedupeWords([...flashedWords, ...spokenWords]);
+  const detectedLanguages = detectLanguages(flashcards, spokenWords, profile);
   const isMultilingual = detectedLanguages.length > 1 || detectedLanguages.some(l => l !== 'english');
 
   // Build enriched data for the edge function
@@ -305,16 +350,26 @@ const BookRecommendations = () => {
       return;
     }
 
+    if (loading) return;
     setLoading(true);
+    let timer;
     try {
       const payload = buildEnrichedPayload();
 
-      const { data, error } = await supabase.functions.invoke('recommend-books', {
-        body: payload,
+      const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('timeout')), REQUEST_TIMEOUT_MS);
       });
+      const { data, error } = await Promise.race([
+        supabase.functions.invoke('recommend-books', { body: payload }),
+        timeout,
+      ]);
 
       if (error) throw error;
-      if (data.error) { toast.error(data.error); return; }
+      if (data?.error) { toast.error(data.error); return; }
+      if (!data?.books?.length) {
+        toast.error('No new books this time. Please try again.');
+        return;
+      }
 
       const books = data.books || [];
       setRecommendations(books);
@@ -332,11 +387,16 @@ const BookRecommendations = () => {
       );
     } catch (error) {
       console.error('Error getting recommendations:', error);
-      toast.error('Failed to get recommendations. Please try again.');
+      toast.error(
+        error?.message === 'timeout'
+          ? 'This is taking too long. Sprouttie is busy, so please try again in a minute.'
+          : 'Could not get recommendations. Please try again.'
+      );
     } finally {
+      clearTimeout(timer);
       setLoading(false);
     }
-  }, [allWords, detectedLanguages, generateCount, isMultilingual, feedbackMap, profile, spokenWordsData, flashcards, excludeTitles]);
+  }, [loading, allWords, detectedLanguages, generateCount, isMultilingual, feedbackMap, profile, spokenWordsData, flashcards, excludeTitles]);
 
   return (
     <div className="space-y-6">
