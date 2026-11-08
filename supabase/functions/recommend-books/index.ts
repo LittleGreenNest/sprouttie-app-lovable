@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // the v1beta API ahead of its announced shutdown date and every call started
 // 404ing. Same alias scan-flashcards uses.
 const GEMINI_MODEL = "gemini-flash-latest";
+const GEMINI_FALLBACK_MODEL = "gemini-flash-lite-latest";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -192,18 +193,43 @@ Respond with valid JSON only:
   ]
 }`;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: "You are a helpful children's book recommendation assistant. Always respond with valid JSON only." }] },
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generation_config: { response_mime_type: "application/json", temperature: 0.5, thinking_config: { thinking_level: "low" } },
-        }),
+    // Gemini answers 503 when it is busy, and sometimes never answers. Each try
+    // is capped at 10 seconds so this function always replies before the app
+    // gives up, and the last try uses the lighter model, which has its own
+    // capacity. Same approach as generate-autopilot-suggestions.
+    const ATTEMPTS = [
+      { model: GEMINI_MODEL, wait: 1000 },
+      { model: GEMINI_MODEL, wait: 1000 },
+      { model: GEMINI_FALLBACK_MODEL, wait: 0 },
+    ];
+    let response!: Response;
+    for (let attempt = 0; attempt < ATTEMPTS.length; attempt += 1) {
+      const { model, wait } = ATTEMPTS[attempt];
+      const isLast = attempt === ATTEMPTS.length - 1;
+      try {
+        response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: AbortSignal.timeout(10000),
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: "You are a helpful children's book recommendation assistant. Always respond with valid JSON only." }] },
+              contents: [{ role: "user", parts: [{ text: prompt }] }],
+              generation_config: { response_mime_type: "application/json", temperature: 0.5, thinking_config: { thinking_level: "low" } },
+            }),
+          }
+        );
+      } catch (e) {
+        console.warn("Gemini call timed out or failed:", model, String(e));
+        if (isLast) throw new Error("The book recommender is busy. Please try again in a minute.");
+        await new Promise((resolve) => setTimeout(resolve, wait));
+        continue;
       }
-    );
+      if (response.ok || ![500, 502, 503, 504].includes(response.status) || isLast) break;
+      console.warn("Gemini busy, retrying:", model, response.status, await response.text());
+      await new Promise((resolve) => setTimeout(resolve, wait));
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
