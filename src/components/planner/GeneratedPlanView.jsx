@@ -1,8 +1,10 @@
 import { insertFlashcards } from '@/utils/flashcardWrites';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { buildInitialWeekPlan } from '@/utils/initialWeekPlan';
+import { withTimeout } from '@/utils/requestTimeout';
 import { toast } from 'react-toastify';
 import { Loader2, Plus, X, Sparkles } from 'lucide-react';
 import {
@@ -28,58 +30,45 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
   const [numSets, setNumSets] = useState(1);
 
   const weekStart = getWeekStart();
+  const requestVersion = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       let initialNumSets = 1;
-      if (currentUser) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('daily_time_commitment')
-          .eq('id', currentUser.id)
-          .single();
-        initialNumSets = getSetsForTime(data?.daily_time_commitment);
+      try {
+        if (currentUser) {
+          const { data, error: profileError } = await withTimeout(supabase
+            .from('profiles')
+            .select('daily_time_commitment')
+            .eq('id', currentUser.id)
+            .single(), 8000);
+          if (profileError) throw profileError;
+          initialNumSets = getSetsForTime(data?.daily_time_commitment);
+        }
+        if (cancelled) return;
+        setNumSets(initialNumSets);
+        generatePlan(initialNumSets);
+      } catch {
+        if (!cancelled) {
+          setError("Sprouttie couldn't load your setup. Please try again.");
+          setLoading(false);
+        }
       }
-      if (cancelled) return;
-      setNumSets(initialNumSets);
-      generatePlan(initialNumSets);
     })();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; requestVersion.current += 1; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
-  // Distribute the autopilot's flat list of words across sets round-robin.
-  const buildPlanFromAutopilot = (suggestions, theme, themeRationale, sets) => {
-    const safeSets = Math.max(1, Math.min(3, sets || 1));
-    const buckets = Array.from({ length: safeSets }, (_, i) => ({
-      set_number: i + 1,
-      words: [],
-    }));
-
-    (suggestions || []).slice(0, safeSets * MAX_WORDS_PER_SET).forEach((s, idx) => {
-      const word = {
-        word: s.word,
-        back: s.pinyin || '',
-        category: s.category || theme || 'Custom',
-        stage_icon: '🌱',
-        is_phrase: typeof s.word === 'string' && s.word.trim().split(/\s+/).length > 1,
-        reason: s.reason || null,
-        activity: s.activity || null,
-      };
-      buckets[idx % safeSets].words.push(word);
-    });
-
-    return { theme, theme_rationale: themeRationale, sets: buckets };
-  };
-
   const generatePlan = async (sets = numSets) => {
+    const version = ++requestVersion.current;
     setLoading(true);
     setError(null);
     try {
-      const response = await supabase.functions.invoke('generate-autopilot-suggestions', {
+      const response = await withTimeout(supabase.functions.invoke('generate-autopilot-suggestions', {
         body: { weekStart, numSets: sets },
-      });
+      }), 45000);
+      if (version !== requestVersion.current) return;
 
       if (response.error) throw new Error(response.error.message);
       if (response.data?.error) throw new Error(response.data.error);
@@ -90,13 +79,15 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
         throw new Error("Sprouttie couldn't generate suggestions just yet. Try again in a moment.");
       }
 
-      setPlan(buildPlanFromAutopilot(suggestions, theme, theme_rationale, sets));
+      setPlan(buildInitialWeekPlan(suggestions, theme, theme_rationale, sets));
       setPlanMeta({ setsPerDay: sets, isPreSpeech: false, weekStart, theme, theme_rationale });
     } catch (err) {
       console.error('Failed to generate plan:', err);
-      setError(err.message || 'Failed to generate your plan. Please try again.');
+      if (version === requestVersion.current) {
+        setError("Sprouttie couldn't generate suggestions just yet. Try again in a moment.");
+      }
     } finally {
-      setLoading(false);
+      if (version === requestVersion.current) setLoading(false);
     }
   };
 
@@ -119,6 +110,7 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
             user_id: currentUser.id,
             front: word.word,
             back: word.back || '',
+            pinyin: word.pinyin || null,
             folder: word.category || 'default',
             card_type: word.is_phrase ? 'phrase' : 'word',
             card_status: 'active',
@@ -156,7 +148,7 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
           wordPlans.push({
             user_id: currentUser.id,
             word: word.word,
-            pinyin: word.back || null,
+            pinyin: word.pinyin || null,
             theme: word.category || null,
             planned_week_start: weekStart,
             display_order: (set.set_number - 1) * 5 + idx,
@@ -241,8 +233,11 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
             {isFirstPlan ? 'Building your first themed week…' : 'Reading the room…'}
           </h2>
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
-            Sprouttie is checking your logs, interests and what worked last week.
+            {isFirstPlan
+              ? 'Sprouttie is choosing words from your setup and interests.'
+              : 'Sprouttie is checking your logs, interests and what worked last week.'}
           </p>
+          {onBack && <button onClick={onBack} className="mt-4 px-4 py-2 text-sm underline">Back</button>}
         </motion.div>
       </div>
     );
@@ -259,6 +254,7 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
           >
             Try Again
           </button>
+          {onBack && <button onClick={onBack} className="block mx-auto mt-3 px-4 py-2 text-sm underline">Back</button>}
         </div>
       </div>
     );
@@ -351,6 +347,7 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline gap-2 flex-wrap">
                         <span className="text-[hsl(var(--foreground))] font-medium">{word.word}</span>
+                        {word.pinyin && <span className="text-xs text-[hsl(var(--muted-foreground))]">{word.pinyin}</span>}
                         {word.back && (
                           <span className="text-xs text-[hsl(var(--muted-foreground))]">{word.back}</span>
                         )}
