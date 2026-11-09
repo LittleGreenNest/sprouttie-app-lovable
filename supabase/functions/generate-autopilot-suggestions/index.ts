@@ -675,15 +675,17 @@ For each word provide:
 
 Return JSON only. No preamble. No markdown. Random seed for variety: ${Math.floor(Math.random() * 100000)}`;
 
-    // Gemini answers 503 when it is busy, and sometimes never answers. Each try
-    // is capped at 20 seconds so the function always replies before Supabase
-    // kills it (546), and the last try uses the lighter model, which has its
-    // own capacity.
-    const ATTEMPTS = [
-      { model: GEMINI_MODEL, wait: 1000 },
-      { model: GEMINI_MODEL, wait: 1000 },
-      { model: GEMINI_FALLBACK_MODEL, wait: 0 },
-    ];
+    // A new family should not wait through repeated busy-model calls before
+    // reaching the lighter model. Both paths fit within the client's 45s wait.
+    const ATTEMPTS = profile.onboarding_completed !== true
+      ? [
+          { model: GEMINI_FALLBACK_MODEL, wait: 1000 },
+          { model: GEMINI_MODEL, wait: 0 },
+        ]
+      : [
+          { model: GEMINI_MODEL, wait: 1000 },
+          { model: GEMINI_FALLBACK_MODEL, wait: 0 },
+        ];
     let aiResponse!: Response;
     for (let attempt = 0; attempt < ATTEMPTS.length; attempt += 1) {
       const { model, wait } = ATTEMPTS[attempt];
@@ -694,7 +696,7 @@ Return JSON only. No preamble. No markdown. Random seed for variety: ${Math.floo
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            signal: AbortSignal.timeout(20000),
+            signal: AbortSignal.timeout(10000),
             body: JSON.stringify({
               system_instruction: { parts: [{ text: systemPrompt }] },
               contents: [{ role: "user", parts: [{ text: userMessage }] }],
@@ -846,6 +848,9 @@ Return JSON only. No preamble. No markdown. Random seed for variety: ${Math.floo
       JSON.stringify({
         success: true,
         count: rows.length,
+        suggestions: rows.map(({ word, category, reason, activity_tip, tier, set_number }) => ({
+          word, category, reason, activity: activity_tip, tier, set_number,
+        })),
         theme: weekTheme,
         dominantCategories: effectiveCategories.map(c => c.label),
         categorySource: effectiveCategories[0]?.source || "none",
