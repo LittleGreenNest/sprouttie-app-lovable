@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { hasCJK } from '../thisweek/weekWords';
 import { buildInitialWeekPlan } from '@/utils/initialWeekPlan';
 import { withTimeout } from '@/utils/requestTimeout';
 import { toast } from 'react-toastify';
@@ -102,6 +103,10 @@ const GeneratedPlanView = ({ isFirstPlan = false, onStartWeek, onBack }) => {
     setSaving(true);
 
     try {
+      // Never create another Mandarin card with an empty meaning.
+      if (plan.sets.some(set => set.words.some(word => hasCJK(word.word) && !word.back?.trim()))) {
+        throw new Error('Add an English meaning for each Chinese word before starting your week.');
+      }
       // Create flashcards for each word in the plan
       const flashcardsToCreate = [];
       plan.sets.forEach((set) => {

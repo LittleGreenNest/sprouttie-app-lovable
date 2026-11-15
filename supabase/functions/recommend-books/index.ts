@@ -174,7 +174,8 @@ For each book, provide:
 - author: The author's full name
 - language: "English", "Bilingual (English/Chinese)", "Chinese", or other
 - ageRange: e.g. "2-4 years"
-- matchingWords: 2-4 of the child's vocabulary words that appear in this book
+- matchingWords: 0-4 exact entries from the supplied vocabulary that a parent can naturally practise while reading this book. Use only strong, direct connections to the book's known subject or illustrations. Never force a match merely because the book and word share a broad theme. Use [] when uncertain. These are conversation suggestions, not verified occurrences in the book text.
+- Do not claim a word appears in the book unless you know its contents. Do not invent book details to justify a match.
 - description: 1-2 sentences on why this book helps with these words
 - coverColor: one of: blue, green, purple, orange, pink, amber
 
@@ -265,6 +266,10 @@ Respond with valid JSON only:
       throw new Error("Failed to parse book recommendations");
     }
 
+    if (!Array.isArray(books)) throw new Error("Invalid book recommendations");
+    const vocabulary = new Map(words.filter((word: unknown) => typeof word === 'string')
+      .map((word: string) => [word.normalize('NFKC').trim().toLowerCase(), word]));
+
     // Validate each book has required fields
     const requiredFields = ['title', 'author', 'language', 'ageRange', 'matchingWords', 'description', 'coverColor'];
     const validColors = ['blue', 'green', 'purple', 'orange', 'pink', 'amber'];
@@ -279,10 +284,13 @@ Respond with valid JSON only:
       if (!validColors.includes(book.coverColor)) {
         book.coverColor = validColors[Math.floor(Math.random() * validColors.length)];
       }
-      // Ensure matchingWords is an array
-      if (!Array.isArray(book.matchingWords)) {
-        book.matchingWords = [String(book.matchingWords)];
-      }
+      if (typeof book.title !== 'string' || !/[\p{L}\p{N}]/u.test(book.title) ||
+          typeof book.author !== 'string' || !book.author.trim()) return false;
+      // Only retain actual input words; this does not verify book contents.
+      book.matchingWords = [...new Set((Array.isArray(book.matchingWords) ? book.matchingWords : [])
+        .filter((word: unknown) => typeof word === 'string')
+        .map((word: string) => vocabulary.get(word.normalize('NFKC').trim().toLowerCase()))
+        .filter(Boolean))].slice(0, 4);
       return true;
     });
 

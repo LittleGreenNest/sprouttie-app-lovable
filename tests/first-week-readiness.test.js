@@ -10,8 +10,10 @@ const interestModule = { exports: {} };
 vm.runInNewContext(transformSync(fs.readFileSync('supabase/functions/generate-autopilot-suggestions/interests.ts', 'utf8'), { loader: 'ts', format: 'cjs' }).code, { module: interestModule, exports: interestModule.exports });
 const planModule = { exports: {} };
 vm.runInNewContext(buildSync({ entryPoints: ['src/utils/initialWeekPlan.js'], bundle: true, write: false, platform: 'node', format: 'cjs' }).outputFiles[0].text, { module: planModule, exports: planModule.exports });
+const normalModule = { exports: {} };
+vm.runInNewContext(transformSync(fs.readFileSync('supabase/functions/generate-autopilot-suggestions/words.ts', 'utf8'), { loader: 'ts', format: 'cjs' }).code, { module: normalModule, exports: normalModule.exports, Error });
 const words = ['bus (巴士 bā shì)', 'truck (卡车 kǎ chē)', 'train (火车 huǒ chē)', 'car (汽车 qì chē)', 'boat (船 chuán)'];
-const success = () => Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify({ theme: 'Vehicles', words: words.map(word => ({ word, reason: 'You mentioned vehicles.', activity_tip: 'Name it outdoors.' })) }) }] } }] });
+const success = () => Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify({ theme: 'Vehicles', words: words.map((word, index) => ({ word, chinese: ['巴士','卡车','火车','汽车','船'][index], pinyin: ['bā shì','kǎ chē','huǒ chē','qì chē','chuán'][index], english: word.split(' ')[0], reason: 'You mentioned vehicles.', activity_tip: 'Name it outdoors.' })) }) }] } }] });
 
 async function generate(onboarded, responses) {
   let handler;
@@ -29,8 +31,8 @@ async function generate(onboarded, responses) {
     },
   };
   vm.runInNewContext(transformSync(source, { loader: 'ts', format: 'cjs' }).code, {
-    require: name => name.includes('supabase-js') ? { createClient: () => supabase } : name.includes('interests') ? interestModule.exports : { serve: fn => { handler = fn; } },
-    Deno: { env: { get: () => 'test-only' } }, Response, Request, AbortSignal,
+    require: name => name.includes('supabase-js') ? { createClient: () => supabase } : name.includes('interests') ? interestModule.exports : name.includes('words.ts') ? normalModule.exports : { serve: fn => { handler = fn; } },
+    Deno: { env: { get: () => 'test-only' } }, Response, Request, AbortSignal, Error,
     console: { log() {}, warn() {}, error() {} }, setTimeout: fn => { fn(); },
     fetch: async url => { calls.push(url); return responses.shift()(); },
   });
@@ -72,4 +74,23 @@ test('onboarding cards keep Chinese, pinyin and English separate; pinyin does no
   assert.equal(plan.sets[0].words[0].back, 'bus');
   assert.equal(plan.sets[0].words[0].pinyin, 'bā shì');
   assert.ok(plan.sets[0].words.every(word => !word.is_phrase));
+});
+
+ test('Mandarin suggestions require separate fields and preserve translations in stored display strings', () => {
+  const normal = normalModule.exports.normaliseSuggestion;
+  const word = normal({ word: '火车', chinese: '火车', pinyin: 'huǒ chē', english: 'train' }, true);
+  assert.equal(word.word, 'train (火车 huǒ chē)');
+  assert.throws(() => normal({ word: '火车 huǒ chē' }, true), /missing translations/);
+  assert.throws(() => normal({ chinese: '火车', pinyin: '火车', english: 'train' }, true), /missing translations/);
+  const plan = planModule.exports.buildInitialWeekPlan([word], 'Vehicles', null, 1);
+  assert.equal(plan.sets[0].words[0].back, 'train');
+  assert.equal(plan.sets[0].words[0].word, '火车');
+});
+
+test('incomplete Mandarin AI output is rejected before replacing saved suggestions', async () => {
+  const incomplete = () => Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify({ theme: 'Vehicles', words: [{ word: '火车 huǒ chē' }] }) }] } }] });
+  const result = await generate(false, [incomplete]);
+  assert.equal(result.status, 500);
+  assert.equal(result.saved.length, 0);
+  assert.match(result.body.error, /missing translations/);
 });
