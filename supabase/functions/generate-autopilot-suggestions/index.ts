@@ -1,3 +1,4 @@
+import { normaliseSuggestion } from "./words.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { parseStatedInterests, withStatedInterestsFirst, type CategorySignal } from "./interests.ts";
@@ -591,6 +592,9 @@ Return JSON only. No preamble. No markdown. Schema:
   "words": [
     {
       "word": string,
+      "chinese": string (required for Mandarin),
+      "pinyin": string (required for Mandarin),
+      "english": string (required for Mandarin),
       "set_number": number | null,
       "pos": string,
       "reason": string,
@@ -666,7 +670,8 @@ The theme MUST emerge from the dominant interest categories above. When the pare
 The parent's daily notes and books from the last two weeks are the freshest evidence of what the child is into right now. Where a note or book fits the theme, draw at least one word from it. Never invent a note, a book or something the child said.
 
 For each word provide:
-- word (with Mandarin character + pinyin if Mandarin, or bilingual pair if applicable)
+- word (the word in the target language)
+- For Mandarin, you MUST also provide three separate string fields: chinese (Chinese characters only), pinyin (tone-marked pronunciation), english (concise English meaning). Example: {"word":"火车","chinese":"火车","pinyin":"huǒ chē","english":"train"}. Never omit any of these fields for Mandarin. Do not put pinyin or English in chinese.
 - set_number (integer: which set this word fits into, or null if no specific set applies)
 - pos (part of speech)
 - reason (1 to 2 sentences to the parent, saying where the word came from. If it comes from a daily note or a book the parent logged, begin with "You noted" and name the note in a few words. If it comes from a word the child said or tried, begin with "Your child said". Otherwise cite the stated interest it comes from, or the pattern in the child's words. Use the child's name or "your child", never he/she/him/her. No em dashes.)
@@ -769,20 +774,24 @@ Return JSON only. No preamble. No markdown. Random seed for variety: ${Math.floo
       );
     }
 
+    const mandarin = /mandarin|chinese/i.test(profile.target_language || '');
+    suggestions = suggestions.map(s => normaliseSuggestion(s, mandarin));
+
     // ─── Post-filter: semantic + literal dedup ───
     const seenNorms = new Set<string>();
     const filtered = suggestions.filter((s: any) => {
       if (!s?.word) return false;
-      const lit = String(s.word).toLowerCase().trim();
-      const norm = normaliseWord(s.word);
-      if (literalExclusionSet.has(lit)) return false;
-      if (normalisedExclusionSet.has(norm)) return false;
+      const variants = [s.word, s.chinese, s.english].filter(Boolean);
+      const norm = normaliseWord(s.chinese || s.word);
+      if (variants.some(value => literalExclusionSet.has(String(value).toLowerCase().trim()))) return false;
+      if (variants.some(value => normalisedExclusionSet.has(normaliseWord(value)))) return false;
       if (seenNorms.has(norm)) return false;
       seenNorms.add(norm);
       return true;
     });
 
-    const finalSuggestions = (filtered.length >= 3 ? filtered : suggestions).slice(0, targetWordCount);
+    const finalSuggestions = filtered.slice(0, targetWordCount);
+    if (!finalSuggestions.length) throw new Error('No new words were found. Please try again.');
 
     // ─── STEP 5: Write to Supabase ───
     let weekStart = body?.weekStart;
@@ -848,8 +857,11 @@ Return JSON only. No preamble. No markdown. Random seed for variety: ${Math.floo
       JSON.stringify({
         success: true,
         count: rows.length,
-        suggestions: rows.map(({ word, category, reason, activity_tip, tier, set_number }) => ({
+        suggestions: rows.map(({ word, category, reason, activity_tip, tier, set_number }, index) => ({
           word, category, reason, activity: activity_tip, tier, set_number,
+          chinese: finalSuggestions[index].chinese,
+          english: finalSuggestions[index].english,
+          pinyin: finalSuggestions[index].pinyin,
         })),
         theme: weekTheme,
         dominantCategories: effectiveCategories.map(c => c.label),

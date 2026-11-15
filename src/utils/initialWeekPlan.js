@@ -9,9 +9,9 @@ export function buildInitialWeekPlan(suggestions, theme, rationale, sets) {
   (suggestions || []).slice(0, count * MAX_WORDS_PER_SET).forEach((suggestion, index) => {
     const parsed = splitSuggestedWord(suggestion.word);
     buckets[index % count].words.push({
-      word: parsed.front,
-      back: parsed.english || suggestion.english || '',
-      pinyin: parsed.pinyin || suggestion.pinyin || '',
+      word: suggestion.chinese || parsed.front,
+      back: suggestion.english || parsed.english || '',
+      pinyin: suggestion.pinyin || parsed.pinyin || '',
       category: suggestion.category || theme || 'Custom',
       stage_icon: '🌱',
       is_phrase: parsed.front.trim().split(/\s+/).length > 1,

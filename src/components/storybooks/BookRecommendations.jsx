@@ -5,6 +5,7 @@ import { useFlashcards } from '../../context/FlashcardContext';
 import { Book, Sparkles, RefreshCw, ChevronDown, ChevronUp, ExternalLink, Globe, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
+import { bookSearchUrl } from './bookSearch.js';
 import { splitSuggestedWord } from '../thisweek/weekWords';
 
 // Stop waiting on the recommender after this long, so the button never hangs.
@@ -133,7 +134,7 @@ const BookCard = ({ book, index, feedback, onFeedback }) => (
 
     <div className="p-4 space-y-3">
       <a
-        href={`https://www.amazon.com/s?k=${encodeURIComponent((() => { const m = book.title.match(/\(([^)]+)\)/); const eng = m ? m[1] : book.title.replace(/[^\x00-\x7F]+/g, '').trim(); return eng || book.title; })())}&i=stripbooks`}
+        href={bookSearchUrl(book)}
         target="_blank"
         rel="noopener noreferrer"
         className="block group"
@@ -162,7 +163,7 @@ const BookCard = ({ book, index, feedback, onFeedback }) => (
 
       {book.matchingWords?.length > 0 && (
         <div>
-          <p className="text-xs text-muted-foreground mb-1.5">Matching vocabulary:</p>
+          <p className="text-xs text-muted-foreground mb-1.5">Words to practise together:</p>
           <div className="flex flex-wrap gap-1.5">
             {book.matchingWords.map((word, i) => (
               <span
@@ -175,6 +176,8 @@ const BookCard = ({ book, index, feedback, onFeedback }) => (
           </div>
         </div>
       )}
+
+      <p className="text-xs text-muted-foreground">AI-suggested reading ideas. These words may not appear in the book. Check the title and edition before buying.</p>
 
       {/* Feedback buttons */}
       <div className="flex items-center gap-2 pt-1 border-t border-border/50">

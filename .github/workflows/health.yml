@@ -1,6 +1,11 @@
 name: Sprouttie availability
 on:
   workflow_dispatch:
+    inputs:
+      alert_test:
+        description: 'Fail this run deliberately to verify GitHub notification delivery. Does not affect the live app.'
+        type: boolean
+        default: false
   schedule:
     - cron: '*/15 * * * *'
   push:
@@ -17,3 +22,8 @@ jobs:
         run: |
           curl --fail --silent --show-error --retry 2 --retry-delay 5 --max-time 20 https://sprouttie.online/login > /dev/null
           curl --fail --silent --show-error --retry 2 --retry-delay 5 --max-time 20 https://xqwrfbyqhuxveoqksuqz.supabase.co/functions/v1/health | python3 -c 'import json,sys; assert json.load(sys.stdin).get("ok") is True'
+      - name: Controlled notification delivery test
+        if: github.event_name == 'workflow_dispatch' && inputs.alert_test
+        run: |
+          echo "Intentional launch alert test. The production app was not changed."
+          exit 1

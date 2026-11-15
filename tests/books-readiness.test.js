@@ -64,3 +64,19 @@ test('rate limits return immediately without retrying', async () => {
   assert.equal(result.status, 429);
   assert.equal(result.calls.length, 1);
 });
+
+test('book searches preserve Chinese, parentheses and the author', async () => {
+  const { bookSearchUrl } = await import('../src/components/storybooks/bookSearch.js');
+  for (const title of ['小熊宝宝绘本: 刷牙', '吃饭啦！(Time for Dinner)', 'Transportation (First 100 Board Books)']) {
+    const url = new URL(bookSearchUrl({ title, author: 'Test Author' }));
+    assert.equal(url.searchParams.get('k'), `${title} Test Author`);
+  }
+});
+
+test('recommendations discard invented vocabulary and allow no practice words', async () => {
+  const response = matchingWords => () => Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify({ books: [{ ...book, matchingWords }] }) }] } }] });
+  const result = await runEndpoint([response(['bus', ' BUS ', 'aeroplane', null])]);
+  assert.deepEqual(result.body.books[0].matchingWords, ['bus']);
+  const empty = await runEndpoint([response(['aeroplane'])]);
+  assert.deepEqual(empty.body.books[0].matchingWords, []);
+});
