@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { withTimeout } from '@/utils/requestTimeout';
 import { cardIdFrom } from '@/utils/cardId';
 import { isReviewDay, localWeekStart, toLocalDateString } from '@/utils/week';
 import { useAuth } from '../../context/AuthContext';
@@ -159,13 +160,13 @@ export const useWeekState = ({ forceReview = false } = {}) => {
     }
   }, [uid, weekStart, pending, refreshFlashcards, load]);
 
-  const loadAlternatives = useCallback(async (suggestion) => {
-    if (alternatives[suggestion.id]) return;
+  const loadAlternatives = useCallback(async (suggestion, force = false) => {
+    if (!force && alternatives[suggestion.id]) return;
     setLoadingAlternatives(suggestion.id);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('generate-swap-alternatives', {
+      const { data, error: fnError } = await withTimeout(supabase.functions.invoke('generate-swap-alternatives', {
         body: { word: suggestion.word, category: suggestion.category },
-      });
+      }), 25000);
       if (fnError || data?.error) throw new Error(data?.error || 'swap failed');
       setAlternatives((prev) => ({ ...prev, [suggestion.id]: data.alternatives || [] }));
     } catch (e) {
