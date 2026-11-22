@@ -9,6 +9,7 @@ import { useCardDays } from '../tracking/useCardDays';
 import { useWeeklyReview } from '../review/useWeeklyReview';
 import { useWeekState } from './useWeekState';
 import { splitSuggestedWord } from './weekWords';
+import WordChoicePicker from './WordChoicePicker';
 import NoticeLogSheet from './NoticeLogSheet';
 import { printWeekWords } from './printWeekWords';
 
@@ -102,6 +103,7 @@ const PlanState = ({ variant, week, navigate }) => {
   const [openSwap, setOpenSwap] = useState(null);
   const { pending, generating, accepting, error } = week;
   const cardsByFront = useCardsByFront();
+  const { flashcards: replacementCards = [] } = useFlashcards() || {};
 
   if (generating) {
     return (
@@ -189,26 +191,12 @@ const PlanState = ({ variant, week, navigate }) => {
                 </TextLink>
               </div>
               {open && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {week.loadingAlternatives === s.id && (
-                    <span className="text-[12px] text-[#66737A]">Finding alternatives…</span>
-                  )}
-                  {(alts || []).map((a) => (
-                    <button
-                      key={a}
-                      type="button"
-                      onClick={async () => {
-                        if (await week.swap(s.id, a)) setOpenSwap(null);
-                      }}
-                      className="text-[13px] px-3 py-1 rounded-full bg-[#F4EDE1] text-[#263136] border-0 cursor-pointer"
-                    >
-                      {a}
-                    </button>
-                  ))}
-                  {alts && alts.length === 0 && week.loadingAlternatives !== s.id && (
-                    <span className="text-[12px] text-[#66737A]">No alternatives found.</span>
-                  )}
-                </div>
+                <WordChoicePicker
+                  suggestion={s} pending={pending} alternatives={alts || []} cards={replacementCards}
+                  loading={week.loadingAlternatives === s.id}
+                  onRetry={() => week.loadAlternatives(s, true)}
+                  onChoose={word => week.swap(s.id, word)} onClose={() => setOpenSwap(null)}
+                />
               )}
             </li>
           );

@@ -4,6 +4,8 @@ import { useFlashcards } from '../context/FlashcardContext';
 import { jsPDF } from 'jspdf';
 import { usePlanAccess, UpgradePrompt } from '../hooks/usePlanAccess';
 import { supabase } from '@/integrations/supabase/client';
+import { withTimeout } from '@/utils/requestTimeout';
+import { preparePrintCards } from '@/utils/preparePrintCards';
 import { setAutoFont, writeFlashcardPages } from '@/utils/flashcardPdf';
 
 function ab2b64(buf) {
@@ -48,7 +50,17 @@ getFlashcardsForSet
 // NEW: back-side printing & preview toggle
 const [includeBack, setIncludeBack] = useState(false);   // whether to add back pages
 const [previewSide, setPreviewSide] = useState('front'); // 'front' | 'back'
+const [preparingPreview, setPreparingPreview] = useState(false);
+const previewVersion = useRef(0);
 const [textColor, setTextColor] = useState('red'); // 'red' | 'black'
+
+useEffect(() => {
+  previewVersion.current += 1;
+  setPreparingPreview(false);
+  setPreviewFlashcards([]);
+  setPreviewPages([]);
+}, [selectedFlashcards]);
+useEffect(() => () => { previewVersion.current += 1; }, []);
 
   // State for preview pages - organized how they'll appear on A4 pages
   const [previewPages, setPreviewPages] = useState([]);
@@ -166,6 +178,8 @@ useEffect(() => {
 
   // Clear selections
   const clearSelections = () => {
+    previewVersion.current += 1;
+    setPreparingPreview(false);
     setSelectedFlashcards([]);
     setSelectedSets([]);
     setPreviewFlashcards([]);
@@ -210,7 +224,9 @@ useEffect(() => {
   };
 
 
-const generatePreview = () => {
+const generatePreview = async () => {
+  const version = ++previewVersion.current;
+  setPreparingPreview(true);
   // Create temp document for measuring
   const tempDoc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
@@ -255,58 +271,35 @@ const generatePreview = () => {
     return pages;
   };
 
-  setPreviewFlashcards(flashcardsToPreview);
-  setPreviewPages(paginate(flashcardsToPreview));
-
-  // Most Chinese cards were saved before pinyin was stored, so the back page
-  // printed an empty "Pinyin:" line. Look up what is missing with the same
-  // translate-word function the planner uses. Print-only: nothing is written
-  // back to the card. A failed lookup leaves the line off, never blocks.
-  fillMissingPinyin(flashcardsToPreview).then((filled) => {
-    if (!filled) return;
-    setPreviewFlashcards(filled);
-    setPreviewPages(paginate(filled));
-  });
+  // Resolve pronunciation before a PDF can be downloaded, never silently race it.
+  try {
+    const filled = await fillMissingPinyin(flashcardsToPreview);
+    if (version !== previewVersion.current) return;
+    const ready = filled || flashcardsToPreview;
+    setPreviewFlashcards(ready);
+    setPreviewPages(paginate(ready));
+    const missing = ready.filter(c => /[㐀-鿿]/.test(c.word || '') && !c.pinyin?.trim());
+    setMessage(missing.length ? `Pinyin could not be loaded for ${missing.length} card(s). Generate the preview again to retry, or edit the cards before printing.` : '');
+  } finally {
+    if (version === previewVersion.current) setPreparingPreview(false);
+  }
 };
 
 const pinyinCacheRef = useRef({});
 
-const fillMissingPinyin = async (cards) => {
-  const cache = pinyinCacheRef.current;
-  const needs = [...new Set(
-    cards
-      .filter(c => !(c.pinyin || '').trim() && /[㐀-鿿]/.test(c.word || '') && !(c.word in cache))
-      .map(c => c.word)
-  )];
+const fillMissingPinyin = cards => preparePrintCards(cards, async word => {
+  const { data, error } = await withTimeout(supabase.functions.invoke('translate-word', { body: { word } }), 12000);
+  if (error) throw error;
+  return data?.pinyin;
+}, pinyinCacheRef.current);
 
-  const CHUNK = 5;
-  for (let i = 0; i < needs.length; i += CHUNK) {
-    await Promise.all(needs.slice(i, i + CHUNK).map(async (w) => {
-      try {
-        const { data, error } = await supabase.functions.invoke('translate-word', { body: { word: w } });
-        if (error) throw error;
-        cache[w] = (data?.pinyin || '').trim();
-      } catch (err) {
-        console.warn('translate-word failed for', w, err);
-        cache[w] = '';
-      }
-    }));
-  }
-
-  let changed = false;
-  const filled = cards.map(c => {
-    if ((c.pinyin || '').trim() || !cache[c.word]) return c;
-    changed = true;
-    return { ...c, pinyin: cache[c.word] };
-  });
-  return changed ? filled : null;
-};
 
 
 
 
   // Generate and download PDF
   const generatePDF = () => {
+    if (preparingPreview) return;
     if (previewFlashcards.length === 0) {
       setMessage('Please generate a preview first.');
       setTimeout(() => setMessage(''), 3000);
@@ -521,7 +514,7 @@ const fillMissingPinyin = async (cards) => {
                 name="print-sides"
                 className="accent-primary"
                 checked={includeBack}
-                onChange={() => setIncludeBack(true)}
+                onChange={() => { setIncludeBack(true); setPreviewSide('back'); }}
               />
               <span>Front + matching backs</span>
             </label>
@@ -545,14 +538,14 @@ const fillMissingPinyin = async (cards) => {
             <button
               onClick={generatePreview}
               className="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 transition-all shadow-md disabled:opacity-50 disabled:shadow-none"
-              disabled={selectedFlashcards.length === 0}
+              disabled={selectedFlashcards.length === 0 || preparingPreview}
             >
-              Generate Preview
+              {preparingPreview ? 'Preparing pinyin…' : 'Generate Preview'}
             </button>
             <button
               onClick={generatePDF}
               className="btn-primary flex-1 py-3 px-4 bg-[hsl(var(--sprouttie-green))] text-white rounded-xl font-semibold hover:opacity-90 transition-all shadow-md disabled:opacity-50 disabled:shadow-none"
-              disabled={previewFlashcards.length === 0}
+              disabled={previewFlashcards.length === 0 || preparingPreview}
             >
               Download PDF
             </button>
