@@ -12,10 +12,12 @@ const planModule = { exports: {} };
 vm.runInNewContext(buildSync({ entryPoints: ['src/utils/initialWeekPlan.js'], bundle: true, write: false, platform: 'node', format: 'cjs' }).outputFiles[0].text, { module: planModule, exports: planModule.exports });
 const normalModule = { exports: {} };
 vm.runInNewContext(transformSync(fs.readFileSync('supabase/functions/generate-autopilot-suggestions/words.ts', 'utf8'), { loader: 'ts', format: 'cjs' }).code, { module: normalModule, exports: normalModule.exports, Error });
+const starterModule = { exports: {} };
+vm.runInNewContext(buildSync({ entryPoints: ['supabase/functions/generate-autopilot-suggestions/starter.ts'], bundle: true, write: false, platform: 'node', format: 'cjs' }).outputFiles[0].text, { module: starterModule, exports: starterModule.exports });
 const words = ['bus (巴士 bā shì)', 'truck (卡车 kǎ chē)', 'train (火车 huǒ chē)', 'car (汽车 qì chē)', 'boat (船 chuán)'];
 const success = () => Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify({ theme: 'Vehicles', words: words.map((word, index) => ({ word, chinese: ['巴士','卡车','火车','汽车','船'][index], pinyin: ['bā shì','kǎ chē','huǒ chē','qì chē','chuán'][index], english: word.split(' ')[0], reason: 'You mentioned vehicles.', activity_tip: 'Name it outdoors.' })) }) }] } }] });
 
-async function generate(onboarded, responses) {
+async function generate(onboarded, responses, options = {}) {
   let handler;
   const calls = [];
   let saved = [];
@@ -24,19 +26,19 @@ async function generate(onboarded, responses) {
     from(table) {
       let query;
       query = new Proxy({}, { get(_target, key) {
-        if (key === 'then') return resolve => resolve({ data: table === 'profiles' ? { onboarding_completed: onboarded, target_language: 'mandarin', child_interests: 'buses and trucks', child_age_band: '2-3' } : [], error: null });
+        if (key === 'then') return resolve => resolve({ data: table === 'profiles' ? { onboarding_completed: onboarded, target_language: 'mandarin', child_interests: 'buses and trucks', child_age_band: '2-3', ...options.profile } : (options.tables?.[table] || []), error: null });
         return (...args) => { if (key === 'insert') saved = args[0]; return query; };
       } });
       return query;
     },
   };
   vm.runInNewContext(transformSync(source, { loader: 'ts', format: 'cjs' }).code, {
-    require: name => name.includes('supabase-js') ? { createClient: () => supabase } : name.includes('interests') ? interestModule.exports : name.includes('words.ts') ? normalModule.exports : { serve: fn => { handler = fn; } },
+    require: name => name.includes('supabase-js') ? { createClient: () => supabase } : name.includes('interests') ? interestModule.exports : name.includes('starter.ts') ? starterModule.exports : name.includes('words.ts') ? normalModule.exports : { serve: fn => { handler = fn; } },
     Deno: { env: { get: () => 'test-only' } }, Response, Request, AbortSignal, Error,
     console: { log() {}, warn() {}, error() {} }, setTimeout: fn => { fn(); },
     fetch: async url => { calls.push(url); return responses.shift()(); },
   });
-  const response = await handler(new Request('https://example.invalid', { method: 'POST', headers: { Authorization: 'Bearer test' }, body: JSON.stringify({ numSets: 1, weekStart: '2026-11-09' }) }));
+  const response = await handler(new Request('https://example.invalid', { method: 'POST', headers: { Authorization: 'Bearer test' }, body: JSON.stringify({ numSets: options.numSets || 1, weekStart: '2026-11-09' }) }));
   return { status: response.status, body: await response.json(), calls, saved };
 }
 
@@ -93,4 +95,38 @@ test('incomplete Mandarin AI output is rejected before replacing saved suggestio
   assert.equal(result.status, 500);
   assert.equal(result.saved.length, 0);
   assert.match(result.body.error, /missing translations/);
+});
+
+for (const numSets of [1, 2, 3, 5]) {
+  test(`blank interests generate ${numSets * 5} reviewed everyday words without AI`, async () => {
+    const result = await generate(false, [], { numSets, profile: { child_interests: '' }, tables: { weekly_suggestions: [{ word: 'car', category: 'Vehicles', status: 'dismissed' }] } });
+    assert.equal(result.status, 200);
+    assert.equal(result.calls.length, 0);
+    assert.equal(result.body.theme, 'Everyday first words');
+    assert.equal(result.saved.length, numSets * 5);
+    assert.ok(result.body.suggestions.every(word => word.chinese && word.english && word.pinyin));
+    assert.ok(result.saved.every(word => !/vehicle|told us|loves/i.test(word.reason + word.category)));
+  });
+}
+test('unmapped Chinese history is not treated as a cold start', async () => {
+  const result = await generate(true, [success], { profile: { child_interests: '' }, tables: { spoken_words: [{ word: '大象' }] } });
+  assert.equal(result.status, 200);
+  assert.equal(result.body.coldStart, false);
+  assert.equal(result.calls.length, 1);
+});
+for (const interest of ['farm', 'family', 'home']) {
+  test(`explicit ${interest} interests retain the personalised generation path`, async () => {
+    const result = await generate(false, [success], { profile: { child_interests: interest } });
+    assert.equal(result.status, 200);
+    assert.equal(result.body.coldStart, false);
+    assert.equal(result.body.categorySource, 'profile_interests');
+    assert.equal(result.calls.length, 1);
+    assert.match(JSON.stringify(result.body.dominantCategories), new RegExp(interest));
+  });
+}
+test('starter skips previously dismissed everyday words and fills the requested count', async () => {
+  const result = await generate(false, [], { profile: { child_interests: '' }, tables: { weekly_suggestions: [{ word: 'mother (妈妈 mā ma)', status: 'dismissed' }] } });
+  assert.equal(result.status, 200);
+  assert.equal(result.saved.length, 5);
+  assert.ok(result.body.suggestions.every(word => word.chinese !== '妈妈'));
 });
