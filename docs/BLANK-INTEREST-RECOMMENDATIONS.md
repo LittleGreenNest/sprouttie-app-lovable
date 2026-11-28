@@ -1,0 +1,7 @@
+# Blank-interest recommendation fix — 28 November 2026
+
+A blank optional interest field must not invent a vehicle interest. Earlier AI suggestions no longer supply interest categories. Parent-stated interests lead; actual logged words, saved cards and parent notes remain useful context, with reasons describing their source rather than claiming the child loves a topic.
+
+For Mandarin families with no stated interests or recorded history, the generator uses a reviewed balanced starter vocabulary from family, body, home/play, food, animals and everyday actions. Theme: Everyday first words. These categories reflect the familiar-word idea in the owner's reference infographic, without imposing its schedules or developmental milestones. The starter requires no AI call and retains Chinese, English and tone-marked pinyin. Existing and dismissed suggestions remain excluded before the requested number of words is selected. Existing family data is not rewritten.
+
+Validation: 52 Node tests pass; production build passes. Regression coverage includes 5/10/15/25 starter words, previous AI vehicle suggestions, dismissed-word exclusion, unmapped Chinese spoken history and explicit farm/family/home interests. Owner Safari verification remains pending: use a fresh profile with interests blank and no recorded words/cards; verify Everyday first words and a balanced vocabulary. Existing vehicle cards/history can legitimately influence an existing profile, so clearing interests alone is not a fresh-profile test.

@@ -1,3 +1,4 @@
+import { everydayStarterPlan } from "./starter.ts";
 import { normaliseSuggestion } from "./words.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -306,7 +307,7 @@ serve(async (req) => {
     const targetWordCount = numSets * 5;
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
+
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -393,6 +394,9 @@ serve(async (req) => {
         .limit(20),
     ]);
 
+    if (profileRes.error || spokenRes.error || flashcardsRes.error || backlogRes.error || weeklyLogsRes.error || sessionsRes.error) {
+      throw new Error("Unable to load family context. Please try again.");
+    }
     const profile = profileRes.data || {};
     const spokenWords: SpokenWord[] = spokenRes.data || [];
     const activeFlashcards = flashcardsRes.data || [];
@@ -524,19 +528,7 @@ serve(async (req) => {
       .sort(([, a], [, b]) => b - a)
       .slice(0, 5);
 
-    // Past suggestion categories — 3rd fallback. These are AI-generated English labels
-    // from prior runs, already stored in weekly_suggestions.category / .theme.
-    const pastCategories = [
-      ...new Set(
-        allPastSuggestions
-          .map((s: any) => s.category || s.theme)
-          .filter(Boolean)
-          .filter((c: string) => !GENERIC_FOLDER_NAMES.has(c.toLowerCase().trim()))
-      ),
-    ].slice(0, 5) as string[];
-
-    // What the parent told us leads. Observed data backs it up, picked by the
-    // cascade spoken_words keywords → flashcard folders → past suggestion categories.
+    // Generated suggestions are exclusions/feedback, never evidence of an interest.
     const statedInterests = parseStatedInterests(profile.child_interests);
     const observedCategories: CategorySignal[] =
       topCategories.length > 0
@@ -549,38 +541,36 @@ serve(async (req) => {
               label: `${folder} (${count} flashcard${count === 1 ? "" : "s"})`,
               source: "flashcard_folders",
             }))
-          : pastCategories.length > 0
-            ? pastCategories.map(cat => ({
-                label: `${cat} (from prior suggestions)`,
-                source: "past_suggestions",
-              }))
-            : [];
+          : [];
 
     const effectiveCategories = withStatedInterestsFirst(statedInterests, observedCategories);
 
-    const coldStart = effectiveCategories.length === 0;
+    const hasRecordedHistory = spokenWords.length > 0 || activeFlashcards.length > 0 ||
+      wordsInBacklog.length > 0 || weeklyLogs.some((log: any) => log.content || log.context) ||
+      sessionNotes.length > 0 || Boolean(profile.daily_activities || profile.pets_and_toys);
+    const coldStart = statedInterests.length === 0 && !hasRecordedHistory;
 
     const dominantCategoriesStr = coldStart
-      ? "COLD START — no data available; use profile interests and age-appropriate defaults"
+      ? "EVERYDAY FIRST WORDS — no stated interests or recorded history; use a balanced mix of familiar family, body, home, food, play and action words"
       : effectiveCategories.map((c, i) => `${i + 1}. ${c.label}`).join("\n  ");
 
     // ─── STEP 3: System prompt ───
     const systemPrompt = `You are a specialist in early childhood language development and bilingual acquisition. Your job is to suggest vocabulary words for a weekly flashcard plan that is personalised to THIS specific child — not a generic toddler.
 
 Your suggestions must:
-1. Lead with the interests the parent has told us about. They are listed first under "Dominant interest categories", marked "(the parent told us)". Use the spoken word history to decide which of those interests to build on and at what level. Only when the parent has stated no interests, ground the week in the spoken word history alone
+1. Lead with the interests the parent has told us about. They are listed first under "Dominant interest categories", marked "(the parent told us)". Use the spoken word history to decide which of those interests to build on and at what level. When interests are blank, use actual parent-recorded words, cards or notes. If there is no recorded history, choose balanced familiar everyday first words
 2. Extend what the child already knows through one of three tiers:
    - "reinforce": adjacent vocabulary within a known category (e.g. child knows "excavator" → suggest "excavator arm")
    - "bridge": connecting a known concept to a new domain (e.g. "steering wheel" → "direction" → "left/right")
    - "stretch": one level above current complexity without being inaccessible
-3. Never regress to generic age-band defaults (food, household items, colours) unless spoken word history explicitly shows this as a dominant interest
+3. For a cold start, mix familiar family, body, home, food, play and action words. Do not default to vehicles or infer an interest from previous AI suggestions
 4. Reflect the child's language balance — prioritise the underrepresented target language where appropriate
-5. Include a rationale per word that references THIS child's actual data. Write it to the parent, in the second person. When the word comes from an interest the parent stated, say so plainly first, e.g. "Trains, because you told us Kai loves them." Use the child's name if it is given, otherwise "your child". Never refer to the child as he, she, him or her. Do not use em dashes
+5. Include a rationale per word that references THIS child's actual data. Write it to the parent, in the second person. When the word comes from an interest the parent stated, say so plainly first, e.g. "Trains, because you listed them as an interest." Use the child's name if it is given, otherwise "your child". Never refer to the child as he, she, him or her. Do not use em dashes
 
 You must NOT:
-- Default to mealtime or household themes without evidence from spoken word history
+- Claim a child loves a topic merely because a word was logged or a card was saved. Describe that evidence accurately instead
 - Suggest any word in the exclusion set
-- Assign a theme that has no connection to observed interests
+- Invent observations, interests or history. For a cold start, explain that these are familiar everyday words to try
 - Repeat previously dismissed words
 
 When SET STRUCTURE is provided, each suggested word must include a "set_number" field indicating which set it is intended for. Assign words to sets where they thematically fit and where there are open slots. If no set structure is available, omit "set_number".
@@ -621,7 +611,7 @@ VOCABULARY PATTERN ANALYSIS (pre-computed):
   ${dominantCategoriesStr}
 - Complexity level observed: ${complexityLevel}
 - Language distribution in spoken words: ${langDistribution}
-- Cold-start flag: ${coldStart ? "YES — no spoken words; theme must come from profile interests or age defaults" : "no"}
+- Cold-start flag: ${coldStart ? "YES — no stated interests or recorded history; use everyday first words" : "no"}
 ${mandarinUnderrepresented ? "- ⚠️ MANDARIN UNDERREPRESENTED: prioritise Mandarin vocabulary this week\n" : ""}
 SPOKEN WORDS — Recent (last 14 days):
 ${recentWords.length > 0 ? recentWords.join(", ") : "none in this window"}
@@ -665,7 +655,7 @@ Graduation threshold: word is owned by child OR has been flashed ≥${GRADUATION
 ` : ""}TASK:
 Suggest ONE weekly theme and ${targetWordCount} words.
 
-The theme MUST emerge from the dominant interest categories above. When the parent has stated interests, the theme should come from one of those.${setAware ? ` Where possible, assign each word to a set (via set_number) where it fits thematically and there are open slots. Prioritise filling sets that have graduating words first.` : ""} If cold-start, pick a theme appropriate for the age band and any profile interests listed.
+The theme MUST emerge from the dominant interest categories above. When the parent has stated interests, the theme should come from one of those.${setAware ? ` Where possible, assign each word to a set (via set_number) where it fits thematically and there are open slots. Prioritise filling sets that have graduating words first.` : ""} If cold-start, use the theme "Everyday first words" and a balanced familiar vocabulary mix. If there is recorded history without mapped categories, use that actual history; do not invent a dominant interest.
 
 The parent's daily notes and books from the last two weeks are the freshest evidence of what the child is into right now. Where a note or book fits the theme, draw at least one word from it. Never invent a note, a book or something the child said.
 
@@ -682,6 +672,13 @@ Return JSON only. No preamble. No markdown. Random seed for variety: ${Math.floo
 
     // A new family should not wait through repeated busy-model calls before
     // reaching the lighter model. Both paths fit within the client's 45s wait.
+let parsed: any;
+    let rawContent = "";
+    if (coldStart && /mandarin|chinese/i.test(profile.target_language || "")) {
+      parsed = everydayStarterPlan((chinese, english) =>
+        [chinese, english].some(value => literalExclusionSet.has(value.toLowerCase()) || normalisedExclusionSet.has(normaliseWord(value))));
+    } else {
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
     const ATTEMPTS = profile.onboarding_completed !== true
       ? [
           { model: GEMINI_FALLBACK_MODEL, wait: 1000 },
@@ -737,10 +734,9 @@ Return JSON only. No preamble. No markdown. Random seed for variety: ${Math.floo
     }
 
     const aiData = await aiResponse.json();
-    let rawContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    rawContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
     rawContent = rawContent.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
 
-    let parsed: any;
     try {
       parsed = JSON.parse(rawContent);
     } catch {
@@ -749,6 +745,8 @@ Return JSON only. No preamble. No markdown. Random seed for variety: ${Math.floo
         JSON.stringify({ error: "parse_failed", raw: rawContent }),
         { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
     }
 
     // Handle both new {theme, words:[]} shape and legacy [] shape
@@ -865,7 +863,7 @@ Return JSON only. No preamble. No markdown. Random seed for variety: ${Math.floo
         })),
         theme: weekTheme,
         dominantCategories: effectiveCategories.map(c => c.label),
-        categorySource: effectiveCategories[0]?.source || "none",
+        categorySource: effectiveCategories[0]?.source || (coldStart ? "everyday_starter" : "parent_history"),
         coldStart,
         setAware,
         setsAnalysed: setAnalysis.length,
@@ -878,7 +876,7 @@ Return JSON only. No preamble. No markdown. Random seed for variety: ${Math.floo
         excluded: literalExclusionSet.size,
         spokenWordsCount: spokenWordsList.length,
         flashcardFolders: topFolders.map(([f, n]) => `${f}:${n}`),
-        pastCategoriesFound: pastCategories.length,
+        pastCategoriesFound: 0,
         droppedFromAI: suggestions.length - filtered.length,
         feedbackUsed: dismissedWithReasons.length,
       }),
