@@ -8,11 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import CSVImport from './CSVImport';
 import PrintFlashcards from './PrintFlashcards';
 import { History, Printer } from 'lucide-react';
-
-// The lookup itself takes roughly a second, so it is the long pole, not the
-// wait before it. 450ms still coalesces a burst of typing without adding a
-// noticeable pause of its own.
-const DEBOUNCE_MS = 450;
+import { createCardTranslator, mandarinCardReady } from '../utils/cardTranslation.js';
 
 const FlashcardManager = () => {
   const navigate = useNavigate();
@@ -56,11 +52,8 @@ const FlashcardManager = () => {
 
   // AI auto-fill state
   const [aiLoading, setAiLoading] = useState(false);
-  const aiTimeoutRef = useRef(null);
-  const translationCache = useRef(new Map());
-  // Responses can land out of order, so only the newest lookup may fill fields.
-  const aiRequestRef = useRef(0);
-  const [aiError, setAiError] = useState(false);
+  const translatorRef = useRef(null);
+  const [aiError, setAiError] = useState('');
   
   // Card language: 'zh' (Chinese) or 'en' (English)
   const [cardLanguage, setCardLanguage] = useState('zh');
@@ -78,112 +71,45 @@ const FlashcardManager = () => {
     setTimeout(() => setMessage({ text: '', type: '' }), 3000);
   };
 
-  // Words repeat constantly while building a set, and a repeat lookup costs a
-  // full round trip for an answer we already had. Cache per session.
-  const applyTranslation = (data) => {
-    if (data?.chinese) setNewFlashcardWord(data.chinese);
-    if (data?.english) setNewFlashcardEnglish(data.english);
-    if (data?.pinyin) setNewFlashcardPinyin(data.pinyin);
+  if (!translatorRef.current) translatorRef.current = createCardTranslator({
+    invoke: async (word, direction) => {
+      const { data, error } = await supabase.functions.invoke('translate-word', { body: { word, direction } });
+      if (error) throw error;
+      return data;
+    },
+    onResult: data => {
+      if (data.chinese) setNewFlashcardWord(data.chinese);
+      setNewFlashcardEnglish(data.english);
+      setNewFlashcardPinyin(data.pinyin);
+    },
+    onState: next => {
+      setAiLoading(next.loading);
+      setAiError(next.error);
+    },
+  });
+  const cancelTranslation = () => translatorRef.current.cancel();
+  const resetTranslationFields = () => {
+    cancelTranslation();
+    setNewFlashcardWord(''); setNewFlashcardEnglish(''); setNewFlashcardPinyin('');
+    setEnglishInput('');
   };
-
-  // AI auto-fill: debounce Chinese word input → English + Pinyin
-  const handleWordChange = (value) => {
+  const handleWordChange = value => {
+    cancelTranslation();
     setNewFlashcardWord(value);
-
-    if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
-
-    const term = value.trim();
-    const hasChinese = /[\u4e00-\u9fff]/.test(term);
-    if (!hasChinese || term.length === 0) {
-      // Without this the spinner sticks on forever when the field is cleared
-      // or edited back below the threshold.
-      aiRequestRef.current++;
-      setAiLoading(false);
-      setAiError(false);
-      return;
-    }
-
-    const cached = translationCache.current.get(`zh:${term}`);
-    if (cached) {
-      aiRequestRef.current++;
-      setAiLoading(false);
-      setAiError(false);
-      applyTranslation(cached);
-      return;
-    }
-
-    const requestId = ++aiRequestRef.current;
-    aiTimeoutRef.current = setTimeout(async () => {
-      // Only now is a request actually in flight. Setting this on keystroke
-      // showed "Translating…" through the whole time the user was still typing.
-      setAiLoading(true);
-      setAiError(false);
-      try {
-        const { data, error } = await supabase.functions.invoke('translate-word', {
-          body: { word: term },
-        });
-        if (error) throw error;
-        translationCache.current.set(`zh:${term}`, data);
-        if (requestId === aiRequestRef.current) applyTranslation(data);
-      } catch (err) {
-        console.error('AI auto-fill error:', err);
-        if (requestId === aiRequestRef.current) setAiError(true);
-      } finally {
-        if (requestId === aiRequestRef.current) setAiLoading(false);
-      }
-    }, DEBOUNCE_MS);
+    if (inputMode === 'english') return; // Parent editing the proposed Chinese.
+    setNewFlashcardEnglish(''); setNewFlashcardPinyin('');
+    translatorRef.current.change(value, 'zh-to-en');
   };
-
-  // AI auto-fill: debounce English input → Chinese + Pinyin
-  const handleEnglishInputChange = (value) => {
+  const handleEnglishInputChange = value => {
     setEnglishInput(value);
-
-    if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
-
-    const term = value.trim();
-    if (term.length < 2) {
-      aiRequestRef.current++;
-      setAiLoading(false);
-      setAiError(false);
-      return;
-    }
-
-    const cached = translationCache.current.get(`en:${term}`);
-    if (cached) {
-      aiRequestRef.current++;
-      setAiLoading(false);
-      setAiError(false);
-      applyTranslation(cached);
-      return;
-    }
-
-    const requestId = ++aiRequestRef.current;
-    aiTimeoutRef.current = setTimeout(async () => {
-      setAiLoading(true);
-      setAiError(false);
-      try {
-        const { data, error } = await supabase.functions.invoke('translate-word', {
-          body: { word: term, direction: 'en-to-zh' },
-        });
-        if (error) throw error;
-        translationCache.current.set(`en:${term}`, data);
-        if (requestId === aiRequestRef.current) applyTranslation(data);
-      } catch (err) {
-        console.error('AI English→Chinese error:', err);
-        if (requestId === aiRequestRef.current) setAiError(true);
-      } finally {
-        if (requestId === aiRequestRef.current) setAiLoading(false);
-      }
-    }, DEBOUNCE_MS);
+    setNewFlashcardWord(''); setNewFlashcardEnglish(''); setNewFlashcardPinyin('');
+    translatorRef.current.change(value, 'en-to-zh');
   };
+  const retryTranslation = () => translatorRef.current.change(
+    inputMode === 'english' ? englishInput : newFlashcardWord,
+    inputMode === 'english' ? 'en-to-zh' : 'zh-to-en', true);
+  useEffect(() => () => translatorRef.current.cancel(), []);
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
-    };
-  }, []);
-  
   // Toggle CSV import modal
   const toggleCSVImport = () => {
     setShowCSVImport(!showCSVImport);
@@ -371,8 +297,12 @@ const FlashcardManager = () => {
       return;
     }
     
-    // Chinese card (existing logic)
-    if (!newFlashcardWord.trim() || !newFlashcardCategory) return;
+    // Save only a complete translation or a complete parent-entered card.
+    if (!mandarinCardReady({ chinese: newFlashcardWord, english: newFlashcardEnglish, pinyin: newFlashcardPinyin, translating: aiLoading })) {
+      showMessage('Please complete Chinese, English and pinyin before adding the card.', 'error');
+      return;
+    }
+    if (!newFlashcardCategory) return;
     
     const existingCard = flashcards.find(
       card => card.word.toLowerCase().trim() === newFlashcardWord.toLowerCase().trim()
@@ -406,6 +336,7 @@ const FlashcardManager = () => {
       if (err?.message === 'FREE_LIMIT_REACHED') { navigate('/plans'); return; }
       throw err;
     }
+    cancelTranslation();
     setNewFlashcardWord('');
     setNewFlashcardEnglish('');
     setNewFlashcardPinyin('');
@@ -672,7 +603,7 @@ const FlashcardManager = () => {
                 <div className="inline-flex items-center rounded-full bg-slate-100 p-1 text-xs">
                   <button
                     type="button"
-                    onClick={() => { setCardLanguage('zh'); }}
+                    onClick={() => { resetTranslationFields(); setCardLanguage('zh'); }}
                     className={`px-3 py-1.5 rounded-full transition ${
                       cardLanguage === 'zh' 
                         ? 'bg-white shadow-sm font-semibold text-slate-900' 
@@ -683,7 +614,7 @@ const FlashcardManager = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setCardLanguage('en'); setInputMode('chinese'); setEnglishInput(''); }}
+                    onClick={() => { resetTranslationFields(); setCardLanguage('en'); setInputMode('chinese'); }}
                     className={`px-3 py-1.5 rounded-full transition ${
                       cardLanguage === 'en' 
                         ? 'bg-white shadow-sm font-semibold text-slate-900' 
@@ -737,7 +668,7 @@ const FlashcardManager = () => {
                       placeholder={newCardType === 'word' ? 'e.g. dog, cat, water' : 'e.g. drink water, sit down'}
                       className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       value={newFlashcardEnglish}
-                      onChange={(e) => setNewFlashcardEnglish(e.target.value)}
+                      onChange={(e) => { cancelTranslation(); setNewFlashcardEnglish(e.target.value); }}
                       required
                     />
                   </div>
@@ -750,7 +681,7 @@ const FlashcardManager = () => {
                       placeholder="e.g. a furry pet that barks"
                       className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       value={newFlashcardPinyin}
-                      onChange={(e) => setNewFlashcardPinyin(e.target.value)}
+                      onChange={(e) => { cancelTranslation(); setNewFlashcardPinyin(e.target.value); }}
                     />
                     <p className="text-xs text-slate-500 mt-1">
                       Add a hint or description to help your child remember this word
@@ -810,7 +741,7 @@ const FlashcardManager = () => {
                     <div className="inline-flex items-center rounded-full bg-slate-100 p-1 text-xs">
                       <button
                         type="button"
-                        onClick={() => { setInputMode('chinese'); setEnglishInput(''); }}
+                        onClick={() => { resetTranslationFields(); setInputMode('chinese'); }}
                         className={`px-3 py-1.5 rounded-full transition ${
                           inputMode === 'chinese' 
                             ? 'bg-white shadow-sm font-semibold text-slate-900' 
@@ -821,7 +752,7 @@ const FlashcardManager = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setInputMode('english')}
+                        onClick={() => { resetTranslationFields(); setInputMode('english'); }}
                         className={`px-3 py-1.5 rounded-full transition ${
                           inputMode === 'english' 
                             ? 'bg-white shadow-sm font-semibold text-slate-900' 
@@ -884,11 +815,11 @@ const FlashcardManager = () => {
                       </div>
                       {aiError && !aiLoading ? (
                         <p className="text-xs text-rose-600 mt-1">
-                          Couldn't reach the translator just now. Edit the word to try again, or fill the Chinese in yourself.
+                          {aiError} <button type="button" onClick={retryTranslation} className="underline font-semibold">Retry translation</button>
                         </p>
                       ) : (
                         <p className="text-xs text-slate-500 mt-1">
-                          AI will auto-fill the Chinese word, pinyin & meaning below (Singapore Mandarin)
+                          Chinese, pinyin and meaning will fill in below (Singapore Mandarin). You can edit them.
                         </p>
                       )}
                     </div>
@@ -898,7 +829,7 @@ const FlashcardManager = () => {
                   <div>
                     <label className="block text-sm font-medium mb-1">
                       {newCardType === 'word' ? 'Chinese Word' : 'Chinese Phrase'}
-                      {inputMode === 'english' && <span className="text-xs text-slate-400 ml-1">(auto-filled)</span>}
+                      {inputMode === 'english' && <span className="text-xs text-slate-400 ml-1">(editable)</span>}
                     </label>
                     <div className="relative">
                       <input
@@ -920,6 +851,7 @@ const FlashcardManager = () => {
                         </span>
                       )}
                     </div>
+                    {aiError && !aiLoading && inputMode === 'chinese' && <p role="status" className="text-xs text-rose-600 mt-1">{aiError} <button type="button" onClick={retryTranslation} className="underline font-semibold">Retry translation</button></p>}
                     {newCardType === 'phrase' && inputMode === 'chinese' && (
                       <p className="text-xs text-slate-500 mt-1">
                         Short toddler phrases like "喝水", "坐下", "我们走走"
@@ -935,7 +867,7 @@ const FlashcardManager = () => {
                       placeholder={newCardType === 'word' ? 'dog' : 'drink water, sit down, let\'s go for a walk'}
                       className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       value={newFlashcardEnglish}
-                      onChange={(e) => setNewFlashcardEnglish(e.target.value)}
+                      onChange={(e) => { cancelTranslation(); setNewFlashcardEnglish(e.target.value); }}
                     />
                   </div>
 
@@ -947,7 +879,7 @@ const FlashcardManager = () => {
                       placeholder="Pinyin"
                       className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       value={newFlashcardPinyin}
-                      onChange={(e) => setNewFlashcardPinyin(e.target.value)}
+                      onChange={(e) => { cancelTranslation(); setNewFlashcardPinyin(e.target.value); }}
                     />
                   </div>
 
@@ -990,7 +922,8 @@ const FlashcardManager = () => {
                   <div className="flex gap-2">
                     <button
                       type="submit"
-                      className="btn-primary px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition"
+                      disabled={!mandarinCardReady({ chinese: newFlashcardWord, english: newFlashcardEnglish, pinyin: newFlashcardPinyin, translating: aiLoading })}
+                      className="btn-primary px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition disabled:opacity-50"
                     >
                       Add {newCardType === 'phrase' ? 'Phrase' : 'Card'}
                     </button>
