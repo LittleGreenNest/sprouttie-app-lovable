@@ -4,6 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // Rolling alias, not a pinned version — Google retired gemini-2.5-flash from
 // the v1beta API ahead of its announced shutdown date and every call started
 // 404ing. Same alias scan-flashcards uses.
+import { normaliseSuggestion } from "../generate-autopilot-suggestions/words.ts";
+
 const GEMINI_MODEL = "gemini-flash-latest";
 
 const corsHeaders = {
@@ -108,8 +110,10 @@ serve(async (req) => {
   }
 
   try {
-    const { word, category } = await req.json();
-    if (!word) throw new Error("word is required");
+    const { word, category, excludedWords = [] } = await req.json();
+    if (typeof word !== "string" || !word.trim() || word.length > 300) throw new Error("word is required");
+    const mandarin = /[\p{Script=Han}]/u.test(word);
+    const wordKey = (value: string) => (value.match(/[\p{Script=Han}]+/gu)?.join("") || value).trim().toLowerCase();
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
@@ -150,7 +154,9 @@ serve(async (req) => {
 
     const profile = profileRes.data;
     const spokenWordsList = (spokenRes.data || []).map((w: any) => w.word);
-    const existingWords = (flashcardsRes.data || []).map((f: any) => f.front?.toLowerCase());
+    if (profileRes.error || spokenRes.error || flashcardsRes.error) throw new Error("Could not load replacement context");
+    const existingWords = (flashcardsRes.data || []).map((f: any) => f.front || "");
+    const excluded = new Set([word, ...existingWords, ...spokenWordsList, ...(Array.isArray(excludedWords) ? excludedWords.filter((v: unknown) => typeof v === "string").slice(0, 50) : [])].map(wordKey));
 
     // Precompute interest categories from spoken word history
     const dominantCategories = computeInterestCategories(
@@ -168,7 +174,7 @@ Your alternatives must:
 
 Never suggest generic fallback words (basic colours, household items) unless the child's interest pattern explicitly supports it.
 
-Respond with a JSON array of exactly 3 strings. No markdown, no explanation.`;
+${mandarin ? 'Respond with a JSON array of exactly 6 objects. Each object must have separate chinese (Simplified Chinese only), pinyin (tone-marked), and english (English meaning) fields.' : 'Respond with a JSON array of exactly 6 strings in the target language.'} No markdown, no explanation.`;
 
     const userMessage = `Word to replace: "${word}"
 Category context: ${category || "general"}
@@ -186,12 +192,13 @@ ${dominantCategories.length > 0
 Words already in the child's sets — avoid all of these:
 ${existingWords.slice(0, 50).join(", ") || "none"}
 
-Return exactly 3 alternative words as a JSON array of strings. Example: ["word1", "word2", "word3"]`;
+${mandarin ? 'Return 6 objects with chinese, pinyin and english fields.' : 'Return 6 alternative strings.'} Also avoid these pending plan words: ${Array.isArray(excludedWords) ? excludedWords.slice(0, 50).join(", ") : "none"}`;
 
     const aiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
+        signal: AbortSignal.timeout(8000),
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemPrompt }] },
@@ -206,8 +213,8 @@ Return exactly 3 alternative words as a JSON array of strings. Example: ["word1"
     );
 
     if (!aiResponse.ok) {
-      const errText = await aiResponse.text();
-      console.error("Gemini API error:", aiResponse.status, errText);
+      await aiResponse.text();
+      console.error("Gemini API status:", aiResponse.status);
       if (aiResponse.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limited. Try again in a moment." }),
@@ -221,11 +228,11 @@ Return exactly 3 alternative words as a JSON array of strings. Example: ["word1"
     let rawContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
     rawContent = rawContent.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
 
-    let alternatives: string[];
+    let alternatives: unknown[];
     try {
       alternatives = JSON.parse(rawContent);
     } catch {
-      console.error("Failed to parse AI response:", rawContent);
+      console.error("Failed to parse swap response");
       return new Response(
         JSON.stringify({ error: "parse_failed" }),
         { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -239,14 +246,19 @@ Return exactly 3 alternative words as a JSON array of strings. Example: ["word1"
       );
     }
 
-    const filtered = alternatives
-      .filter(
-        (a: string) =>
-          typeof a === "string" &&
-          a.toLowerCase() !== word.toLowerCase() &&
-          !existingWords.includes(a.toLowerCase()),
-      )
-      .slice(0, 3);
+    const filtered: string[] = [];
+    for (const alternative of alternatives) {
+      try {
+        const value = mandarin
+          ? normaliseSuggestion(alternative, true).word
+          : typeof alternative === "string" ? alternative.trim() : "";
+        const key = wordKey(value);
+        if (!key || excluded.has(key)) continue;
+        excluded.add(key);
+        filtered.push(value);
+        if (filtered.length >= 6) break;
+      } catch { /* Incomplete translations must never become cards. */ }
+    }
 
     return new Response(
       JSON.stringify({ alternatives: filtered }),
@@ -256,7 +268,7 @@ Return exactly 3 alternative words as a JSON array of strings. Example: ["word1"
     console.error("generate-swap-alternatives error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError") ? 504 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

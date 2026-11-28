@@ -193,7 +193,8 @@ const PlanState = ({ variant, week, navigate }) => {
               {open && (
                 <WordChoicePicker
                   suggestion={s} pending={pending} alternatives={alts || []} cards={replacementCards}
-                  loading={week.loadingAlternatives === s.id}
+                  loading={Boolean(week.loadingAlternatives[s.id])}
+                  suggestionError={week.alternativesError[s.id]}
                   onRetry={() => week.loadAlternatives(s, true)}
                   onChoose={word => week.swap(s.id, word)} onClose={() => setOpenSwap(null)}
                 />
