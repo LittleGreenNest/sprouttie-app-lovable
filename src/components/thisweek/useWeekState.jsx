@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useFlashcards } from '../../context/FlashcardContext';
 import { REVIEW_LOG_TYPE } from '../review/useWeeklyReview';
 import { acceptWeek } from './acceptWeek';
+import { saveSwap } from './saveSwap.js';
 
 /** Sets of five words proposed each week. The backend accepts 1 to 5. */
 const NUM_SETS = 2;
@@ -37,7 +38,9 @@ export const useWeekState = ({ forceReview = false } = {}) => {
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState('');
   const [alternatives, setAlternatives] = useState({});
-  const [loadingAlternatives, setLoadingAlternatives] = useState(null);
+  const [loadingAlternatives, setLoadingAlternatives] = useState({});
+  const [alternativesError, setAlternativesError] = useState({});
+  const alternativesInFlight = useRef(new Set());
 
   const generatingRef = useRef(false);
   const acceptingRef = useRef(false);
@@ -161,43 +164,39 @@ export const useWeekState = ({ forceReview = false } = {}) => {
   }, [uid, weekStart, pending, refreshFlashcards, load]);
 
   const loadAlternatives = useCallback(async (suggestion, force = false) => {
-    if (!force && alternatives[suggestion.id]) return;
-    setLoadingAlternatives(suggestion.id);
+    if (alternativesInFlight.current.has(suggestion.id) || (!force && alternatives[suggestion.id])) return;
+    alternativesInFlight.current.add(suggestion.id);
+    setLoadingAlternatives(prev => ({ ...prev, [suggestion.id]: true }));
+    setAlternativesError(prev => ({ ...prev, [suggestion.id]: false }));
     try {
       const { data, error: fnError } = await withTimeout(supabase.functions.invoke('generate-swap-alternatives', {
-        body: { word: suggestion.word, category: suggestion.category },
-      }), 25000);
+        body: { word: suggestion.word, category: suggestion.category, excludedWords: pending.map(s => s.word) },
+      }), 12000);
       if (fnError || data?.error) throw new Error(data?.error || 'swap failed');
       setAlternatives((prev) => ({ ...prev, [suggestion.id]: data.alternatives || [] }));
     } catch (e) {
       console.error('Swap alternatives error:', e);
-      setAlternatives((prev) => ({ ...prev, [suggestion.id]: [] }));
+      setAlternativesError(prev => ({ ...prev, [suggestion.id]: true }));
     } finally {
-      setLoadingAlternatives(null);
+      alternativesInFlight.current.delete(suggestion.id);
+      setLoadingAlternatives(prev => ({ ...prev, [suggestion.id]: false }));
     }
-  }, [alternatives]);
+  }, [alternatives, pending]);
 
   // The reason and the everyday tip were written for the old word, so clear
   // them rather than show a rationale that no longer applies.
   const swap = useCallback(async (id, word) => {
-    let { error: swapError } = await supabase
-      .from('weekly_suggestions')
-      .update({ word, reason: null, activity_tip: null })
-      .eq('id', id);
-    if (swapError && /activity_tip/.test(swapError.message || '')) {
-      ({ error: swapError } = await supabase
-        .from('weekly_suggestions')
-        .update({ word, reason: null })
-        .eq('id', id));
-    }
-    if (swapError) {
-      console.error('Swap error:', swapError);
-      setError('Could not swap that word.');
+    setError('');
+    try {
+      await saveSwap(supabase, uid, id, word);
+    } catch (e) {
+      console.error('Swap error:', e);
+      setError('Could not save that replacement. Please try again.');
       return false;
     }
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, word, reason: null, activity_tip: null } : r)));
     return true;
-  }, []);
+  }, [uid]);
 
   return {
     state,
@@ -211,6 +210,7 @@ export const useWeekState = ({ forceReview = false } = {}) => {
     reviewed,
     alternatives,
     loadingAlternatives,
+    alternativesError,
     generate,
     accept,
     swap,

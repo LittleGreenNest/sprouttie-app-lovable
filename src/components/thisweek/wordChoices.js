@@ -1,6 +1,6 @@
 import { splitSuggestedWord } from './weekWords.js';
 
-export function buildWordChoices(alternatives = [], cards = [], excluded = []) {
+export function buildWordChoices(alternatives = [], cards = [], excluded = [], library = []) {
   const key = value => splitSuggestedWord(value).front.trim().toLowerCase();
   const seen = new Set(excluded.map(key));
   const choices = [];
@@ -22,5 +22,6 @@ export function buildWordChoices(alternatives = [], cards = [], excluded = []) {
       : pinyin ? `${parsed.front} (${pinyin})` : front;
     add(value, 'Your cards');
   });
+  library.forEach(value => add(value, 'Word library'));
   return choices;
 }
